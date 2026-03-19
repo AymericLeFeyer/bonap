@@ -5,12 +5,10 @@ import type { MealieMealPlan } from "../../shared/types/mealie.ts"
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 
-const MEAL_TYPE_ORDER = ["breakfast", "lunch", "dinner", "side"] as const
+const MEAL_TYPE_ORDER = ["lunch", "dinner"] as const
 const MEAL_TYPE_LABELS: Record<string, string> = {
-  breakfast: "Petit-dej",
-  lunch: "Dejeuner",
-  dinner: "Diner",
-  side: "Accomp.",
+  lunch: "Déjeuner",
+  dinner: "Dîner",
 }
 
 function formatDayDate(date: Date): string {
