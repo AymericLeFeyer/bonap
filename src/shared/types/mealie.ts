@@ -11,13 +11,20 @@ export interface MealieInstruction {
   text: string
 }
 
+export interface MealieCategory {
+  id: string
+  groupId: string
+  name: string
+  slug: string
+}
+
 export interface MealieRecipe {
   id: string
   slug: string
   name: string
   description?: string
   image?: string
-  recipeCategory?: string[]
+  recipeCategory?: MealieCategory[]
   prepTime?: string
   cookTime?: string
   recipeIngredient?: MealieIngredient[]

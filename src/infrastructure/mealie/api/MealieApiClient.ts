@@ -6,7 +6,12 @@ import {
   MealieUnauthorizedError,
 } from "../../../shared/types/errors.ts"
 
-const baseUrl = (import.meta.env.VITE_MEALIE_URL as string).replace(/\/+$/, "")
+// En dev, les requêtes /api sont proxifiées par Vite vers VITE_MEALIE_URL (pas de CORS).
+// En prod, VITE_MEALIE_URL doit être renseigné et accessible directement.
+const baseUrl =
+  import.meta.env.DEV
+    ? ""
+    : (import.meta.env.VITE_MEALIE_URL as string).replace(/\/+$/, "")
 const token = import.meta.env.VITE_MEALIE_TOKEN as string
 
 export class MealieApiClient implements IMealieApiClient {

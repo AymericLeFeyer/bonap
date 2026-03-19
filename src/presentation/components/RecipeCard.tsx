@@ -1,32 +1,21 @@
 import { Card, CardContent, CardHeader } from "./ui/card.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
-import { UtensilsCrossed } from "lucide-react"
 
 interface RecipeCardProps {
   recipe: MealieRecipe
 }
 
-const baseUrl = (import.meta.env.VITE_MEALIE_URL as string).replace(/\/+$/, "")
-
 export function RecipeCard({ recipe }: RecipeCardProps) {
-  const imageUrl = recipe.image
-    ? `${baseUrl}/api/media/recipes/${recipe.id}/images/min-original.webp`
-    : null
+  const imageUrl = `/api/media/recipes/${recipe.id}/images/min-original.webp`
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md">
       <div className="aspect-video w-full overflow-hidden bg-muted">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={recipe.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <UtensilsCrossed className="h-10 w-10 text-muted-foreground" />
-          </div>
-        )}
+        <img
+          src={imageUrl}
+          alt={recipe.name}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <CardHeader className="p-4 pb-2">
@@ -40,10 +29,10 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           <div className="flex flex-wrap gap-1">
             {recipe.recipeCategory.map((cat) => (
               <span
-                key={cat}
+                key={cat.id}
                 className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
               >
-                {cat}
+                {cat.name}
               </span>
             ))}
           </div>
