@@ -47,6 +47,15 @@ export interface MealiePaginatedRecipes {
   totalPages: number
 }
 
+export interface MealieRawMealPlan {
+  id: number
+  date: string
+  entry_type: string
+  title?: string
+  recipe_id?: string
+  recipe?: MealieRecipe
+}
+
 export interface MealieMealPlan {
   id: number
   date: string
@@ -54,4 +63,12 @@ export interface MealieMealPlan {
   title?: string
   recipeId?: string
   recipe?: MealieRecipe
+}
+
+export interface MealieRawPaginatedMealPlans {
+  items: MealieRawMealPlan[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
 }
