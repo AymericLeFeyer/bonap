@@ -1,73 +1,64 @@
-# React + TypeScript + Vite
+# Bonap 🍽️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Front-end ergonomique pour [Mealie](https://mealie.io), gestionnaire de recettes self-hosted. Bonap se connecte à votre instance Mealie existante sans en modifier le backend.
 
-Currently, two official plugins are available:
+## Prérequis
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 18+
+- Une instance Mealie accessible sur le réseau
+- Un token API Mealie (Mealie → Profil → API Tokens)
 
-## React Compiler
+## Installation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/votre-user/bonap
+cd bonap
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Configuration
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Créez un fichier `.env` à la racine du projet :
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_MEALIE_URL=http://192.168.1.21:9000
+VITE_MEALIE_TOKEN=votre_token_api
 ```
+
+> Le proxy Vite redirige automatiquement `/api/*` vers `VITE_MEALIE_URL` en développement, ce qui évite les problèmes CORS.
+
+## Lancer en développement
+
+```bash
+npm run dev
+```
+
+L'application est disponible sur [http://localhost:5173](http://localhost:5173).
+
+## Build de production
+
+```bash
+npm run build
+npm run preview  # pour tester le build localement
+```
+
+Les fichiers de production sont générés dans `dist/`.
+
+## Stack
+
+| Outil | Rôle |
+|---|---|
+| React 18 + Vite | Framework & bundler |
+| TypeScript (strict) | Typage statique |
+| Tailwind CSS v4 | Styles utilitaires |
+| shadcn/ui | Composants UI (Radix UI) |
+| React Router v6 | Navigation |
+
+## Fonctionnalités
+
+- **Recettes** — liste avec recherche, filtres par catégorie / tag / temps, infinite scroll
+- **Détail recette** — ingrédients, instructions, temps de préparation
+- **Planning** — tableau semaine avec déjeuner et dîner, navigation jour par jour
+  - Drag & drop pour déplacer les repas
+  - Bouton "Restes" pour copier le repas du créneau précédent
+  - Préchargement intelligent pour une navigation fluide
