@@ -71,7 +71,7 @@ export function RecipeDetailPage() {
 
             {(recipe.prepTime || recipe.cookTime) && (
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                {recipe.prepTime && <span>Preparation : {recipe.prepTime}</span>}
+                {recipe.prepTime && <span>Préparation : {recipe.prepTime}</span>}
                 {recipe.cookTime && <span>Cuisson : {recipe.cookTime}</span>}
               </div>
             )}
@@ -79,7 +79,7 @@ export function RecipeDetailPage() {
 
           {recipe.recipeIngredient && recipe.recipeIngredient.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-lg font-semibold">Ingredients</h2>
+              <h2 className="text-lg font-semibold">Ingrédients</h2>
               <ul className="space-y-1.5">
                 {recipe.recipeIngredient.map((ing, i) => (
                   <li key={i} className="text-sm">
@@ -104,8 +104,8 @@ export function RecipeDetailPage() {
                 {recipe.recipeInstructions.map((step, i) => (
                   <li key={step.id} className="space-y-1">
                     <p className="text-sm font-medium">
-                      Etape {i + 1}
-                      {step.title && ` - ${step.title}`}
+                      Étape {i + 1}
+                      {step.title && ` — ${step.title}`}
                     </p>
                     <p className="text-sm text-muted-foreground">{step.text}</p>
                   </li>

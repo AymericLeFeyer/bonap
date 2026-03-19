@@ -56,10 +56,18 @@ export interface MealieMealPlan {
   recipe?: MealieRecipe
 }
 
-export interface MealiePaginatedMealPlans {
+export interface MealieRawPaginatedMealPlans {
   items: MealieMealPlan[]
   total: number
   page: number
   per_page: number
   total_pages: number
+}
+
+export interface MealiePaginatedMealPlans {
+  items: MealieMealPlan[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
 }

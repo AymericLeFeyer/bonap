@@ -9,12 +9,14 @@ const getRecipesUseCase = new GetRecipesUseCase(new RecipeRepository())
 export function useRecipesInfinite(search: string) {
   const [recipes, setRecipes] = useState<MealieRecipe[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const pageRef = useRef(1)
   const loadingRef = useRef(false)
 
   const reset = useCallback(() => {
     setRecipes([])
+    setError(null)
     setHasMore(true)
     pageRef.current = 1
   }, [])
@@ -28,7 +30,8 @@ export function useRecipesInfinite(search: string) {
       setRecipes((prev) => [...prev, ...data.items])
       setHasMore(pageRef.current < data.totalPages)
       pageRef.current += 1
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue")
       setHasMore(false)
     } finally {
       setLoading(false)
@@ -52,5 +55,5 @@ export function useRecipesInfinite(search: string) {
     ? recipes.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()))
     : recipes
 
-  return { recipes: filtered, loading, hasMore, loadMore }
+  return { recipes: filtered, loading, error, hasMore, loadMore }
 }
