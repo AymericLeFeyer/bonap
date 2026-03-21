@@ -7,10 +7,24 @@ import type {
   RecipeFormData,
   Season,
 } from "../../../shared/types/mealie.ts"
-import { isSeasonTag, seasonsToTagObjects } from "../../../shared/utils/season.ts"
+import { isSeasonTag } from "../../../shared/utils/season.ts"
 import { mealieApiClient } from "../api/index.ts"
 
+interface MealieTagObject { id?: string; name: string; slug: string }
+
 export class RecipeRepository implements IRecipeRepository {
+  /** Résout les tags saison en incluant leur id si ils existent déjà dans Mealie. */
+  private async resolveSeasonTags(seasons: Season[]): Promise<MealieTagObject[]> {
+    const response = await mealieApiClient.get<{ items: MealieTag[] }>("/api/tags")
+    const existing = response.items
+    return seasons.map((s) => {
+      const tagName = `saison-${s}`
+      const found = existing.find((t) => t.slug === tagName)
+      return found
+        ? { id: found.id, name: found.name, slug: found.slug }
+        : { name: tagName, slug: tagName }
+    })
+  }
   async getAll(
     page = 1,
     perPage = 30,
@@ -59,10 +73,13 @@ export class RecipeRepository implements IRecipeRepository {
   }
 
   async update(slug: string, data: RecipeFormData): Promise<MealieRecipe> {
-    const current = await this.getBySlug(slug)
+    const [current, seasonTags] = await Promise.all([
+      this.getBySlug(slug),
+      this.resolveSeasonTags(data.seasons),
+    ])
     const nonSeasonTags = (current.tags ?? [])
       .filter((t) => !isSeasonTag(t))
-      .map((t) => ({ name: t.name, slug: t.slug }))
+      .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
 
     const payload = {
       name: data.name,
@@ -80,19 +97,22 @@ export class RecipeRepository implements IRecipeRepository {
           id: String(i),
           text: step.text,
         })),
-      tags: [...nonSeasonTags, ...seasonsToTagObjects(data.seasons)],
+      tags: [...nonSeasonTags, ...seasonTags],
     }
     return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, payload)
   }
 
   async updateSeasons(slug: string, seasons: Season[]): Promise<MealieRecipe> {
-    const current = await this.getBySlug(slug)
+    const [current, seasonTags] = await Promise.all([
+      this.getBySlug(slug),
+      this.resolveSeasonTags(seasons),
+    ])
     const nonSeasonTags = (current.tags ?? [])
       .filter((t) => !isSeasonTag(t))
-      .map((t) => ({ name: t.name, slug: t.slug }))
+      .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
     return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
       name: current.name,
-      tags: [...nonSeasonTags, ...seasonsToTagObjects(seasons)],
+      tags: [...nonSeasonTags, ...seasonTags],
     })
   }
 }
