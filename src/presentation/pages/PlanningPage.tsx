@@ -31,6 +31,78 @@ function addDays(date: Date, n: number): Date {
   return d
 }
 
+// ─── MobileMealSection ────────────────────────────────────────────────────────
+
+interface MobileMealSectionProps {
+  meals: MealieMealPlan[]
+  previousMeal: MealieMealPlan | null
+  onAdd: () => void
+  onDelete: (id: number) => void
+  onLeftovers: () => void
+  onView: (slug: string) => void
+}
+
+function MobileMealSection({ meals, previousMeal, onAdd, onDelete, onLeftovers, onView }: MobileMealSectionProps) {
+  const isEmpty = meals.length === 0
+  return (
+    <div className="flex flex-col gap-2 px-3 pb-3">
+      {meals.map((meal) => {
+        const name = meal.recipe?.name ?? meal.title ?? "Sans titre"
+        return (
+          <div key={meal.id} className="flex items-center gap-3 rounded-lg bg-white/80 dark:bg-card shadow-sm overflow-hidden">
+            {meal.recipe && (
+              <img
+                src={`/api/media/recipes/${meal.recipe.id}/images/min-original.webp`}
+                alt={name}
+                className="h-14 w-14 shrink-0 object-cover"
+              />
+            )}
+            <span className="flex-1 text-sm font-medium leading-tight line-clamp-2">{name}</span>
+            <div className="flex shrink-0 flex-col border-l border-border/40">
+              {meal.recipe?.slug && (
+                <button
+                  type="button"
+                  onClick={() => onView(meal.recipe!.slug)}
+                  className="flex items-center justify-center p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onDelete(meal.id)}
+                className="flex items-center justify-center p-2.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )
+      })}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex flex-1 items-center justify-center rounded-md border border-dashed border-current/20 py-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+        {isEmpty && (
+          <button
+            type="button"
+            onClick={onLeftovers}
+            disabled={!previousMeal}
+            title={previousMeal ? `Copier "${previousMeal.recipe?.name ?? "le repas"}"` : "Aucun repas précédent"}
+            className="flex items-center justify-center rounded-md border border-dashed border-current/20 px-3 py-2 text-muted-foreground hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 transition-colors"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── MealCell ────────────────────────────────────────────────────────────────
 
 interface MealCellProps {
@@ -251,51 +323,53 @@ export function PlanningPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Planning</h1>
+    <div className="flex flex-col gap-4 px-4 pb-4 md:px-6 md:pb-6">
+      {/* Header sticky */}
+      <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur md:-mx-6 md:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-bold">Planning</h1>
 
-        <div className="flex items-center gap-2">
-          {/* Sélecteur nombre de jours */}
-          <div className="flex items-center rounded-md border border-border overflow-hidden">
-            {([3, 5, 7] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setNbDays(n)}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  nbDays === n
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary"
-                }`}
-              >
-                {n}j
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            {/* Sélecteur nombre de jours */}
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
+              {([3, 5, 7] as const).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setNbDays(n)}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    nbDays === n
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {n}j
+                </button>
+              ))}
+            </div>
+
+            <Button variant="outline" size="icon" onClick={goToPrevPeriod}>
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={goToPrevDay}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={goToToday}>
+              Aujourd'hui
+            </Button>
+            <Button variant="outline" size="icon" onClick={goToNextDay}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={goToNextPeriod}>
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-
-          <Button variant="outline" size="icon" onClick={goToPrevPeriod}>
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={goToPrevDay}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={goToToday}>
-            Aujourd'hui
-          </Button>
-          <Button variant="outline" size="icon" onClick={goToNextDay}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={goToNextPeriod}>
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
 
-      <p className="text-sm font-medium text-muted-foreground">
-        {formatDateRange(days)}
-      </p>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
+          {formatDateRange(days)}
+        </p>
+      </div>
 
       {loading && (
         <div className="flex items-center justify-center py-16">
@@ -311,12 +385,50 @@ export function PlanningPage() {
       )}
 
       {!loading && !error && (
-        <div className="overflow-x-auto rounded-xl border border-border shadow-sm">
-          <div>
+        <>
+          {/* ── Vue mobile : cartes verticales par jour ── */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {days.slice(1).map((date) => {
+              const isToday = new Date().toDateString() === date.toDateString()
+              const dayLabel = DAY_LABELS[date.getDay()]
+              return (
+                <div key={date.toISOString()} className="rounded-xl border border-border overflow-hidden shadow-sm">
+                  {/* En-tête du jour */}
+                  <div className={`px-4 py-2 text-sm font-semibold ${isToday ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}>
+                    <span className="uppercase tracking-wide opacity-70 text-xs mr-2">{dayLabel}</span>
+                    {formatDayDate(date)}
+                  </div>
+                  {/* Créneaux */}
+                  {MEAL_TYPES.map(({ key, label, color }) => {
+                    const dateStr = date.toISOString().slice(0, 10)
+                    const meals = getMeals(date, key)
+                    const prevMeal = getPreviousMeal(date, key)
+                    return (
+                      <div key={key} className={`${color} border-t border-border`}>
+                        <div className="px-3 pt-2 pb-1">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+                        </div>
+                        <MobileMealSection
+                          meals={meals}
+                          previousMeal={prevMeal}
+                          onAdd={() => handleAddMeal(dateStr, key)}
+                          onDelete={deleteMeal}
+                          onLeftovers={() => handleLeftovers(date, key)}
+                          onView={setPreviewSlug}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* ── Vue desktop : tableau ── */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-border shadow-sm">
             <table className="w-full border-collapse text-sm table-fixed">
               <thead>
                 <tr>
-                  {/* Colonne étiquette */}
                   <th className="w-20 border border-border bg-secondary px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground" />
                   {days.map((date) => {
                     const isToday = new Date().toDateString() === date.toDateString()
@@ -372,7 +484,7 @@ export function PlanningPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </>
       )}
 
       <RecipePickerDialog

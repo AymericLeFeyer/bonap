@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-@theme inline {
+/* Tailwind v4 : faire répondre dark: à la classe .dark plutôt qu'à prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
   /* ── Typographie ── */
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
