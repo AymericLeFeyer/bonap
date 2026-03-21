@@ -62,7 +62,7 @@ export class RecipeRepository implements IRecipeRepository {
     const current = await this.getBySlug(slug)
     const nonSeasonTags = (current.tags ?? [])
       .filter((t) => !isSeasonTag(t))
-      .map((t) => ({ name: t.name }))
+      .map((t) => ({ name: t.name, slug: t.slug }))
 
     const payload = {
       name: data.name,
@@ -89,7 +89,7 @@ export class RecipeRepository implements IRecipeRepository {
     const current = await this.getBySlug(slug)
     const nonSeasonTags = (current.tags ?? [])
       .filter((t) => !isSeasonTag(t))
-      .map((t) => ({ name: t.name }))
+      .map((t) => ({ name: t.name, slug: t.slug }))
     return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
       name: current.name,
       tags: [...nonSeasonTags, ...seasonsToTagObjects(seasons)],
