@@ -31,5 +31,5 @@ export function useRecipe(slug: string | undefined) {
     }
   }, [slug, fetchRecipe])
 
-  return { recipe, loading, error }
+  return { recipe, setRecipe, loading, error }
 }

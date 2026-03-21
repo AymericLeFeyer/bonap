@@ -4,6 +4,7 @@ import type {
   MealieRawPaginatedRecipes,
   MealieRecipe,
   RecipeFilters,
+  RecipeFormData,
 } from "../../../shared/types/mealie.ts"
 import { mealieApiClient } from "../api/index.ts"
 
@@ -48,5 +49,31 @@ export class RecipeRepository implements IRecipeRepository {
   async createFromUrl(url: string): Promise<string> {
     const response = await mealieApiClient.post<string | { slug: string }>("/api/recipes/create-url", { url })
     return typeof response === "string" ? response : response.slug
+  }
+
+  async create(name: string): Promise<string> {
+    const response = await mealieApiClient.post<string | { slug: string }>("/api/recipes", { name })
+    return typeof response === "string" ? response : response.slug
+  }
+
+  async update(slug: string, data: RecipeFormData): Promise<MealieRecipe> {
+    const payload = {
+      name: data.name,
+      description: data.description || undefined,
+      prepTime: data.prepTime || undefined,
+      recipeIngredient: data.recipeIngredient.map((ing) => ({
+        quantity: ing.quantity ? parseFloat(ing.quantity) : undefined,
+        unit: ing.unit ? { name: ing.unit } : undefined,
+        food: ing.food ? { name: ing.food } : undefined,
+        note: ing.note || undefined,
+      })),
+      recipeInstructions: data.recipeInstructions
+        .filter((step) => step.text.trim())
+        .map((step, i) => ({
+          id: String(i),
+          text: step.text,
+        })),
+    }
+    return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, payload)
   }
 }

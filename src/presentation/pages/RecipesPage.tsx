@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
 import { ImportRecipeDialog } from "../components/ImportRecipeDialog.tsx"
+import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
-import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus } from "lucide-react"
+import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine } from "lucide-react"
+import type { MealieRecipe } from "../../shared/types/mealie.ts"
 
 const TIME_OPTIONS = [
   { label: "< 30 min", value: 30 },
@@ -21,6 +24,8 @@ export function RecipesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [newRecipeDialogOpen, setNewRecipeDialogOpen] = useState(false)
+  const navigate = useNavigate()
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -97,11 +102,20 @@ export function RecipesPage() {
             )}
             <Button
               size="sm"
+              variant="outline"
               onClick={() => setImportDialogOpen(true)}
               className="gap-1.5"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Importer</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setNewRecipeDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <PenLine className="h-4 w-4" />
+              <span className="hidden sm:inline">Nouvelle recette</span>
             </Button>
           </div>
         </div>
@@ -230,6 +244,12 @@ export function RecipesPage() {
       <ImportRecipeDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+      />
+
+      <RecipeFormDialog
+        open={newRecipeDialogOpen}
+        onOpenChange={setNewRecipeDialogOpen}
+        onSuccess={(recipe: MealieRecipe) => navigate(`/recipes/${recipe.slug}`)}
       />
     </div>
   )

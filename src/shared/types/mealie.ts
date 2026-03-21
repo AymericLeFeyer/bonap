@@ -31,6 +31,26 @@ export interface RecipeFilters {
   maxTotalTime?: number
 }
 
+export interface RecipeFormIngredient {
+  quantity: string
+  unit: string
+  food: string
+  note: string
+}
+
+export interface RecipeFormInstruction {
+  text: string
+}
+
+export interface RecipeFormData {
+  name: string
+  description: string
+  prepTime: string
+  recipeIngredient: RecipeFormIngredient[]
+  recipeInstructions: RecipeFormInstruction[]
+  imageUrl: string
+}
+
 export interface MealieRecipe {
   id: string
   slug: string

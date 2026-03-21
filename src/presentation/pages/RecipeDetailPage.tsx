@@ -1,6 +1,10 @@
+import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { Button } from "../components/ui/button.tsx"
+import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
+import { Pencil } from "lucide-react"
+import type { MealieRecipe } from "../../shared/types/mealie.ts"
 
 function RecipeDetailSkeleton() {
   return (
@@ -29,13 +33,31 @@ function RecipeDetailSkeleton() {
 
 export function RecipeDetailPage() {
   const { slug } = useParams<{ slug: string }>()
-  const { recipe, loading, error } = useRecipe(slug)
+  const { recipe, loading, error, setRecipe } = useRecipe(slug)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const handleEditSuccess = (updated: MealieRecipe) => {
+    setRecipe(updated)
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-      <Button variant="ghost" size="sm" asChild>
-        <Link to="/recipes">&larr; Recettes</Link>
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/recipes">&larr; Recettes</Link>
+        </Button>
+        {recipe && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEditDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <Pencil className="h-4 w-4" />
+            Modifier
+          </Button>
+        )}
+      </div>
 
       {loading && <RecipeDetailSkeleton />}
 
@@ -43,6 +65,15 @@ export function RecipeDetailPage() {
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {recipe && (
+        <RecipeFormDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          recipe={recipe}
+          onSuccess={handleEditSuccess}
+        />
       )}
 
       {recipe && (
