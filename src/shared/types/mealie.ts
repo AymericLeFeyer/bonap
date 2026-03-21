@@ -1,3 +1,14 @@
+export type Season = "printemps" | "ete" | "automne" | "hiver"
+
+export const SEASONS: Season[] = ["printemps", "ete", "automne", "hiver"]
+
+export const SEASON_LABELS: Record<Season, string> = {
+  printemps: "Printemps",
+  ete: "Été",
+  automne: "Automne",
+  hiver: "Hiver",
+}
+
 export interface MealieIngredient {
   quantity?: number
   unit?: { name: string }
@@ -29,6 +40,7 @@ export interface RecipeFilters {
   categories?: string[]
   tags?: string[]
   maxTotalTime?: number
+  seasons?: Season[]
 }
 
 export interface RecipeFormIngredient {
@@ -49,6 +61,7 @@ export interface RecipeFormData {
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
   imageUrl: string
+  seasons: Season[]
 }
 
 export interface MealieRecipe {
@@ -58,10 +71,12 @@ export interface MealieRecipe {
   description?: string
   image?: string
   recipeCategory?: MealieCategory[]
+  tags?: MealieTag[]
   prepTime?: string
   cookTime?: string
   recipeIngredient?: MealieIngredient[]
   recipeInstructions?: MealieInstruction[]
+  extras?: Record<string, string>
 }
 
 export interface MealieRawPaginatedRecipes {

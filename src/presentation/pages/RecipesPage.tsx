@@ -10,7 +10,9 @@ import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine } from "lucide-react"
-import type { MealieRecipe } from "../../shared/types/mealie.ts"
+import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
+import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
+import { getCurrentSeason, getRecipeSeasons } from "../../shared/utils/season.ts"
 
 const TIME_OPTIONS = [
   { label: "< 30 min", value: 30 },
@@ -23,6 +25,7 @@ export function RecipesPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
+  const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([getCurrentSeason()])
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [newRecipeDialogOpen, setNewRecipeDialogOpen] = useState(false)
   const navigate = useNavigate()
@@ -66,6 +69,12 @@ export function RecipesPage() {
     )
   }
 
+  const toggleSeason = (season: Season) => {
+    setSelectedSeasons((prev) =>
+      prev.includes(season) ? prev.filter((s) => s !== season) : [...prev, season],
+    )
+  }
+
   const handleTimeFilter = (value: number | undefined) => {
     setMaxTotalTime((prev) => (prev === value ? undefined : value))
   }
@@ -74,14 +83,25 @@ export function RecipesPage() {
     search.trim() !== "" ||
     selectedCategories.length > 0 ||
     selectedTags.length > 0 ||
-    maxTotalTime !== undefined
+    maxTotalTime !== undefined ||
+    selectedSeasons.length > 0
 
   const resetFilters = () => {
     setSearch("")
     setSelectedCategories([])
     setSelectedTags([])
     setMaxTotalTime(undefined)
+    setSelectedSeasons([])
   }
+
+  // Filtre saison côté client
+  const filteredRecipes =
+    selectedSeasons.length === 0
+      ? recipes
+      : recipes.filter((recipe) => {
+          const recipeSeasonsSet = new Set(getRecipeSeasons(recipe.extras))
+          return selectedSeasons.some((s) => recipeSeasonsSet.has(s))
+        })
 
   return (
     <div className="space-y-6">
@@ -140,6 +160,23 @@ export function RecipesPage() {
                 <X className="h-4 w-4" />
               </button>
             )}
+          </div>
+
+          {/* Filtre saisons */}
+          <div className="flex flex-wrap gap-1.5">
+            {SEASONS.map((season: Season) => {
+              const active = selectedSeasons.includes(season)
+              return (
+                <Badge
+                  key={season}
+                  variant={active ? "default" : "outline"}
+                  className="cursor-pointer select-none transition-colors"
+                  onClick={() => toggleSeason(season)}
+                >
+                  {SEASON_LABELS[season]}
+                </Badge>
+              )
+            })}
           </div>
 
           {/* Filtre temps */}
@@ -208,7 +245,7 @@ export function RecipesPage() {
       )}
 
       {/* Etat vide */}
-      {!loading && !error && recipes.length === 0 && (
+      {!loading && !error && filteredRecipes.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-24 text-muted-foreground">
           <UtensilsCrossed className="h-8 w-8" />
           <p className="text-sm">Aucune recette trouvée</p>
@@ -225,9 +262,9 @@ export function RecipesPage() {
       )}
 
       {/* Grille */}
-      {recipes.length > 0 && (
+      {filteredRecipes.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {recipes.map((recipe) => (
+          {filteredRecipes.map((recipe) => (
             <RecipeCard key={recipe.id} recipe={recipe} />
           ))}
         </div>

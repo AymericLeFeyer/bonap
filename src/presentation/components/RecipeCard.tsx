@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader } from "./ui/card.tsx"
+import { SeasonBadge } from "./SeasonBadge.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
+import { getRecipeSeasons } from "../../shared/utils/season.ts"
 
 interface RecipeCardProps {
   recipe: MealieRecipe
@@ -8,6 +10,7 @@ interface RecipeCardProps {
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
   const imageUrl = `/api/media/recipes/${recipe.id}/images/min-original.webp`
+  const seasons = getRecipeSeasons(recipe.extras)
 
   return (
     <Link to={`/recipes/${recipe.slug}`} className="block">
@@ -26,10 +29,14 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           </h3>
         </CardHeader>
 
-        {recipe.recipeCategory && recipe.recipeCategory.length > 0 && (
+        {(seasons.length > 0 ||
+          (recipe.recipeCategory && recipe.recipeCategory.length > 0)) && (
           <CardContent className="px-4 pb-4 pt-0">
             <div className="flex flex-wrap gap-1">
-              {recipe.recipeCategory.map((cat) => (
+              {seasons.map((season) => (
+                <SeasonBadge key={season} season={season} size="sm" />
+              ))}
+              {recipe.recipeCategory?.map((cat) => (
                 <span
                   key={cat.id}
                   className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"

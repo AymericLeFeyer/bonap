@@ -1,10 +1,15 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { useRecipe } from "../hooks/useRecipe.ts"
+import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { Button } from "../components/ui/button.tsx"
+import { Badge } from "../components/ui/badge.tsx"
 import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
+import { SeasonBadge } from "../components/SeasonBadge.tsx"
 import { Pencil } from "lucide-react"
-import type { MealieRecipe } from "../../shared/types/mealie.ts"
+import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
+import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
+import { getRecipeSeasons } from "../../shared/utils/season.ts"
 
 function RecipeDetailSkeleton() {
   return (
@@ -35,9 +40,20 @@ export function RecipeDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { recipe, loading, error, setRecipe } = useRecipe(slug)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
 
   const handleEditSuccess = (updated: MealieRecipe) => {
     setRecipe(updated)
+  }
+
+  const handleToggleSeason = async (season: Season) => {
+    if (!recipe) return
+    const currentSeasons = getRecipeSeasons(recipe.extras)
+    const newSeasons = currentSeasons.includes(season)
+      ? currentSeasons.filter((s) => s !== season)
+      : [...currentSeasons, season]
+    const updated = await updateSeasons(recipe.slug, newSeasons)
+    if (updated) setRecipe(updated)
   }
 
   return (
@@ -99,6 +115,32 @@ export function RecipeDetailPage() {
                 ))}
               </div>
             )}
+
+            {/* Saisons — affichage + édition rapide */}
+            <div className="space-y-1.5">
+              {getRecipeSeasons(recipe.extras).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {getRecipeSeasons(recipe.extras).map((season) => (
+                    <SeasonBadge key={season} season={season} size="md" />
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {SEASONS.map((season: Season) => {
+                  const active = getRecipeSeasons(recipe.extras).includes(season)
+                  return (
+                    <Badge
+                      key={season}
+                      variant={active ? "default" : "outline"}
+                      className="cursor-pointer select-none transition-colors text-xs"
+                      onClick={() => void handleToggleSeason(season)}
+                    >
+                      {seasonsLoading ? "…" : SEASON_LABELS[season]}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
 
             {(recipe.prepTime || recipe.cookTime) && (
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">

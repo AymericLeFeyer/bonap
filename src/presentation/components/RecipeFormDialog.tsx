@@ -10,8 +10,11 @@ import {
 import { Input } from "./ui/input.tsx"
 import { Button } from "./ui/button.tsx"
 import { Label } from "./ui/label.tsx"
+import { Badge } from "./ui/badge.tsx"
 import { useRecipeForm } from "../hooks/useRecipeForm.ts"
-import type { MealieRecipe, RecipeFormData, RecipeFormIngredient, RecipeFormInstruction } from "../../shared/types/mealie.ts"
+import type { MealieRecipe, RecipeFormData, RecipeFormIngredient, RecipeFormInstruction, Season } from "../../shared/types/mealie.ts"
+import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
+import { getRecipeSeasons } from "../../shared/utils/season.ts"
 
 interface RecipeFormDialogProps {
   open: boolean
@@ -47,6 +50,7 @@ function buildInitialFormData(recipe?: MealieRecipe): RecipeFormData {
     recipeIngredient: buildInitialIngredients(recipe),
     recipeInstructions: buildInitialInstructions(recipe),
     imageUrl: "",
+    seasons: getRecipeSeasons(recipe?.extras),
   }
 }
 
@@ -199,6 +203,34 @@ export function RecipeFormDialog({
             <p className="text-xs text-muted-foreground">
               Format ISO 8601 : PT30M = 30 minutes, PT1H = 1 heure
             </p>
+          </div>
+
+          {/* Saisons */}
+          <div className="space-y-2">
+            <Label>Saisons</Label>
+            <div className="flex flex-wrap gap-2">
+              {SEASONS.map((season: Season) => {
+                const active = formData.seasons.includes(season)
+                return (
+                  <Badge
+                    key={season}
+                    variant={active ? "default" : "outline"}
+                    className="cursor-pointer select-none transition-colors"
+                    onClick={() => {
+                      if (loading) return
+                      setFormData((prev) => ({
+                        ...prev,
+                        seasons: active
+                          ? prev.seasons.filter((s) => s !== season)
+                          : [...prev.seasons, season],
+                      }))
+                    }}
+                  >
+                    {SEASON_LABELS[season]}
+                  </Badge>
+                )
+              })}
+            </div>
           </div>
 
           {/* Image URL */}
