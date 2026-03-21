@@ -4,6 +4,7 @@ import { RecipesPage } from "./presentation/pages/RecipesPage.tsx"
 import { RecipeDetailPage } from "./presentation/pages/RecipeDetailPage.tsx"
 import { PlanningPage } from "./presentation/pages/PlanningPage.tsx"
 import { StatsPage } from "./presentation/pages/StatsPage.tsx"
+import { ShoppingPage } from "./presentation/pages/ShoppingPage.tsx"
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="recipes/:slug" element={<RecipeDetailPage />} />
         <Route path="planning" element={<PlanningPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="shopping" element={<ShoppingPage />} />
       </Route>
     </Routes>
   )

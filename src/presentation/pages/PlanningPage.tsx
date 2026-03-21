@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Loader2, AlertCircle, Copy, Eye, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { usePlanning } from "../hooks/usePlanning.ts"
+import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
@@ -266,6 +267,13 @@ export function PlanningPage() {
     deleteMeal,
   } = usePlanning()
 
+  const {
+    addRecipes: addRecipesToCart,
+    loading: addingToCart,
+    error: cartError,
+    success: cartSuccess,
+  } = useAddRecipesToCart()
+
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
@@ -276,6 +284,16 @@ export function PlanningPage() {
 
   // Calcul des jours affichés — aujourd'hui en 2ème colonne (offset -1)
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
+
+  const handleAddToCart = async () => {
+    const visibleDateStrs = new Set(days.map((d) => d.toISOString().slice(0, 10)))
+    const recipeIds = mealPlans
+      .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.id)
+      .map((m) => m.recipe!.id)
+    // Dédupliquer les recipeIds
+    const unique = [...new Set(recipeIds)]
+    await addRecipesToCart(unique)
+  }
 
   const getMeals = (date: Date, type: string): MealieMealPlan[] => {
     const key = date.toISOString().slice(0, 10)
@@ -330,6 +348,26 @@ export function PlanningPage() {
           <h1 className="text-xl font-bold">Planning</h1>
 
           <div className="flex items-center gap-2">
+            {/* Bouton Ajouter au panier */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleAddToCart()}
+              disabled={addingToCart}
+              className="gap-1.5"
+            >
+              {addingToCart ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : cartSuccess ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
+              </span>
+            </Button>
+
             {/* Sélecteur nombre de jours */}
             <div className="flex items-center rounded-md border border-border overflow-hidden">
               {([3, 5, 7] as const).map((n) => (
@@ -381,6 +419,13 @@ export function PlanningPage() {
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
           <AlertCircle className="h-5 w-5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {cartError && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+          <span>Panier : {cartError}</span>
         </div>
       )}
 

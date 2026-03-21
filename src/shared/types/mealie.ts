@@ -119,3 +119,74 @@ export interface MealiePaginatedMealPlans {
   perPage: number
   totalPages: number
 }
+
+// ─── Shopping ─────────────────────────────────────────────────────────────────
+
+export interface MealieShoppingLabel {
+  id: string
+  name: string
+  color?: string
+}
+
+export interface MealieShoppingList {
+  id: string
+  name: string
+  groupId: string
+  householdId?: string
+}
+
+export interface MealieShoppingItem {
+  id: string
+  shoppingListId: string
+  checked: boolean
+  position: number
+  isFood: boolean
+  note?: string
+  quantity?: number
+  unit?: { id: string; name: string }
+  food?: { id: string; name: string }
+  label?: MealieShoppingLabel
+  display?: string
+}
+
+export interface MealieShoppingItemCreate {
+  shoppingListId: string
+  checked?: boolean
+  position?: number
+  isFood?: boolean
+  note?: string
+  quantity?: number
+  unitId?: string
+  foodId?: string
+  labelId?: string
+}
+
+export interface MealieShoppingItemUpdate {
+  id: string
+  shoppingListId: string
+  checked: boolean
+  position: number
+  isFood: boolean
+  note?: string
+  quantity?: number
+  unitId?: string
+  foodId?: string
+  labelId?: string
+  display?: string
+}
+
+export interface MealieRawPaginatedShoppingLists {
+  items: MealieShoppingList[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface MealieRawPaginatedShoppingItems {
+  items: MealieShoppingItem[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
