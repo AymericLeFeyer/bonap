@@ -12,11 +12,12 @@ import {
   Pencil,
   X,
   Check,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { useShopping } from "../hooks/useShopping.ts"
-import type { ShoppingItem, ShoppingLabel, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel } from "../../domain/shopping/entities/ShoppingItem.ts"
 import { cn } from "../../lib/utils.ts"
 
 // ─── Mealie item component ─────────────────────────────────────────────────────
@@ -110,29 +111,34 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
   )
 }
 
-// ─── Custom item component ─────────────────────────────────────────────────────
+// ─── Habituel item component ───────────────────────────────────────────────────
 
-interface CustomItemRowProps {
-  item: CustomItem
-  onToggle: (id: string) => void
+interface HabituelItemRowProps {
+  item: ShoppingItem
+  labels: ShoppingLabel[]
+  onAddToCart: (item: ShoppingItem) => void
   onDelete: (id: string) => void
-  onUpdate: (id: string, note: string) => void
+  onUpdateNote: (item: ShoppingItem, note: string) => void
+  onUpdateLabel: (item: ShoppingItem, labelId: string | undefined) => void
 }
 
-function CustomItemRow({ item, onToggle, onDelete, onUpdate }: CustomItemRowProps) {
+function HabituelItemRow({ item, labels, onAddToCart, onDelete, onUpdateNote, onUpdateLabel }: HabituelItemRowProps) {
   const [editing, setEditing] = useState(false)
-  const [editValue, setEditValue] = useState(item.note)
+  const [editValue, setEditValue] = useState(item.note ?? "")
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const name = item.note ?? "Article sans nom"
+
   const handleEdit = () => {
-    setEditValue(item.note)
+    setEditValue(item.note ?? "")
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 0)
   }
 
   const handleSave = () => {
-    if (editValue.trim()) {
-      onUpdate(item.id, editValue.trim())
+    const trimmed = editValue.trim()
+    if (trimmed) {
+      onUpdateNote(item, trimmed)
     }
     setEditing(false)
   }
@@ -143,20 +149,7 @@ function CustomItemRow({ item, onToggle, onDelete, onUpdate }: CustomItemRowProp
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-accent/50 transition-colors group">
-      <button
-        type="button"
-        onClick={() => onToggle(item.id)}
-        aria-label={item.checked ? "Décocher" : "Cocher"}
-        className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
-      >
-        {item.checked ? (
-          <CheckSquare className="h-4 w-4 text-primary" />
-        ) : (
-          <Square className="h-4 w-4" />
-        )}
-      </button>
-
+    <li className="flex items-center gap-2 rounded-lg px-3 py-2.5 hover:bg-accent/50 transition-colors group">
       {editing ? (
         <div className="flex flex-1 items-center gap-1">
           <Input
@@ -183,15 +176,33 @@ function CustomItemRow({ item, onToggle, onDelete, onUpdate }: CustomItemRowProp
         </div>
       ) : (
         <>
-          <span
-            className={cn(
-              "flex-1 text-sm leading-tight",
-              item.checked && "line-through text-muted-foreground",
-            )}
-          >
-            {item.note}
-          </span>
+          <span className="flex-1 text-sm leading-tight">{name}</span>
+
+          {/* Category selector — visible on hover */}
+          {labels.length > 0 && (
+            <select
+              value={item.label?.id ?? ""}
+              onChange={(e) => onUpdateLabel(item, e.target.value || undefined)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-6 shrink-0 rounded border-0 bg-transparent px-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer"
+            >
+              <option value="">—</option>
+              {labels.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
+
           <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              type="button"
+              onClick={() => void onAddToCart(item)}
+              aria-label="Ajouter aux prochaines courses"
+              title="Ajouter aux prochaines courses"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
             <button
               type="button"
               onClick={handleEdit}
@@ -294,7 +305,7 @@ export function ShoppingPage() {
   const {
     items,
     labels,
-    customItems,
+    habituelsItems,
     loading,
     error,
     addItem,
@@ -303,22 +314,24 @@ export function ShoppingPage() {
     updateItemLabel,
     deleteItem,
     clearList,
-    addCustomItem,
-    toggleCustomItem,
-    deleteCustomItem,
-    clearCustomItems,
-    updateCustomItem,
+    addHabituel,
+    deleteHabituel,
+    updateHabituelLabel,
+    updateHabituelNote,
+    addHabituelToCart,
+    deleteAllHabituels,
     reload,
   } = useShopping()
 
   const [newItemNote, setNewItemNote] = useState("")
   const [newItemQty, setNewItemQty] = useState(1)
   const [newItemLabelId, setNewItemLabelId] = useState<string>("")
-  const [newCustomNote, setNewCustomNote] = useState("")
+  const [newHabituelNote, setNewHabituelNote] = useState("")
+  const [newHabituelLabelId, setNewHabituelLabelId] = useState<string>("")
   const [addingItem, setAddingItem] = useState(false)
+  const [addingHabituel, setAddingHabituel] = useState(false)
 
   const checkedCount = items.filter((i) => i.checked).length
-  const customCheckedCount = customItems.filter((i) => i.checked).length
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -335,12 +348,18 @@ export function ShoppingPage() {
     }
   }
 
-  const handleAddCustomItem = (e: React.FormEvent) => {
+  const handleAddHabituel = async (e: React.FormEvent) => {
     e.preventDefault()
-    const note = newCustomNote.trim()
+    const note = newHabituelNote.trim()
     if (!note) return
-    addCustomItem(note)
-    setNewCustomNote("")
+    setAddingHabituel(true)
+    try {
+      await addHabituel(note, newHabituelLabelId || undefined)
+      setNewHabituelNote("")
+      setNewHabituelLabelId("")
+    } finally {
+      setAddingHabituel(false)
+    }
   }
 
   return (
@@ -381,10 +400,10 @@ export function ShoppingPage() {
 
       {!loading && (
         <div className="flex flex-col gap-6">
-          {/* ── Left column: Mealie ingredients ── */}
+          {/* ── Prochaines courses ── */}
           <section className="rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between bg-secondary px-4 py-3">
-              <h2 className="text-sm font-semibold">Ingrédients</h2>
+              <h2 className="text-sm font-semibold">Prochaines courses</h2>
               <div className="flex items-center gap-1">
                 {checkedCount > 0 && (
                   <Button
@@ -481,75 +500,82 @@ export function ShoppingPage() {
             </div>
           </section>
 
-          {/* ── Right column: regular non-food items ── */}
+          {/* ── Articles habituels ── */}
           <section className="rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between bg-secondary px-4 py-3">
               <div>
                 <h2 className="text-sm font-semibold">Articles habituels</h2>
                 <p className="text-xs text-muted-foreground">Lessive, papier toilette...</p>
               </div>
-              <div className="flex items-center gap-1">
-                {customCheckedCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => clearCustomItems("checked")}
-                    className="h-7 gap-1 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Vider cochés ({customCheckedCount})
-                  </Button>
-                )}
-                {customItems.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => clearCustomItems("all")}
-                    className="h-7 gap-1 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Tout vider
-                  </Button>
-                )}
-              </div>
+              {habituelsItems.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void deleteAllHabituels()}
+                  className="h-7 gap-1 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Tout supprimer
+                </Button>
+              )}
             </div>
 
             <div className="p-2">
-              {customItems.length === 0 ? (
+              {habituelsItems.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   Aucun article habituel
                 </p>
               ) : (
                 <ul className="divide-y divide-border/40">
-                  {customItems.map((item) => (
-                    <CustomItemRow
+                  {habituelsItems.map((item) => (
+                    <HabituelItemRow
                       key={item.id}
                       item={item}
-                      onToggle={toggleCustomItem}
-                      onDelete={deleteCustomItem}
-                      onUpdate={updateCustomItem}
+                      labels={labels}
+                      onAddToCart={(i) => void addHabituelToCart(i)}
+                      onDelete={(id) => void deleteHabituel(id)}
+                      onUpdateNote={(i, note) => void updateHabituelNote(i, note)}
+                      onUpdateLabel={(i, labelId) => void updateHabituelLabel(i, labelId)}
                     />
                   ))}
                 </ul>
               )}
             </div>
 
-            {/* Add */}
+            {/* Add habituel */}
             <div className="border-t border-border p-3">
-              <form onSubmit={handleAddCustomItem} className="flex gap-2">
+              <form onSubmit={(e) => void handleAddHabituel(e)} className="flex gap-2">
                 <Input
-                  value={newCustomNote}
-                  onChange={(e) => setNewCustomNote(e.target.value)}
+                  value={newHabituelNote}
+                  onChange={(e) => setNewHabituelNote(e.target.value)}
                   placeholder="Ajouter un article habituel..."
                   className="h-8 flex-1 text-sm"
+                  disabled={addingHabituel}
                 />
+                {labels.length > 0 && (
+                  <select
+                    value={newHabituelLabelId}
+                    onChange={(e) => setNewHabituelLabelId(e.target.value)}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    disabled={addingHabituel}
+                  >
+                    <option value="">Catégorie</option>
+                    {labels.map((l) => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                )}
                 <Button
                   type="submit"
                   size="sm"
                   className="h-8 shrink-0"
-                  disabled={!newCustomNote.trim()}
+                  disabled={addingHabituel || !newHabituelNote.trim()}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  {addingHabituel ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </form>
             </div>

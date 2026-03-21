@@ -10,6 +10,7 @@ import type {
 import { mealieApiClient } from "../api/index.ts"
 
 const DEFAULT_LIST_NAME = "Bonap"
+const HABITUELS_LIST_NAME = "Habituels"
 
 function mapItem(raw: MealieShoppingItem): ShoppingItem {
   return {
@@ -31,23 +32,38 @@ function mapItem(raw: MealieShoppingItem): ShoppingItem {
 }
 
 export class ShoppingRepository implements IShoppingRepository {
-  async getOrCreateDefaultList(): Promise<ShoppingList> {
-    const raw = await mealieApiClient.get<MealieRawPaginatedShoppingLists>(
+  private async getOrCreateList(name: string, allLists?: MealieRawPaginatedShoppingLists): Promise<ShoppingList> {
+    const raw = allLists ?? await mealieApiClient.get<MealieRawPaginatedShoppingLists>(
       "/api/households/shopping/lists?page=1&perPage=-1",
     )
 
-    const existing = raw.items.find((l) => l.name === DEFAULT_LIST_NAME) ?? raw.items[0]
+    const existing = raw.items.find((l) => l.name === name)
 
     if (existing) {
       return { id: existing.id, name: existing.name, labels: [] }
     }
 
-    // No list found: create one
     const created = await mealieApiClient.post<{ id: string; name: string }>(
       "/api/households/shopping/lists",
-      { name: DEFAULT_LIST_NAME },
+      { name },
     )
     return { id: created.id, name: created.name, labels: [] }
+  }
+
+  async getOrCreateDefaultList(): Promise<ShoppingList> {
+    const raw = await mealieApiClient.get<MealieRawPaginatedShoppingLists>(
+      "/api/households/shopping/lists?page=1&perPage=-1",
+    )
+    // Fallback to first list if "Bonap" not found
+    const existing = raw.items.find((l) => l.name === DEFAULT_LIST_NAME) ?? raw.items[0]
+    if (existing) {
+      return { id: existing.id, name: existing.name, labels: [] }
+    }
+    return this.getOrCreateList(DEFAULT_LIST_NAME, raw)
+  }
+
+  async getOrCreateHabituelsList(): Promise<ShoppingList> {
+    return this.getOrCreateList(HABITUELS_LIST_NAME)
   }
 
   async getItems(listId: string): Promise<{ items: ShoppingItem[]; labels: ShoppingLabel[] }> {

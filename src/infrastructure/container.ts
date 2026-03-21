@@ -12,7 +12,6 @@ import { PlanningRepository } from "./mealie/repositories/PlanningRepository.ts"
 import { ShoppingRepository } from "./mealie/repositories/ShoppingRepository.ts"
 import { CategoryRepository } from "./mealie/repositories/CategoryRepository.ts"
 import { TagRepository } from "./mealie/repositories/TagRepository.ts"
-import { CustomItemRepository } from "./shopping/CustomItemRepository.ts"
 
 // Use cases — recipe
 import { GetRecipesUseCase } from "../application/recipe/usecases/GetRecipesUseCase.ts"
@@ -48,8 +47,6 @@ export const planningRepository = new PlanningRepository()
 export const shoppingRepository = new ShoppingRepository()
 export const categoryRepository = new CategoryRepository()
 export const tagRepository = new TagRepository()
-export const customItemRepository = new CustomItemRepository()
-
 // --- Singleton use case instances — recipe ---
 
 export const getRecipesUseCase = new GetRecipesUseCase(recipeRepository)

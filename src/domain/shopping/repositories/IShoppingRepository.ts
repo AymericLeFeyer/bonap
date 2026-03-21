@@ -5,6 +5,9 @@ export interface IShoppingRepository {
   /** Fetches or creates the default shopping list */
   getOrCreateDefaultList(): Promise<ShoppingList>
 
+  /** Fetches or creates the "Habituels" shopping list */
+  getOrCreateHabituelsList(): Promise<ShoppingList>
+
   /** Fetches all items and available labels from a list */
   getItems(listId: string): Promise<{ items: ShoppingItem[]; labels: ShoppingLabel[] }>
 

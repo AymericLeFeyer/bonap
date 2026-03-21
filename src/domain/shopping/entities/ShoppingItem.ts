@@ -17,8 +17,7 @@ export interface ShoppingItem {
   label?: ShoppingLabel
   /** Display text (computed by Mealie or raw note) */
   display?: string
-  /** Item source: "local" means non-food item stored in localStorage */
-  source: "mealie" | "local"
+  source: "mealie"
 }
 
 export interface ShoppingList {
@@ -27,8 +26,3 @@ export interface ShoppingList {
   labels: ShoppingLabel[]
 }
 
-export interface CustomItem {
-  id: string
-  note: string
-  checked: boolean
-}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { ShoppingItem, ShoppingLabel, ShoppingList, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../../domain/shopping/entities/ShoppingItem.ts"
 import type { ClearMode } from "../../application/shopping/usecases/ClearListUseCase.ts"
 import {
   getShoppingItemsUseCase,
@@ -8,7 +8,6 @@ import {
   toggleItemUseCase,
   deleteItemUseCase,
   clearListUseCase,
-  customItemRepository,
   shoppingRepository,
 } from "../../infrastructure/container.ts"
 
@@ -16,7 +15,8 @@ export function useShopping() {
   const [list, setList] = useState<ShoppingList | null>(null)
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [labels, setLabels] = useState<ShoppingLabel[]>([])
-  const [customItems, setCustomItems] = useState<CustomItem[]>([])
+  const [habituelsListId, setHabituelsListId] = useState<string | null>(null)
+  const [habituelsItems, setHabituelsItems] = useState<ShoppingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [addingRecipes, setAddingRecipes] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +32,8 @@ export function useShopping() {
       setList(result.list)
       setItems(result.items)
       setLabels(result.labels)
+      setHabituelsListId(result.habituelsListId)
+      setHabituelsItems(result.habituelsItems)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du chargement")
     } finally {
@@ -42,7 +44,6 @@ export function useShopping() {
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-    setCustomItems(customItemRepository.getAll())
     void loadItems()
   }, [loadItems])
 
@@ -160,42 +161,108 @@ export function useShopping() {
     }
   }, [list, items, loadItems])
 
-  // Usual items (localStorage)
-  const addCustomItem = useCallback((note: string) => {
-    const item = customItemRepository.add(note)
-    setCustomItems(customItemRepository.getAll())
-    return item
-  }, [])
+  // ── Habituels (Mealie "Habituels" list) ─────────────────────────────────────
 
-  const toggleCustomItem = useCallback((id: string) => {
-    customItemRepository.toggle(id)
-    setCustomItems(customItemRepository.getAll())
-  }, [])
+  const addHabituel = useCallback(async (note: string, labelId?: string) => {
+    if (!habituelsListId) return
+    await shoppingRepository.addItem(habituelsListId, {
+      shoppingListId: habituelsListId,
+      note,
+      isFood: false,
+      labelId,
+    })
+    const result = await getShoppingItemsUseCase.execute()
+    setHabituelsListId(result.habituelsListId)
+    setHabituelsItems(result.habituelsItems)
+  }, [habituelsListId])
 
-  const deleteCustomItem = useCallback((id: string) => {
-    customItemRepository.remove(id)
-    setCustomItems(customItemRepository.getAll())
-  }, [])
-
-  const clearCustomItems = useCallback((mode: ClearMode) => {
-    if (mode === "checked") {
-      customItemRepository.removeChecked()
-    } else {
-      customItemRepository.removeAll()
+  const deleteHabituel = useCallback(async (itemId: string) => {
+    if (!habituelsListId) return
+    setHabituelsItems((prev) => prev.filter((i) => i.id !== itemId))
+    try {
+      await shoppingRepository.deleteItem(habituelsListId, itemId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression")
+      void loadItems()
     }
-    setCustomItems(customItemRepository.getAll())
-  }, [])
+  }, [habituelsListId, loadItems])
 
-  const updateCustomItem = useCallback((id: string, note: string) => {
-    customItemRepository.update(id, note)
-    setCustomItems(customItemRepository.getAll())
-  }, [])
+  const updateHabituelLabel = useCallback(async (item: ShoppingItem, labelId: string | undefined) => {
+    if (!habituelsListId) return
+    const newLabel = labelId ? labels.find((l) => l.id === labelId) : undefined
+    setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: newLabel } : i)))
+    try {
+      await shoppingRepository.updateItem(habituelsListId, {
+        id: item.id,
+        shoppingListId: habituelsListId,
+        checked: item.checked,
+        position: item.position,
+        isFood: item.isFood,
+        note: item.note,
+        quantity: item.quantity,
+        labelId: labelId || undefined,
+        display: item.display,
+      })
+    } catch (err) {
+      setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: item.label } : i)))
+      setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
+    }
+  }, [habituelsListId, labels])
+
+  const updateHabituelNote = useCallback(async (item: ShoppingItem, note: string) => {
+    if (!habituelsListId) return
+    setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note } : i)))
+    try {
+      await shoppingRepository.updateItem(habituelsListId, {
+        id: item.id,
+        shoppingListId: habituelsListId,
+        checked: item.checked,
+        position: item.position,
+        isFood: item.isFood,
+        note,
+        quantity: item.quantity,
+        labelId: item.label?.id,
+        display: item.display,
+      })
+    } catch (err) {
+      setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note: item.note } : i)))
+      setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
+    }
+  }, [habituelsListId])
+
+  const addHabituelToCart = useCallback(async (item: ShoppingItem) => {
+    if (!list) return
+    await shoppingRepository.addItem(list.id, {
+      shoppingListId: list.id,
+      note: item.note,
+      isFood: item.isFood,
+      quantity: item.quantity ?? 1,
+      labelId: item.label?.id,
+    })
+    const result = await getShoppingItemsUseCase.execute()
+    setList(result.list)
+    setItems(result.items)
+    setLabels(result.labels)
+  }, [list])
+
+  const deleteAllHabituels = useCallback(async () => {
+    if (!habituelsListId) return
+    const snapshot = habituelsItems
+    setHabituelsItems([])
+    try {
+      await shoppingRepository.deleteAllItems(habituelsListId, snapshot)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du vidage")
+      void loadItems()
+    }
+  }, [habituelsListId, habituelsItems, loadItems])
 
   return {
     list,
     items,
     labels,
-    customItems,
+    habituelsListId,
+    habituelsItems,
     loading,
     addingRecipes,
     error,
@@ -206,11 +273,12 @@ export function useShopping() {
     updateItemLabel,
     deleteItem,
     clearList,
-    addCustomItem,
-    toggleCustomItem,
-    deleteCustomItem,
-    clearCustomItems,
-    updateCustomItem,
+    addHabituel,
+    deleteHabituel,
+    updateHabituelLabel,
+    updateHabituelNote,
+    addHabituelToCart,
+    deleteAllHabituels,
     reload: loadItems,
   }
 }
