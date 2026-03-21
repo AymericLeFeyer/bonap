@@ -9,7 +9,7 @@ import { SeasonBadge } from "../components/SeasonBadge.tsx"
 import { Pencil } from "lucide-react"
 import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
-import { getRecipeSeasons } from "../../shared/utils/season.ts"
+import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 
 function RecipeDetailSkeleton() {
   return (
@@ -48,7 +48,7 @@ export function RecipeDetailPage() {
 
   const handleToggleSeason = async (season: Season) => {
     if (!recipe) return
-    const currentSeasons = getRecipeSeasons(recipe.extras)
+    const currentSeasons = getRecipeSeasonsFromTags(recipe.tags)
     const newSeasons = currentSeasons.includes(season)
       ? currentSeasons.filter((s) => s !== season)
       : [...currentSeasons, season]
@@ -118,16 +118,16 @@ export function RecipeDetailPage() {
 
             {/* Saisons — affichage + édition rapide */}
             <div className="space-y-1.5">
-              {getRecipeSeasons(recipe.extras).length > 0 && (
+              {getRecipeSeasonsFromTags(recipe.tags).length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {getRecipeSeasons(recipe.extras).map((season) => (
+                  {getRecipeSeasonsFromTags(recipe.tags).map((season) => (
                     <SeasonBadge key={season} season={season} size="md" />
                   ))}
                 </div>
               )}
               <div className="flex flex-wrap gap-1.5">
                 {SEASONS.map((season: Season) => {
-                  const active = getRecipeSeasons(recipe.extras).includes(season)
+                  const active = getRecipeSeasonsFromTags(recipe.tags).includes(season)
                   return (
                     <Badge
                       key={season}

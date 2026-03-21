@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { UtensilsCrossed, CalendarDays, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react"
+import { UtensilsCrossed, CalendarDays, ChevronLeft, ChevronRight, Sun, Moon, ExternalLink } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
 import { useTheme } from "../hooks/useTheme.ts"
 
@@ -106,8 +106,22 @@ export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desk
         ))}
       </nav>
 
-      {/* Pied : toggle thème */}
-      <div className={cn("border-t px-2 py-3", isCollapsed && "flex justify-center")}>
+      {/* Pied : lien Mealie + toggle thème */}
+      <div className={cn("border-t px-2 py-3 space-y-1", isCollapsed && "flex flex-col items-center space-y-1")}>
+        <a
+          href={import.meta.env.VITE_MEALIE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "flex items-center rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+            isCollapsed ? "p-2.5" : "w-full gap-3 px-3 py-2",
+          )}
+          title="Ouvrir Mealie"
+        >
+          <ExternalLink className="h-4 w-4 shrink-0" />
+          {!isCollapsed && <span>Mealie</span>}
+        </a>
+
         <button
           type="button"
           onClick={toggleTheme}

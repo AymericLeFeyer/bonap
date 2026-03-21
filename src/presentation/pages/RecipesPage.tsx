@@ -12,7 +12,7 @@ import { Input } from "../components/ui/input.tsx"
 import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine } from "lucide-react"
 import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
-import { getCurrentSeason, getRecipeSeasons } from "../../shared/utils/season.ts"
+import { getCurrentSeason, getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
 
 const TIME_OPTIONS = [
   { label: "< 30 min", value: 30 },
@@ -94,13 +94,14 @@ export function RecipesPage() {
     setSelectedSeasons([])
   }
 
-  // Filtre saison côté client
+  // Filtre saison côté client (tags présents dans la réponse liste)
   const filteredRecipes =
     selectedSeasons.length === 0
       ? recipes
       : recipes.filter((recipe) => {
-          const recipeSeasonsSet = new Set(getRecipeSeasons(recipe.extras))
-          return selectedSeasons.some((s) => recipeSeasonsSet.has(s))
+          const recipeSeasons = getRecipeSeasonsFromTags(recipe.tags)
+          if (recipeSeasons.length === 0) return true
+          return selectedSeasons.some((s) => recipeSeasons.includes(s))
         })
 
   return (
@@ -216,9 +217,9 @@ export function RecipesPage() {
           )}
 
           {/* Filtres tags */}
-          {tags.length > 0 && (
+          {tags.filter((t) => !isSeasonTag(t)).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag) => {
+              {tags.filter((t) => !isSeasonTag(t)).map((tag) => {
                 const active = selectedTags.includes(tag.slug)
                 return (
                   <Badge

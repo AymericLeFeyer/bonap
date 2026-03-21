@@ -14,7 +14,7 @@ import { Badge } from "./ui/badge.tsx"
 import { useRecipeForm } from "../hooks/useRecipeForm.ts"
 import type { MealieRecipe, RecipeFormData, RecipeFormIngredient, RecipeFormInstruction, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
-import { getRecipeSeasons } from "../../shared/utils/season.ts"
+import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 
 interface RecipeFormDialogProps {
   open: boolean
@@ -50,7 +50,7 @@ function buildInitialFormData(recipe?: MealieRecipe): RecipeFormData {
     recipeIngredient: buildInitialIngredients(recipe),
     recipeInstructions: buildInitialInstructions(recipe),
     imageUrl: "",
-    seasons: getRecipeSeasons(recipe?.extras),
+    seasons: getRecipeSeasonsFromTags(recipe?.tags),
   }
 }
 

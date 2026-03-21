@@ -1,4 +1,7 @@
-import type { Season } from "../types/mealie.ts"
+import type { MealieTag, Season } from "../types/mealie.ts"
+import { SEASONS } from "../types/mealie.ts"
+
+const SEASON_TAG_PREFIX = "saison:"
 
 /**
  * Retourne la saison courante basée sur la date du jour.
@@ -16,32 +19,28 @@ export function getCurrentSeason(): Season {
 }
 
 /**
- * Sérialise une liste de saisons en chaîne pour le champ extras.saison de Mealie.
- * Ex: ["ete", "automne"] => "ete,automne"
+ * Extrait les saisons d'une recette depuis ses tags Mealie.
+ * Les tags de saison ont le préfixe "saison:" (ex: "saison:printemps").
  */
-export function seasonsToExtras(seasons: Season[]): string {
-  return seasons.join(",")
+export function getRecipeSeasonsFromTags(tags: MealieTag[] | undefined): Season[] {
+  if (!tags?.length) return []
+  return tags
+    .map((t) => t.name)
+    .filter((name) => name.startsWith(SEASON_TAG_PREFIX))
+    .map((name) => name.slice(SEASON_TAG_PREFIX.length))
+    .filter((s): s is Season => SEASONS.includes(s as Season))
 }
 
 /**
- * Désérialise la chaîne extras.saison en liste de saisons.
- * Ex: "ete,automne" => ["ete", "automne"]
+ * Indique si un tag est un tag de saison (préfixe "saison:").
  */
-export function extrasToSeasons(value: string | undefined): Season[] {
-  if (!value) return []
-  return value
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s): s is Season =>
-      ["printemps", "ete", "automne", "hiver"].includes(s),
-    )
+export function isSeasonTag(tag: MealieTag): boolean {
+  return tag.name.startsWith(SEASON_TAG_PREFIX)
 }
 
 /**
- * Extrait les saisons d'une recette Mealie depuis le champ extras.
+ * Convertit une liste de saisons en objets tag Mealie pour le PATCH.
  */
-export function getRecipeSeasons(
-  extras: Record<string, string> | undefined,
-): Season[] {
-  return extrasToSeasons(extras?.saison)
+export function seasonsToTagObjects(seasons: Season[]): { name: string }[] {
+  return seasons.map((s) => ({ name: `${SEASON_TAG_PREFIX}${s}` }))
 }

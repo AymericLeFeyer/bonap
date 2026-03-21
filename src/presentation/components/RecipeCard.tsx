@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader } from "./ui/card.tsx"
 import { SeasonBadge } from "./SeasonBadge.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
-import { getRecipeSeasons } from "../../shared/utils/season.ts"
+import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 
 interface RecipeCardProps {
   recipe: MealieRecipe
@@ -10,7 +10,7 @@ interface RecipeCardProps {
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
   const imageUrl = `/api/media/recipes/${recipe.id}/images/min-original.webp`
-  const seasons = getRecipeSeasons(recipe.extras)
+  const seasons = getRecipeSeasonsFromTags(recipe.tags)
 
   return (
     <Link to={`/recipes/${recipe.slug}`} className="block">
