@@ -1,7 +1,7 @@
 import type { MealieTag, Season } from "../types/mealie.ts"
 import { SEASONS } from "../types/mealie.ts"
 
-const SEASON_TAG_PREFIX = "saison:"
+const SEASON_TAG_PREFIX = "saison-"
 
 /**
  * Retourne la saison courante basée sur la date du jour.

@@ -91,6 +91,7 @@ export class RecipeRepository implements IRecipeRepository {
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ name: t.name }))
     return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
+      name: current.name,
       tags: [...nonSeasonTags, ...seasonsToTagObjects(seasons)],
     })
   }
