@@ -3,9 +3,11 @@ import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
+import { ImportRecipeDialog } from "../components/ImportRecipeDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
+import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
-import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw } from "lucide-react"
+import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus } from "lucide-react"
 
 const TIME_OPTIONS = [
   { label: "< 30 min", value: 30 },
@@ -18,6 +20,7 @@ export function RecipesPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -81,16 +84,26 @@ export function RecipesPage() {
       <div className="sticky top-0 z-10 -mx-4 -mt-4 md:-mx-6 md:-mt-6 bg-background px-4 pt-4 md:px-6 md:pt-6 pb-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold">Mes recettes</h1>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Réinitialiser
+              </button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setImportDialogOpen(true)}
+              className="gap-1.5"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Réinitialiser
-            </button>
-          )}
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Importer</span>
+            </Button>
+          </div>
         </div>
 
         {/* Barre de filtres */}
@@ -213,6 +226,11 @@ export function RecipesPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
+
+      <ImportRecipeDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
     </div>
   )
 }

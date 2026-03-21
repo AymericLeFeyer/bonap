@@ -11,4 +11,5 @@ export interface IRecipeRepository {
     filters?: RecipeFilters,
   ): Promise<MealiePaginatedRecipes>
   getBySlug(slug: string): Promise<MealieRecipe>
+  createFromUrl(url: string): Promise<string>
 }

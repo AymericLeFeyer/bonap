@@ -44,4 +44,8 @@ export class RecipeRepository implements IRecipeRepository {
   async getBySlug(slug: string): Promise<MealieRecipe> {
     return mealieApiClient.get<MealieRecipe>(`/api/recipes/${slug}`)
   }
+
+  async createFromUrl(url: string): Promise<string> {
+    return mealieApiClient.post<string>("/api/recipes/create-url", { url })
+  }
 }
