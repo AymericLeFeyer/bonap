@@ -8,7 +8,7 @@ export interface PeriodDates {
 }
 
 /**
- * Calcule les dates de début et de fin pour une période donnée.
+ * Computes the start and end dates for a given period.
  */
 export function getPeriodDates(period: StatsPeriod): PeriodDates {
   const end = new Date()

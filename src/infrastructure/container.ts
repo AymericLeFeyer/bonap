@@ -1,9 +1,9 @@
 /**
- * Conteneur de dépendances — module singleton.
+ * Dependency container — singleton module.
  *
- * Toutes les instances de repositories et use cases sont créées une seule fois
- * et partagées à travers toute l'application. Les hooks importent directement
- * depuis ce fichier au lieu d'instancier eux-mêmes leurs dépendances.
+ * All repository and use case instances are created once
+ * and shared throughout the application. Hooks import directly
+ * from this file instead of instantiating their own dependencies.
  */
 
 // Repositories
@@ -41,7 +41,7 @@ import { ClearListUseCase } from "../application/shopping/usecases/ClearListUseC
 import { GetCategoriesUseCase } from "../application/organizer/usecases/GetCategoriesUseCase.ts"
 import { GetTagsUseCase } from "../application/organizer/usecases/GetTagsUseCase.ts"
 
-// --- Instances singleton des repositories ---
+// --- Singleton repository instances ---
 
 export const recipeRepository = new RecipeRepository()
 export const planningRepository = new PlanningRepository()
@@ -50,7 +50,7 @@ export const categoryRepository = new CategoryRepository()
 export const tagRepository = new TagRepository()
 export const customItemRepository = new CustomItemRepository()
 
-// --- Instances singleton des use cases — recipe ---
+// --- Singleton use case instances — recipe ---
 
 export const getRecipesUseCase = new GetRecipesUseCase(recipeRepository)
 export const getRecipeUseCase = new GetRecipeUseCase(recipeRepository)
@@ -60,14 +60,14 @@ export const updateRecipeUseCase = new UpdateRecipeUseCase(recipeRepository)
 export const createRecipeFromUrlUseCase = new CreateRecipeFromUrlUseCase(recipeRepository)
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
 
-// --- Instances singleton des use cases — planning ---
+// --- Singleton use case instances — planning ---
 
 export const getWeekPlanningUseCase = new GetWeekPlanningUseCase(planningRepository)
 export const getPlanningRangeUseCase = new GetPlanningRangeUseCase(planningRepository)
 export const addMealUseCase = new AddMealUseCase(planningRepository)
 export const deleteMealUseCase = new DeleteMealUseCase(planningRepository)
 
-// --- Instances singleton des use cases — shopping ---
+// --- Singleton use case instances — shopping ---
 
 export const getShoppingItemsUseCase = new GetShoppingItemsUseCase(shoppingRepository)
 export const addItemUseCase = new AddItemUseCase(shoppingRepository)
@@ -76,7 +76,7 @@ export const toggleItemUseCase = new ToggleItemUseCase(shoppingRepository)
 export const deleteItemUseCase = new DeleteItemUseCase(shoppingRepository)
 export const clearListUseCase = new ClearListUseCase(shoppingRepository)
 
-// --- Instances singleton des use cases — organizer ---
+// --- Singleton use case instances — organizer ---
 
 export const getCategoriesUseCase = new GetCategoriesUseCase(categoryRepository)
 export const getTagsUseCase = new GetTagsUseCase(tagRepository)

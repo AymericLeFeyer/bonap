@@ -35,7 +35,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desk
         isMobile && "w-72 h-full",
       )}
     >
-      {/* Logo / titre */}
+      {/* Logo / title */}
       <div
         className={cn(
           "flex h-14 items-center border-b shrink-0",
@@ -63,7 +63,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desk
           </button>
         )}
 
-        {/* Bouton collapse (desktop seulement) */}
+        {/* Collapse button (desktop only) */}
         {!isMobile && (
           <button
             type="button"

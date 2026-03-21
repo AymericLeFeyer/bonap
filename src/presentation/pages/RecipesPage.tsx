@@ -141,9 +141,9 @@ export function RecipesPage() {
           </div>
         </div>
 
-        {/* Barre de filtres */}
+        {/* Filter bar */}
         <div className="space-y-3">
-          {/* Recherche */}
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -163,7 +163,7 @@ export function RecipesPage() {
             )}
           </div>
 
-          {/* Filtre saisons */}
+          {/* Season filter */}
           <div className="flex flex-wrap gap-1.5">
             {SEASONS.map((season: Season) => {
               const active = selectedSeasons.includes(season)
@@ -180,7 +180,7 @@ export function RecipesPage() {
             })}
           </div>
 
-          {/* Filtre temps */}
+          {/* Time filter */}
           <div className="flex flex-wrap gap-1.5">
             {TIME_OPTIONS.filter((opt) => opt.value !== undefined).map((opt) => {
               const active = maxTotalTime === opt.value
@@ -216,7 +216,7 @@ export function RecipesPage() {
             </div>
           )}
 
-          {/* Filtres tags */}
+          {/* Tag filters */}
           {tags.filter((t) => !isSeasonTag(t)).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.filter((t) => !isSeasonTag(t)).map((tag) => {
@@ -237,7 +237,7 @@ export function RecipesPage() {
         </div>
       </div>
 
-      {/* Erreur */}
+      {/* Error */}
       {error && (
         <div className="flex flex-col items-center gap-2 py-24 text-destructive">
           <AlertCircle className="h-8 w-8" />
@@ -245,7 +245,7 @@ export function RecipesPage() {
         </div>
       )}
 
-      {/* Etat vide */}
+      {/* Empty state */}
       {!loading && !error && filteredRecipes.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-24 text-muted-foreground">
           <UtensilsCrossed className="h-8 w-8" />
@@ -262,7 +262,7 @@ export function RecipesPage() {
         </div>
       )}
 
-      {/* Grille */}
+      {/* Recipe grid */}
       {filteredRecipes.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filteredRecipes.map((recipe) => (

@@ -9,8 +9,8 @@ export class GetRecipesByIdsUseCase {
   }
 
   /**
-   * Fetche les détails de plusieurs recettes par leur slug, en parallèle.
-   * Les erreurs individuelles sont ignorées silencieusement (recette introuvable, supprimée…).
+   * Fetches the details of multiple recipes by their slug, in parallel.
+   * Individual errors are silently ignored (recipe not found, deleted, etc.).
    */
   async execute(slugs: string[]): Promise<MealieRecipe[]> {
     const results = await Promise.allSettled(

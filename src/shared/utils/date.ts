@@ -1,5 +1,5 @@
 /**
- * Formate une date au format YYYY-MM-DD.
+ * Formats a date as YYYY-MM-DD.
  */
 export function formatDate(date: Date): string {
   const y = date.getFullYear()
@@ -9,8 +9,8 @@ export function formatDate(date: Date): string {
 }
 
 /**
- * Calcule le nombre de semaines (fractionnaire) entre deux dates au format YYYY-MM-DD.
- * Retourne au minimum 1.
+ * Computes the (fractional) number of weeks between two YYYY-MM-DD dates.
+ * Returns at least 1.
  */
 export function getWeeksBetween(startDate: string, endDate: string): number {
   const start = new Date(startDate)

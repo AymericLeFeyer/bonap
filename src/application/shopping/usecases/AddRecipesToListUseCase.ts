@@ -8,8 +8,8 @@ export class AddRecipesToListUseCase {
   }
 
   /**
-   * Ajoute les ingrédients de plusieurs recettes à la liste.
-   * Les appels sont séquentiels pour éviter de surcharger Mealie.
+   * Adds the ingredients of multiple recipes to the list.
+   * Calls are sequential to avoid overloading Mealie.
    */
   async execute(listId: string, recipeIds: string[]): Promise<void> {
     for (const recipeId of recipeIds) {

@@ -8,7 +8,7 @@ export interface CategoryStat {
 }
 
 /**
- * Calcule le pourcentage de repas "restes" (même recette sur deux créneaux consécutifs).
+ * Computes the percentage of "leftover" meals (same recipe on two consecutive slots).
  */
 export function computeLeftoverPercentage(mealPlans: MealieMealPlan[]): number {
   if (mealPlans.length < 2) return 0
@@ -35,8 +35,8 @@ export function computeLeftoverPercentage(mealPlans: MealieMealPlan[]): number {
 }
 
 /**
- * Calcule le nombre de semaines consécutives avec planning complet (≥1 repas/jour)
- * en remontant depuis la fin de la période.
+ * Computes the number of consecutive weeks with a complete plan (≥1 meal/day),
+ * going back from the end of the period.
  */
 export function computeStreak(
   mealPlans: MealieMealPlan[],
@@ -48,7 +48,7 @@ export function computeStreak(
   const start = new Date(startDate)
   const end = new Date(endDate)
 
-  // Ramener au lundi de la semaine de fin
+  // Rewind to the Monday of the end week
   const current = new Date(end)
   const dayOfWeek = current.getDay() === 0 ? 6 : current.getDay() - 1
   current.setDate(current.getDate() - dayOfWeek)
@@ -81,7 +81,7 @@ export function computeStreak(
 }
 
 /**
- * Calcule la distribution par catégorie sur un ensemble de recettes planifiées.
+ * Computes the category distribution across a set of planned recipes.
  */
 export function computeCategoryStats(plannedRecipes: MealieRecipe[]): CategoryStat[] {
   const countMap = new Map<string, number>()

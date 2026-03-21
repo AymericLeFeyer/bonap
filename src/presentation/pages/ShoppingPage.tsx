@@ -18,7 +18,7 @@ import { useShopping } from "../hooks/useShopping.ts"
 import type { ShoppingItem, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
 import { cn } from "../../lib/utils.ts"
 
-// ─── Composant item Mealie ─────────────────────────────────────────────────────
+// ─── Mealie item component ─────────────────────────────────────────────────────
 
 interface MealieItemRowProps {
   item: ShoppingItem
@@ -77,7 +77,7 @@ function MealieItemRow({ item, onToggle, onDelete }: MealieItemRowProps) {
   )
 }
 
-// ─── Composant item custom ─────────────────────────────────────────────────────
+// ─── Custom item component ─────────────────────────────────────────────────────
 
 interface CustomItemRowProps {
   item: CustomItem
@@ -318,7 +318,7 @@ export function ShoppingPage() {
         </div>
       </div>
 
-      {/* Erreur */}
+      {/* Error */}
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
           <AlertCircle className="h-5 w-5 shrink-0" />
@@ -326,7 +326,7 @@ export function ShoppingPage() {
         </div>
       )}
 
-      {/* Spinner initial */}
+      {/* Loading spinner */}
       {loading && (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -373,7 +373,7 @@ export function ShoppingPage() {
               />
             </div>
 
-            {/* Ajout manuel */}
+            {/* Manual add */}
             <div className="border-t border-border p-3">
               <form onSubmit={(e) => void handleAddItem(e)} className="flex gap-2">
                 <Input
@@ -399,7 +399,7 @@ export function ShoppingPage() {
             </div>
           </section>
 
-          {/* ── Colonne droite : articles habituels non alimentaires ── */}
+          {/* ── Right column: regular non-food items ── */}
           <section className="rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between bg-secondary px-4 py-3">
               <div>
@@ -452,7 +452,7 @@ export function ShoppingPage() {
               )}
             </div>
 
-            {/* Ajout */}
+            {/* Add */}
             <div className="border-t border-border p-3">
               <form onSubmit={handleAddCustomItem} className="flex gap-2">
                 <Input

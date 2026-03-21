@@ -157,7 +157,7 @@ export function RecipeFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Titre */}
+          {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="recipe-name">
               Titre <span className="text-destructive">*</span>
@@ -204,7 +204,7 @@ export function RecipeFormDialog({
             </p>
           </div>
 
-          {/* Saisons */}
+          {/* Seasons */}
           <div className="space-y-2">
             <Label>Saisons</Label>
             <div className="flex flex-wrap gap-2">
@@ -353,7 +353,7 @@ export function RecipeFormDialog({
             </div>
           </div>
 
-          {/* Erreur */}
+          {/* Error */}
           {error && (
             <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -361,7 +361,7 @@ export function RecipeFormDialog({
             </div>
           )}
 
-          {/* Actions */}
+          {/* Form actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
