@@ -64,8 +64,12 @@ export class RecipeRepository implements IRecipeRepository {
   }
 
   async createFromUrl(url: string): Promise<string> {
-    const response = await mealieApiClient.post<string | { slug: string }>("/api/recipes/create-url", { url })
-    return typeof response === "string" ? response : response.slug
+    const response = await mealieApiClient.postSse<{ message: string; slug: string | null }>(
+      "/api/recipes/create/url/stream",
+      { url },
+    )
+    if (!response.slug) throw new Error("Recipe import failed: no slug returned")
+    return response.slug
   }
 
   async create(name: string): Promise<string> {

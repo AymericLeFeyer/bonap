@@ -74,4 +74,39 @@ export class MealieApiClient implements IMealieApiClient {
   async delete(path: string): Promise<void> {
     await this.request<void>("DELETE", path)
   }
+
+  async postSse<T>(path: string, body: unknown): Promise<T> {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok || !response.body) {
+      const message = await response.text().catch(() => response.statusText)
+      throw new MealieApiError(message, response.status)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let last: T | undefined
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value, { stream: true })
+      for (const line of chunk.split("\n")) {
+        if (!line.startsWith("data: ")) continue
+        try {
+          last = JSON.parse(line.slice(6)) as T
+        } catch { /* ignore malformed SSE lines */ }
+      }
+    }
+
+    if (last === undefined) throw new MealieApiError("SSE stream ended with no data", 0)
+    return last
+  }
 }
