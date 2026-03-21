@@ -3,6 +3,7 @@ import type {
   MealiePaginatedRecipes,
   MealieRawPaginatedRecipes,
   MealieRecipe,
+  MealieTag,
   RecipeFilters,
   RecipeFormData,
   Season,

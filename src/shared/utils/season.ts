@@ -37,14 +37,3 @@ export function getRecipeSeasonsFromTags(tags: MealieTag[] | undefined): Season[
 export function isSeasonTag(tag: MealieTag): boolean {
   return tag.name.startsWith(SEASON_TAG_PREFIX)
 }
-
-/**
- * Convertit une liste de saisons en objets tag Mealie pour le PATCH.
- * Mealie exige name + slug (le slug est identique au name pour nos tags).
- */
-export function seasonsToTagObjects(seasons: Season[]): { name: string; slug: string }[] {
-  return seasons.map((s) => {
-    const tagName = `${SEASON_TAG_PREFIX}${s}`
-    return { name: tagName, slug: tagName }
-  })
-}

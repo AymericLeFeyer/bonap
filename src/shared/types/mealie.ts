@@ -112,14 +112,6 @@ export interface MealieRawPaginatedMealPlans {
   total_pages: number
 }
 
-export interface MealiePaginatedMealPlans {
-  items: MealieMealPlan[]
-  total: number
-  page: number
-  perPage: number
-  totalPages: number
-}
-
 // ─── Shopping ─────────────────────────────────────────────────────────────────
 
 export interface MealieShoppingLabel {
