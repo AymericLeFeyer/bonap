@@ -1,4 +1,4 @@
-import type { IMealieApiClient } from "../../../domain/recipe/repositories/IMealieApiClient.ts"
+import type { IMealieApiClient } from "./IMealieApiClient.ts"
 import {
   MealieApiError,
   MealieNotFoundError,
