@@ -63,46 +63,6 @@ export class RecipeRepository implements IRecipeRepository {
     return mealieApiClient.get<MealieRecipe>(`/api/recipes/${slug}`)
   }
 
-  private ingredientText(ing: MealieIngredient): string | null {
-    if (ing.originalText) return ing.originalText
-    if (ing.display) return ing.display
-    const parts = [
-      ing.quantity != null ? String(ing.quantity) : "",
-      ing.unit?.name ?? "",
-      ing.food?.name ?? "",
-      ing.note ?? "",
-    ].filter(Boolean)
-    return parts.length ? parts.join(" ") : null
-  }
-
-  private async parseAndUpdateIngredients(slug: string, recipe: MealieRecipe): Promise<void> {
-    const ingredients = recipe.recipeIngredient ?? []
-    const texts = ingredients.map((ing) => this.ingredientText(ing)).filter(Boolean) as string[]
-    if (!texts.length) return
-
-    const parsed = await mealieApiClient.post<MealieIngredient[]>(
-      "/api/parser/ingredients",
-      texts.map((t) => ({ ingredient: t })),
-    )
-
-    await mealieApiClient.patch(`/api/recipes/${slug}`, {
-      name: recipe.name,
-      recipeIngredient: parsed,
-    })
-  }
-
-  async createFromUrl(url: string): Promise<string> {
-    const response = await mealieApiClient.postSse<{ message: string; slug: string | null }>(
-      "/api/recipes/create/url/stream",
-      { url },
-    )
-    if (!response.slug) throw new Error("Recipe import failed: no slug returned")
-    const slug = response.slug
-    const recipe = await this.getBySlug(slug)
-    await this.parseAndUpdateIngredients(slug, recipe)
-    return slug
-  }
-
   async create(name: string): Promise<string> {
     const response = await mealieApiClient.post<string | { slug: string }>("/api/recipes", { name })
     return typeof response === "string" ? response : response.slug

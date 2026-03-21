@@ -13,7 +13,6 @@ export interface IRecipeRepository {
     filters?: RecipeFilters,
   ): Promise<MealiePaginatedRecipes>
   getBySlug(slug: string): Promise<MealieRecipe>
-  createFromUrl(url: string): Promise<string>
   create(name: string): Promise<string>
   update(slug: string, data: RecipeFormData): Promise<MealieRecipe>
   updateSeasons(slug: string, seasons: Season[]): Promise<MealieRecipe>

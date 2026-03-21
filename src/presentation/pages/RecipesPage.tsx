@@ -4,7 +4,6 @@ import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
-import { ImportRecipeDialog } from "../components/ImportRecipeDialog.tsx"
 import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
@@ -26,7 +25,6 @@ export function RecipesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
   const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([getCurrentSeason()])
-  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [newRecipeDialogOpen, setNewRecipeDialogOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -121,15 +119,15 @@ export function RecipesPage() {
                 Réinitialiser
               </button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setImportDialogOpen(true)}
-              className="gap-1.5"
+            <a
+              href={`${(import.meta.env.VITE_MEALIE_URL as string ?? "").replace(/\/+$/, "")}/g/home/r/create/url`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Importer</span>
-            </Button>
+            </a>
             <Button
               size="sm"
               onClick={() => setNewRecipeDialogOpen(true)}
@@ -279,10 +277,6 @@ export function RecipesPage() {
         </div>
       )}
 
-      <ImportRecipeDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-      />
 
       <RecipeFormDialog
         open={newRecipeDialogOpen}
