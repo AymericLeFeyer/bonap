@@ -124,6 +124,8 @@ export interface MealieShoppingList {
   name: string
   groupId: string
   householdId?: string
+  listItems?: MealieShoppingItem[]
+  labelSettings?: { label: MealieShoppingLabel }[]
 }
 
 export interface MealieShoppingItem {

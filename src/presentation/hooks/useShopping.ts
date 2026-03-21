@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { ShoppingItem, ShoppingList, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, ShoppingList, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
 import type { ClearMode } from "../../application/shopping/usecases/ClearListUseCase.ts"
 import {
   getShoppingItemsUseCase,
@@ -9,11 +9,13 @@ import {
   deleteItemUseCase,
   clearListUseCase,
   customItemRepository,
+  shoppingRepository,
 } from "../../infrastructure/container.ts"
 
 export function useShopping() {
   const [list, setList] = useState<ShoppingList | null>(null)
   const [items, setItems] = useState<ShoppingItem[]>([])
+  const [labels, setLabels] = useState<ShoppingLabel[]>([])
   const [customItems, setCustomItems] = useState<CustomItem[]>([])
   const [loading, setLoading] = useState(true)
   const [addingRecipes, setAddingRecipes] = useState(false)
@@ -29,6 +31,7 @@ export function useShopping() {
       const result = await getShoppingItemsUseCase.execute()
       setList(result.list)
       setItems(result.items)
+      setLabels(result.labels)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du chargement")
     } finally {
@@ -43,11 +46,57 @@ export function useShopping() {
     void loadItems()
   }, [loadItems])
 
-  const addItem = useCallback(async (note: string) => {
+  const addItem = useCallback(async (note: string, quantity?: number, labelId?: string) => {
     if (!list) return
-    const newItem = await addItemUseCase.execute(list.id, note)
-    setItems((prev) => [...prev, newItem])
+    await addItemUseCase.execute(list.id, note, quantity, labelId)
+    const result = await getShoppingItemsUseCase.execute()
+    setList(result.list)
+    setItems(result.items)
+    setLabels(result.labels)
   }, [list])
+
+  const updateItemQuantity = useCallback(async (item: ShoppingItem, quantity: number) => {
+    if (!list) return
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity } : i)))
+    try {
+      await shoppingRepository.updateItem(list.id, {
+        id: item.id,
+        shoppingListId: list.id,
+        checked: item.checked,
+        position: item.position,
+        isFood: item.isFood,
+        note: item.note,
+        quantity,
+        labelId: item.label?.id,
+        display: item.display,
+      })
+    } catch (err) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i)))
+      setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
+    }
+  }, [list])
+
+  const updateItemLabel = useCallback(async (item: ShoppingItem, labelId: string | undefined) => {
+    if (!list) return
+    const newLabel = labelId ? labels.find((l) => l.id === labelId) : undefined
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: newLabel } : i)))
+    try {
+      await shoppingRepository.updateItem(list.id, {
+        id: item.id,
+        shoppingListId: list.id,
+        checked: item.checked,
+        position: item.position,
+        isFood: item.isFood,
+        note: item.note,
+        quantity: item.quantity,
+        labelId: labelId || undefined,
+        display: item.display,
+      })
+    } catch (err) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: item.label } : i)))
+      setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
+    }
+  }, [list, labels])
 
   const addRecipes = useCallback(async (recipeIds: string[]) => {
     if (!list) return
@@ -59,6 +108,7 @@ export function useShopping() {
       const result = await getShoppingItemsUseCase.execute()
       setList(result.list)
       setItems(result.items)
+      setLabels(result.labels)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'ajout des recettes")
     } finally {
@@ -73,8 +123,7 @@ export function useShopping() {
       prev.map((i) => (i.id === item.id ? { ...i, checked: !i.checked } : i)),
     )
     try {
-      const updated = await toggleItemUseCase.execute(list.id, item)
-      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      await toggleItemUseCase.execute(list.id, item)
     } catch (err) {
       // Rollback on error
       setItems((prev) =>
@@ -145,6 +194,7 @@ export function useShopping() {
   return {
     list,
     items,
+    labels,
     customItems,
     loading,
     addingRecipes,
@@ -152,6 +202,8 @@ export function useShopping() {
     addItem,
     addRecipes,
     toggleItem,
+    updateItemQuantity,
+    updateItemLabel,
     deleteItem,
     clearList,
     addCustomItem,

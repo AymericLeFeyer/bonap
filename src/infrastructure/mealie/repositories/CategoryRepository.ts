@@ -8,7 +8,7 @@ interface RawCategoriesResponse {
 
 export class CategoryRepository implements ICategoryRepository {
   async getAll(): Promise<MealieCategory[]> {
-    const data = await mealieApiClient.get<RawCategoriesResponse>("/api/categories")
+    const data = await mealieApiClient.get<RawCategoriesResponse>("/api/organizers/categories")
     return data.items
   }
 }

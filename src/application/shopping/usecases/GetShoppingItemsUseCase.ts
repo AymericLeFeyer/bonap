@@ -1,5 +1,5 @@
 import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
-import type { ShoppingItem, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
 
 export class GetShoppingItemsUseCase {
   private repository: IShoppingRepository
@@ -8,9 +8,9 @@ export class GetShoppingItemsUseCase {
     this.repository = repository
   }
 
-  async execute(): Promise<{ list: ShoppingList; items: ShoppingItem[] }> {
+  async execute(): Promise<{ list: ShoppingList; items: ShoppingItem[]; labels: ShoppingLabel[] }> {
     const list = await this.repository.getOrCreateDefaultList()
-    const items = await this.repository.getItems(list.id)
-    return { list, items }
+    const { items, labels } = await this.repository.getItems(list.id)
+    return { list, items, labels }
   }
 }

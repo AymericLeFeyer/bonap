@@ -17,6 +17,7 @@ export class ToggleItemUseCase {
       isFood: item.isFood,
       note: item.note,
       quantity: item.quantity,
+      labelId: item.label?.id,
       display: item.display,
     })
   }

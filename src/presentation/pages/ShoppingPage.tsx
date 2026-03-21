@@ -4,6 +4,7 @@ import {
   Loader2,
   AlertCircle,
   Plus,
+  Minus,
   Trash2,
   CheckSquare,
   Square,
@@ -15,21 +16,27 @@ import {
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { useShopping } from "../hooks/useShopping.ts"
-import type { ShoppingItem, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, CustomItem } from "../../domain/shopping/entities/ShoppingItem.ts"
 import { cn } from "../../lib/utils.ts"
 
 // ─── Mealie item component ─────────────────────────────────────────────────────
 
 interface MealieItemRowProps {
   item: ShoppingItem
+  labels: ShoppingLabel[]
   onToggle: (item: ShoppingItem) => void
   onDelete: (id: string) => void
+  onUpdateQuantity: (item: ShoppingItem, qty: number) => void
+  onUpdateLabel: (item: ShoppingItem, labelId: string | undefined) => void
 }
 
-function MealieItemRow({ item, onToggle, onDelete }: MealieItemRowProps) {
-  const label = item.display ?? item.note ?? item.foodName ?? "Article sans nom"
+function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onUpdateLabel }: MealieItemRowProps) {
+  const name = item.note ?? item.foodName ?? "Article sans nom"
+  const qty = item.quantity ?? 0
+
   return (
-    <li className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-accent/50 transition-colors group">
+    <li className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-accent/50 transition-colors group">
+      {/* Checkbox — far left */}
       <button
         type="button"
         onClick={() => onToggle(item)}
@@ -43,26 +50,52 @@ function MealieItemRow({ item, onToggle, onDelete }: MealieItemRowProps) {
         )}
       </button>
 
+      {/* Quantity controls */}
+      <div className="flex shrink-0 items-center gap-0.5">
+        <button
+          type="button"
+          onClick={() => onUpdateQuantity(item, Math.max(0, qty - 1))}
+          aria-label="Diminuer"
+          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+        >
+          <Minus className="h-3 w-3" />
+        </button>
+        <span className={cn("min-w-[1.5rem] text-center text-xs tabular-nums", qty === 0 ? "text-muted-foreground" : "font-medium")}>
+          {qty > 0 ? qty : "—"}
+        </span>
+        <button
+          type="button"
+          onClick={() => onUpdateQuantity(item, qty + 1)}
+          aria-label="Augmenter"
+          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Name */}
       <span
         className={cn(
           "flex-1 text-sm leading-tight",
           item.checked && "line-through text-muted-foreground",
         )}
       >
-        {label}
+        {name}
       </span>
 
-      {item.label && (
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-          style={
-            item.label.color
-              ? { backgroundColor: `${item.label.color}30`, color: item.label.color }
-              : undefined
-          }
+      {/* Category selector — far right */}
+      {labels.length > 0 && (
+        <select
+          value={item.label?.id ?? ""}
+          onChange={(e) => onUpdateLabel(item, e.target.value || undefined)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-6 shrink-0 rounded border-0 bg-transparent px-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer"
         >
-          {item.label.name}
-        </span>
+          <option value="">—</option>
+          {labels.map((l) => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
+        </select>
       )}
 
       <button
@@ -186,11 +219,14 @@ function CustomItemRow({ item, onToggle, onDelete, onUpdate }: CustomItemRowProp
 
 interface GroupedItemsProps {
   items: ShoppingItem[]
+  labels: ShoppingLabel[]
   onToggle: (item: ShoppingItem) => void
   onDelete: (id: string) => void
+  onUpdateQuantity: (item: ShoppingItem, qty: number) => void
+  onUpdateLabel: (item: ShoppingItem, labelId: string | undefined) => void
 }
 
-function GroupedItems({ items, onToggle, onDelete }: GroupedItemsProps) {
+function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onUpdateLabel }: GroupedItemsProps) {
   // Group by label (no label = "Sans catégorie" group)
   const groups = new Map<string, { label: string; color?: string; items: ShoppingItem[] }>()
 
@@ -238,8 +274,11 @@ function GroupedItems({ items, onToggle, onDelete }: GroupedItemsProps) {
               <MealieItemRow
                 key={item.id}
                 item={item}
+                labels={labels}
                 onToggle={onToggle}
                 onDelete={onDelete}
+                onUpdateQuantity={onUpdateQuantity}
+                onUpdateLabel={onUpdateLabel}
               />
             ))}
           </ul>
@@ -254,11 +293,14 @@ function GroupedItems({ items, onToggle, onDelete }: GroupedItemsProps) {
 export function ShoppingPage() {
   const {
     items,
+    labels,
     customItems,
     loading,
     error,
     addItem,
     toggleItem,
+    updateItemQuantity,
+    updateItemLabel,
     deleteItem,
     clearList,
     addCustomItem,
@@ -270,6 +312,8 @@ export function ShoppingPage() {
   } = useShopping()
 
   const [newItemNote, setNewItemNote] = useState("")
+  const [newItemQty, setNewItemQty] = useState(1)
+  const [newItemLabelId, setNewItemLabelId] = useState<string>("")
   const [newCustomNote, setNewCustomNote] = useState("")
   const [addingItem, setAddingItem] = useState(false)
 
@@ -282,8 +326,10 @@ export function ShoppingPage() {
     if (!note) return
     setAddingItem(true)
     try {
-      await addItem(note)
+      await addItem(note, newItemQty, newItemLabelId || undefined)
       setNewItemNote("")
+      setNewItemQty(1)
+      setNewItemLabelId("")
     } finally {
       setAddingItem(false)
     }
@@ -334,7 +380,7 @@ export function ShoppingPage() {
       )}
 
       {!loading && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="flex flex-col gap-6">
           {/* ── Left column: Mealie ingredients ── */}
           <section className="rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between bg-secondary px-4 py-3">
@@ -368,21 +414,57 @@ export function ShoppingPage() {
             <div className="p-2">
               <GroupedItems
                 items={items}
+                labels={labels}
                 onToggle={(item) => void toggleItem(item)}
                 onDelete={(id) => void deleteItem(id)}
+                onUpdateQuantity={(item, qty) => void updateItemQuantity(item, qty)}
+                onUpdateLabel={(item, labelId) => void updateItemLabel(item, labelId)}
               />
             </div>
 
             {/* Manual add */}
             <div className="border-t border-border p-3">
-              <form onSubmit={(e) => void handleAddItem(e)} className="flex gap-2">
+              <form onSubmit={(e) => void handleAddItem(e)} className="flex flex-wrap gap-2">
+                {/* Quantity selector */}
+                <div className="flex shrink-0 items-center rounded-md border border-input bg-background">
+                  <button
+                    type="button"
+                    onClick={() => setNewItemQty((q) => Math.max(1, q - 1))}
+                    className="flex h-8 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Diminuer"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-6 text-center text-sm tabular-nums">{newItemQty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setNewItemQty((q) => q + 1)}
+                    className="flex h-8 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Augmenter"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
                 <Input
                   value={newItemNote}
                   onChange={(e) => setNewItemNote(e.target.value)}
                   placeholder="Ajouter un article..."
-                  className="h-8 flex-1 text-sm"
+                  className="h-8 min-w-0 flex-1 text-sm"
                   disabled={addingItem}
                 />
+                {labels.length > 0 && (
+                  <select
+                    value={newItemLabelId}
+                    onChange={(e) => setNewItemLabelId(e.target.value)}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    disabled={addingItem}
+                  >
+                    <option value="">Catégorie</option>
+                    {labels.map((l) => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                )}
                 <Button
                   type="submit"
                   size="sm"

@@ -1,15 +1,15 @@
-import type { ShoppingItem, ShoppingList } from "../entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../entities/ShoppingItem.ts"
 import type { MealieShoppingItemCreate, MealieShoppingItemUpdate } from "../../../shared/types/mealie.ts"
 
 export interface IShoppingRepository {
   /** Fetches or creates the default shopping list */
   getOrCreateDefaultList(): Promise<ShoppingList>
 
-  /** Fetches all items from a list */
-  getItems(listId: string): Promise<ShoppingItem[]>
+  /** Fetches all items and available labels from a list */
+  getItems(listId: string): Promise<{ items: ShoppingItem[]; labels: ShoppingLabel[] }>
 
   /** Adds a free-text item */
-  addItem(listId: string, data: MealieShoppingItemCreate): Promise<ShoppingItem>
+  addItem(listId: string, data: MealieShoppingItemCreate): Promise<void>
 
   /** Adds all ingredients of a recipe to the list */
   addRecipeToList(listId: string, recipeId: string): Promise<void>

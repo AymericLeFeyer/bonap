@@ -1,11 +1,11 @@
 import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
-import type { ShoppingItem, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
+import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
 import type {
   MealieShoppingItem,
   MealieShoppingItemCreate,
   MealieShoppingItemUpdate,
+  MealieShoppingList,
   MealieRawPaginatedShoppingLists,
-  MealieRawPaginatedShoppingItems,
 } from "../../../shared/types/mealie.ts"
 import { mealieApiClient } from "../api/index.ts"
 
@@ -39,7 +39,7 @@ export class ShoppingRepository implements IShoppingRepository {
     const existing = raw.items.find((l) => l.name === DEFAULT_LIST_NAME) ?? raw.items[0]
 
     if (existing) {
-      return { id: existing.id, name: existing.name }
+      return { id: existing.id, name: existing.name, labels: [] }
     }
 
     // No list found: create one
@@ -47,22 +47,26 @@ export class ShoppingRepository implements IShoppingRepository {
       "/api/households/shopping/lists",
       { name: DEFAULT_LIST_NAME },
     )
-    return { id: created.id, name: created.name }
+    return { id: created.id, name: created.name, labels: [] }
   }
 
-  async getItems(listId: string): Promise<ShoppingItem[]> {
-    const raw = await mealieApiClient.get<MealieRawPaginatedShoppingItems>(
-      `/api/households/shopping/lists/${listId}/items?page=1&perPage=-1`,
+  async getItems(listId: string): Promise<{ items: ShoppingItem[]; labels: ShoppingLabel[] }> {
+    const raw = await mealieApiClient.get<MealieShoppingList>(
+      `/api/households/shopping/lists/${listId}`,
     )
-    return raw.items.map(mapItem)
+    const labels: ShoppingLabel[] = (raw.labelSettings ?? []).map((s) => ({
+      id: s.label.id,
+      name: s.label.name,
+      color: s.label.color,
+    }))
+    return { items: (raw.listItems ?? []).map(mapItem), labels }
   }
 
-  async addItem(listId: string, data: MealieShoppingItemCreate): Promise<ShoppingItem> {
-    const raw = await mealieApiClient.post<MealieShoppingItem>(
-      `/api/households/shopping/lists/${listId}/items`,
-      data,
+  async addItem(listId: string, data: MealieShoppingItemCreate): Promise<void> {
+    await mealieApiClient.post(
+      "/api/households/shopping/items/create-bulk",
+      [{ ...data, shoppingListId: listId }],
     )
-    return mapItem(raw)
   }
 
   async addRecipeToList(listId: string, recipeId: string): Promise<void> {
@@ -72,27 +76,41 @@ export class ShoppingRepository implements IShoppingRepository {
     )
   }
 
-  async updateItem(listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem> {
-    const raw = await mealieApiClient.put<MealieShoppingItem>(
-      `/api/households/shopping/lists/${listId}/items/${item.id}`,
-      item,
+  async updateItem(_listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem> {
+    const raw = await mealieApiClient.put<MealieShoppingItem[] | null>(
+      "/api/households/shopping/items",
+      [item],
     )
-    return mapItem(raw)
+    if (raw?.[0]) return mapItem(raw[0])
+    // Fallback: construct from sent data if the API returns nothing
+    return {
+      id: item.id,
+      shoppingListId: item.shoppingListId,
+      checked: item.checked,
+      position: item.position,
+      isFood: item.isFood,
+      note: item.note,
+      quantity: item.quantity,
+      display: item.display,
+      source: "mealie",
+    }
   }
 
-  async deleteItem(listId: string, itemId: string): Promise<void> {
-    await mealieApiClient.delete(
-      `/api/households/shopping/lists/${listId}/items/${itemId}`,
-    )
+  async deleteItem(_listId: string, itemId: string): Promise<void> {
+    await mealieApiClient.delete(`/api/households/shopping/items?ids=${itemId}&`)
   }
 
-  async deleteCheckedItems(listId: string, items: ShoppingItem[]): Promise<void> {
-    const checked = items.filter((i) => i.checked && i.source === "mealie")
-    await Promise.all(checked.map((i) => this.deleteItem(listId, i.id)))
+  async deleteCheckedItems(_listId: string, items: ShoppingItem[]): Promise<void> {
+    const ids = items.filter((i) => i.checked && i.source === "mealie").map((i) => i.id)
+    if (!ids.length) return
+    const query = ids.map((id) => `ids=${id}`).join("&")
+    await mealieApiClient.delete(`/api/households/shopping/items?${query}&`)
   }
 
-  async deleteAllItems(listId: string, items: ShoppingItem[]): Promise<void> {
-    const mealie = items.filter((i) => i.source === "mealie")
-    await Promise.all(mealie.map((i) => this.deleteItem(listId, i.id)))
+  async deleteAllItems(_listId: string, items: ShoppingItem[]): Promise<void> {
+    const ids = items.filter((i) => i.source === "mealie").map((i) => i.id)
+    if (!ids.length) return
+    const query = ids.map((id) => `ids=${id}`).join("&")
+    await mealieApiClient.delete(`/api/households/shopping/items?${query}&`)
   }
 }

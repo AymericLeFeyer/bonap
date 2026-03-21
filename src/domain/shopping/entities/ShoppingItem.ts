@@ -24,6 +24,7 @@ export interface ShoppingItem {
 export interface ShoppingList {
   id: string
   name: string
+  labels: ShoppingLabel[]
 }
 
 export interface CustomItem {

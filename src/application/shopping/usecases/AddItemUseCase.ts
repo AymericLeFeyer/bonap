@@ -1,5 +1,4 @@
 import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
-import type { ShoppingItem } from "../../../domain/shopping/entities/ShoppingItem.ts"
 
 export class AddItemUseCase {
   private repository: IShoppingRepository
@@ -8,12 +7,14 @@ export class AddItemUseCase {
     this.repository = repository
   }
 
-  async execute(listId: string, note: string): Promise<ShoppingItem> {
-    return this.repository.addItem(listId, {
+  async execute(listId: string, note: string, quantity?: number, labelId?: string): Promise<void> {
+    await this.repository.addItem(listId, {
       shoppingListId: listId,
       note,
       checked: false,
       isFood: false,
+      quantity: quantity && quantity > 0 ? quantity : undefined,
+      labelId: labelId || undefined,
     })
   }
 }
