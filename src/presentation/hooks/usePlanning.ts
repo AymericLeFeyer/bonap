@@ -7,7 +7,7 @@ import {
 } from "../../infrastructure/container.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 
-// Marge de pré-chargement : on charge ±14 jours autour du centre
+// Prefetch margin: load ±14 days around the center date
 const PREFETCH_MARGIN = 14
 
 function addDays(date: Date, days: number): Date {
@@ -30,7 +30,7 @@ export function usePlanning() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Plage déjà chargée en mémoire
+  // Range already loaded in memory
   const fetchedRange = useRef<{ start: string; end: string } | null>(null)
   const prefetching = useRef(false)
 
@@ -62,7 +62,7 @@ export function usePlanning() {
   }, [])
 
   useEffect(() => {
-    // Même offset que le rendu : aujourd'hui en 2ème colonne → window = [centerDate-1 .. centerDate+nbDays-2]
+    // Same offset as the render: today in 2nd column → window = [centerDate-1 .. centerDate+nbDays-2]
     const visibleStart = formatDate(addDays(centerDate, -2))
     const visibleEnd = formatDate(addDays(centerDate, nbDays - 1))
 
@@ -71,14 +71,14 @@ export function usePlanning() {
       cached !== null && visibleStart >= cached.start && visibleEnd <= cached.end
 
     if (!isCovered) {
-      // Hors cache : fetch bloquant avec spinner
+      // Outside cache: blocking fetch with spinner
       const fetchStart = formatDate(addDays(centerDate, -PREFETCH_MARGIN))
       const fetchEnd = formatDate(addDays(centerDate, PREFETCH_MARGIN))
       void fetchRange(fetchStart, fetchEnd, false)
       return
     }
 
-    // Dans le cache : anticiper si on s'approche d'un bord (à moins de 3 jours)
+    // Within cache: prefetch if approaching an edge (less than 3 days away)
     if (!prefetching.current && cached) {
       const nearStart = visibleStart <= formatDate(addDays(new Date(cached.start), 3))
       const nearEnd = visibleEnd >= formatDate(addDays(new Date(cached.end), -3))

@@ -11,9 +11,9 @@ function getStoredCollapsed(): boolean {
 }
 
 export function useSidebar() {
-  // Desktop : sidebar réduite en mode icon-only
+  // Desktop: sidebar collapsed to icon-only mode
   const [collapsed, setCollapsedState] = useState<boolean>(getStoredCollapsed)
-  // Mobile : drawer ouvert ou fermé
+  // Mobile: drawer open or closed
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const toggleCollapsed = useCallback(() => {

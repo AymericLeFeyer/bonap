@@ -14,7 +14,7 @@ import { mealieApiClient } from "../api/index.ts"
 interface MealieTagObject { id?: string; name: string; slug: string }
 
 export class RecipeRepository implements IRecipeRepository {
-  /** Résout les tags saison en incluant leur id si ils existent déjà dans Mealie. */
+  /** Resolves season tags by including their id if they already exist in Mealie. */
   private async resolveSeasonTags(seasons: Season[]): Promise<MealieTagObject[]> {
     const response = await mealieApiClient.get<{ items: MealieTag[] }>("/api/organizers/tags")
     const existing = response.items

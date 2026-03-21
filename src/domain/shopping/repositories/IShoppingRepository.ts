@@ -2,27 +2,27 @@ import type { ShoppingItem, ShoppingList } from "../entities/ShoppingItem.ts"
 import type { MealieShoppingItemCreate, MealieShoppingItemUpdate } from "../../../shared/types/mealie.ts"
 
 export interface IShoppingRepository {
-  /** Récupère ou crée la liste de courses principale */
+  /** Fetches or creates the default shopping list */
   getOrCreateDefaultList(): Promise<ShoppingList>
 
-  /** Récupère tous les items d'une liste */
+  /** Fetches all items from a list */
   getItems(listId: string): Promise<ShoppingItem[]>
 
-  /** Ajoute un item texte libre */
+  /** Adds a free-text item */
   addItem(listId: string, data: MealieShoppingItemCreate): Promise<ShoppingItem>
 
-  /** Ajoute tous les ingrédients d'une recette à la liste */
+  /** Adds all ingredients of a recipe to the list */
   addRecipeToList(listId: string, recipeId: string): Promise<void>
 
-  /** Coche ou décoche un item */
+  /** Checks or unchecks an item */
   updateItem(listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem>
 
-  /** Supprime un item */
+  /** Deletes an item */
   deleteItem(listId: string, itemId: string): Promise<void>
 
-  /** Supprime tous les items cochés */
+  /** Deletes all checked items */
   deleteCheckedItems(listId: string, items: ShoppingItem[]): Promise<void>
 
-  /** Supprime tous les items */
+  /** Deletes all items */
   deleteAllItems(listId: string, items: ShoppingItem[]): Promise<void>
 }

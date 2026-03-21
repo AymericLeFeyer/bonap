@@ -182,7 +182,7 @@ function CustomItemRow({ item, onToggle, onDelete, onUpdate }: CustomItemRowProp
   )
 }
 
-// ─── Section items groupés par label ──────────────────────────────────────────
+// ─── Items section grouped by label ──────────────────────────────────────────
 
 interface GroupedItemsProps {
   items: ShoppingItem[]
@@ -191,7 +191,7 @@ interface GroupedItemsProps {
 }
 
 function GroupedItems({ items, onToggle, onDelete }: GroupedItemsProps) {
-  // Grouper par label (sans label = groupe "Sans catégorie")
+  // Group by label (no label = "Sans catégorie" group)
   const groups = new Map<string, { label: string; color?: string; items: ShoppingItem[] }>()
 
   for (const item of items) {
@@ -203,7 +203,7 @@ function GroupedItems({ items, onToggle, onDelete }: GroupedItemsProps) {
     groups.get(key)!.items.push(item)
   }
 
-  // Sans catégorie en dernier
+  // Uncategorized group last
   const sorted = [...groups.entries()].sort(([a], [b]) => {
     if (a === "__none__") return 1
     if (b === "__none__") return -1
@@ -335,7 +335,7 @@ export function ShoppingPage() {
 
       {!loading && (
         <div className="grid gap-6 md:grid-cols-2">
-          {/* ── Colonne gauche : ingrédients Mealie ── */}
+          {/* ── Left column: Mealie ingredients ── */}
           <section className="rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between bg-secondary px-4 py-3">
               <h2 className="text-sm font-semibold">Ingrédients</h2>

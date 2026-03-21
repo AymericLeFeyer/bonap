@@ -94,7 +94,7 @@ export function RecipesPage() {
     setSelectedSeasons([])
   }
 
-  // Filtre saison côté client (tags présents dans la réponse liste)
+  // Client-side season filter (tags present in the list response)
   const filteredRecipes =
     selectedSeasons.length === 0
       ? recipes
@@ -197,7 +197,7 @@ export function RecipesPage() {
             })}
           </div>
 
-          {/* Filtres catégories */}
+          {/* Category filters */}
           {categories.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {categories.map((cat) => {

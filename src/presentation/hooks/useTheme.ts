@@ -24,7 +24,7 @@ function getStoredTheme(): Theme {
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(getStoredTheme)
 
-  // Appliquer au montage et écouter les changements système si theme === 'system'
+  // Apply on mount and listen to system preference changes when theme === 'system'
   useEffect(() => {
     applyTheme(theme)
 
@@ -45,7 +45,7 @@ export function useTheme() {
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
-      // Bascule simple light ↔ dark (sans passer par system)
+      // Simple toggle light ↔ dark (bypassing system)
       const resolved = prev === "system" ? getSystemPreference() : prev
       const next: Theme = resolved === "dark" ? "light" : "dark"
       try {

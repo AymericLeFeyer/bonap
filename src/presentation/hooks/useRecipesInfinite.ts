@@ -12,7 +12,7 @@ export function useRecipesInfinite(filters: RecipeFilters = {}) {
   const pageRef = useRef(1)
   const loadingRef = useRef(false)
 
-  // Sérialisation stable des filtres pour détecter les changements
+  // Stable serialization of filters to detect changes
   const filtersKey = JSON.stringify({
     search: filters.search ?? "",
     categories: [...(filters.categories ?? [])].sort(),
@@ -52,16 +52,16 @@ export function useRecipesInfinite(filters: RecipeFilters = {}) {
     [],
   )
 
-  // Filtre ref pour accéder aux filtres courants dans loadMore (évite stale closure)
+  // Filters ref to access current filters in loadMore (avoids stale closure)
   const filtersRef = useRef<RecipeFilters>(filters)
   filtersRef.current = filters
 
-  // Reset et rechargement quand les filtres changent
+  // Reset and reload when filters change
   useEffect(() => {
     reset()
   }, [filtersKey, reset])
 
-  // Charge la première page après reset
+  // Load first page after reset
   useEffect(() => {
     if (recipes.length === 0 && hasMore && !loadingRef.current) {
       void loadMore(filtersRef.current)

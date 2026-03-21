@@ -7,7 +7,7 @@ const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: "12m", label: "12 mois" },
 ]
 
-// ─── Composants utilitaires ───────────────────────────────────────────────────
+// ─── Utility components ───────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -197,21 +197,21 @@ function NeverPlannedList({
   )
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export function StatsPage() {
   const { period, setPeriod, stats, loading, error } = useStats()
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      {/* En-tête */}
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Statistiques</h1>
           <p className="text-sm text-muted-foreground">Analyse de vos habitudes culinaires</p>
         </div>
 
-        {/* Sélecteur de période */}
+        {/* Period selector */}
         <div className="flex gap-1 rounded-lg border bg-muted p-1">
           {PERIODS.map((p) => (
             <button
@@ -231,14 +231,14 @@ export function StatsPage() {
         </div>
       </div>
 
-      {/* Erreur */}
+      {/* Error */}
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {/* Skeleton de chargement */}
+      {/* Loading skeleton */}
       {loading && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -254,10 +254,10 @@ export function StatsPage() {
         </div>
       )}
 
-      {/* Contenu */}
+      {/* Content */}
       {!loading && stats && (
         <div className="space-y-6">
-          {/* État vide global */}
+          {/* Global empty state */}
           {stats.totalMeals === 0 && (
             <div className="rounded-xl border bg-card p-8 text-center shadow-sm">
               <p className="text-lg font-semibold">Aucun repas planifié sur cette période</p>
@@ -269,7 +269,7 @@ export function StatsPage() {
 
           {stats.totalMeals > 0 && (
             <>
-              {/* Chiffres clés */}
+              {/* Key figures */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatCard
                   label="Repas planifiés"
@@ -292,7 +292,7 @@ export function StatsPage() {
                 />
               </div>
 
-              {/* Répartition déjeuner / dîner */}
+              {/* Lunch / dinner breakdown */}
               {(stats.lunchCount > 0 || stats.dinnerCount > 0) && (
                 <div className="rounded-xl border bg-card p-4 shadow-sm">
                   <h3 className="mb-3 text-sm font-semibold">Répartition déjeuner / dîner</h3>
@@ -306,7 +306,7 @@ export function StatsPage() {
                 </div>
               )}
 
-              {/* Top recettes + Top ingrédients */}
+              {/* Top recipes + top ingredients */}
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <RankedList
                   title="Top recettes cuisinées"
@@ -327,10 +327,10 @@ export function StatsPage() {
                 />
               </div>
 
-              {/* Distribution par catégorie */}
+              {/* Category distribution */}
               <CategoryBars stats={stats.categoryStats} />
 
-              {/* Recettes jamais planifiées */}
+              {/* Never-planned recipes */}
               <NeverPlannedList
                 recipes={stats.neverPlannedRecipes.map((r) => ({
                   slug: r.slug,

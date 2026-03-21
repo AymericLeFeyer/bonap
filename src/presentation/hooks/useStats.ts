@@ -30,27 +30,27 @@ export interface TopIngredient {
 export type { CategoryStat }
 
 export interface StatsData {
-  /** Top recettes les plus planifiées */
+  /** Most frequently planned recipes */
   topRecipes: TopRecipe[]
-  /** Top ingrédients les plus utilisés */
+  /** Most used ingredients */
   topIngredients: TopIngredient[]
-  /** % de repas "restes" (même recette sur deux créneaux consécutifs) */
+  /** % of "leftover" meals (same recipe on two consecutive slots) */
   leftoverPercentage: number
-  /** Nombre de repas déjeuner */
+  /** Number of lunch meals */
   lunchCount: number
-  /** Nombre de repas dîner */
+  /** Number of dinner meals */
   dinnerCount: number
-  /** Ratio déjeuner (0-1) */
+  /** Lunch ratio (0-1) */
   lunchRatio: number
-  /** Moyenne de repas planifiés par semaine */
+  /** Average number of planned meals per week */
   avgMealsPerWeek: number
-  /** Recettes du catalogue jamais planifiées sur la période */
+  /** Catalogue recipes never planned during the period */
   neverPlannedRecipes: MealieRecipe[]
-  /** Distribution par catégorie */
+  /** Distribution by category */
   categoryStats: CategoryStat[]
-  /** Nombre de semaines consécutives avec planning complet (≥1 repas/jour) */
+  /** Number of consecutive weeks with a complete plan (≥1 meal/day) */
   streak: number
-  /** Nombre total de repas planifiés sur la période */
+  /** Total number of meals planned during the period */
   totalMeals: number
 }
 
@@ -68,10 +68,10 @@ export function useStats() {
     try {
       const { startDate, endDate } = getPeriodDates(selectedPeriod)
 
-      // 1. Récupérer le planning de la période
+      // 1. Fetch the meal plans for the period
       const mealPlans = await getPlanningRangeUseCase.execute(startDate, endDate)
 
-      // 2. Compter les recettes planifiées
+      // 2. Count planned recipe occurrences
       const recipeCounts = new Map<string, number>()
       for (const meal of mealPlans) {
         if (meal.recipe?.slug) {
@@ -79,11 +79,11 @@ export function useStats() {
         }
       }
 
-      // 3. Top recettes (triées par fréquence)
+      // 3. Top recipes (sorted by frequency)
       const sortedSlugs = Array.from(recipeCounts.entries())
         .sort((a, b) => b[1] - a[1])
 
-      // Les recettes sont déjà dans meal.recipe, les extraire
+      // Recipes are already in meal.recipe, extract them
       const recipeMap = new Map<string, MealieRecipe>()
       for (const meal of mealPlans) {
         if (meal.recipe?.slug && !recipeMap.has(meal.recipe.slug)) {
@@ -96,11 +96,11 @@ export function useStats() {
         .filter(([slug]) => recipeMap.has(slug))
         .map(([slug, count]) => ({ recipe: recipeMap.get(slug)!, count }))
 
-      // 4. Récupérer les détails des top 20 recettes pour les ingrédients
+      // 4. Fetch details of the top 20 recipes for ingredient aggregation
       const top20Slugs = sortedSlugs.slice(0, MAX_INGREDIENT_RECIPES).map(([slug]) => slug)
       const detailedRecipes = await getRecipesByIdsUseCase.execute(top20Slugs)
 
-      // 5. Agréger les ingrédients (pondéré par le nombre de fois planifiée)
+      // 5. Aggregate ingredients (weighted by number of times planned)
       const ingredientCounts = new Map<string, number>()
       for (const recipe of detailedRecipes) {
         const count = recipeCounts.get(recipe.slug) ?? 1
@@ -116,10 +116,10 @@ export function useStats() {
         .slice(0, 15)
         .map(([name, count]) => ({ name, count }))
 
-      // 6. % restes
+      // 6. Leftover percentage
       const leftoverPercentage = computeLeftoverPercentage(mealPlans)
 
-      // 7. Répartition déjeuner / dîner
+      // 7. Lunch / dinner breakdown
       const lunchCount = mealPlans.filter((m) =>
         m.entryType?.toLowerCase().includes("lunch") ||
         m.entryType?.toLowerCase().includes("déjeuner") ||
@@ -134,11 +134,11 @@ export function useStats() {
       const totalTyped = lunchCount + dinnerCount
       const lunchRatio = totalTyped > 0 ? lunchCount / totalTyped : 0.5
 
-      // 8. Moyenne par semaine
+      // 8. Average meals per week
       const weeks = getWeeksBetween(startDate, endDate)
       const avgMealsPerWeek = Math.round((mealPlans.length / weeks) * 10) / 10
 
-      // 9. Recettes jamais planifiées (catalogue complet)
+      // 9. Recipes never planned (full catalogue)
       const allRecipesResult = await getRecipesUseCase.execute(1, -1)
       const allRecipes = allRecipesResult.items
       const plannedSlugsSet = new Set(recipeCounts.keys())
@@ -146,11 +146,11 @@ export function useStats() {
         .filter((r) => !plannedSlugsSet.has(r.slug))
         .slice(0, 50)
 
-      // 10. Distribution par catégorie (sur toutes les recettes planifiées uniques)
+      // 10. Category distribution (over all unique planned recipes)
       const uniquePlannedRecipes = Array.from(recipeMap.values())
       const categoryStats = computeCategoryStats(uniquePlannedRecipes)
 
-      // 11. Streak
+      // 11. Consecutive planning streak
       const streak = computeStreak(mealPlans, startDate, endDate)
 
       setStats({

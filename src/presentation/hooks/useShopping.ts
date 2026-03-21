@@ -19,7 +19,7 @@ export function useShopping() {
   const [addingRecipes, setAddingRecipes] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Ref pour éviter les double-fetch en mode strict
+  // Ref to prevent double-fetch in strict mode
   const initialized = useRef(false)
 
   const loadItems = useCallback(async () => {
@@ -55,7 +55,7 @@ export function useShopping() {
     setError(null)
     try {
       await addRecipesToListUseCase.execute(list.id, recipeIds)
-      // Recharger les items après l'ajout (Mealie fait la déduplication)
+      // Reload items after adding (Mealie handles deduplication)
       const result = await getShoppingItemsUseCase.execute()
       setList(result.list)
       setItems(result.items)
@@ -68,7 +68,7 @@ export function useShopping() {
 
   const toggleItem = useCallback(async (item: ShoppingItem) => {
     if (!list) return
-    // Optimistic update
+    // Optimistic update: flip checked state immediately
     setItems((prev) =>
       prev.map((i) => (i.id === item.id ? { ...i, checked: !i.checked } : i)),
     )
@@ -76,7 +76,7 @@ export function useShopping() {
       const updated = await toggleItemUseCase.execute(list.id, item)
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
     } catch (err) {
-      // Rollback
+      // Rollback on error
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, checked: item.checked } : i)),
       )
@@ -111,7 +111,7 @@ export function useShopping() {
     }
   }, [list, items, loadItems])
 
-  // Articles habituels (localStorage)
+  // Usual items (localStorage)
   const addCustomItem = useCallback((note: string) => {
     const item = customItemRepository.add(note)
     setCustomItems(customItemRepository.getAll())

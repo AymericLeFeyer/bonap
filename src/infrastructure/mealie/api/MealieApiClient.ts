@@ -6,8 +6,8 @@ import {
   MealieUnauthorizedError,
 } from "../../../shared/types/errors.ts"
 
-// En dev, les requêtes /api sont proxifiées par Vite vers VITE_MEALIE_URL (pas de CORS).
-// En prod, VITE_MEALIE_URL doit être renseigné et accessible directement.
+// In dev, /api requests are proxied by Vite to VITE_MEALIE_URL (no CORS).
+// In prod, VITE_MEALIE_URL must be set and directly reachable.
 const baseUrl =
   import.meta.env.DEV
     ? ""

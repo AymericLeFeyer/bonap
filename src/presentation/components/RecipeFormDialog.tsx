@@ -94,7 +94,7 @@ export function RecipeFormDialog({
     }
   }
 
-  // --- Ingrédients ---
+  // --- Ingredients ---
 
   const addIngredient = () => {
     setFormData((prev) => ({
@@ -188,7 +188,7 @@ export function RecipeFormDialog({
             />
           </div>
 
-          {/* Temps de préparation */}
+          {/* Prep time */}
           <div className="space-y-2">
             <Label htmlFor="recipe-prep-time">Temps de préparation</Label>
             <Input
@@ -232,7 +232,7 @@ export function RecipeFormDialog({
             </div>
           </div>
 
-          {/* Ingrédients */}
+          {/* Ingredients */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Ingrédients</Label>

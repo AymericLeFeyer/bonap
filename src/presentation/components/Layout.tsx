@@ -28,7 +28,7 @@ export function Layout() {
         onClick={closeMobile}
         aria-hidden="true"
       />
-      {/* Panneau drawer */}
+      {/* Drawer panel */}
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:hidden",
@@ -47,15 +47,15 @@ export function Layout() {
       <main
         className={cn(
           "transition-all duration-300 ease-in-out",
-          // Desktop : marge gauche selon l'état collapsed
+          // Desktop: left margin based on collapsed state
           "md:ml-60",
           collapsed && "md:ml-16",
-          // Mobile : pas de marge
+          // Mobile: no margin
           "ml-0",
           "p-4 md:p-6",
         )}
       >
-        {/* Burger mobile */}
+        {/* Mobile burger button */}
         <div className="mb-4 flex items-center md:hidden">
           <button
             type="button"

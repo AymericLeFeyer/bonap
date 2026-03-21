@@ -11,9 +11,9 @@ import { Input } from "./ui/input.tsx"
 import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
 
-// ─── Liste isolée ─────────────────────────────────────────────────────────────
-// Composant séparé : ne re-rend que quand `search` (debouncé) change,
-// pas à chaque frappe dans l'input.
+// ─── Isolated list ────────────────────────────────────────────────────────────
+// Separate component: only re-renders when `search` (debounced) changes,
+// not on every keystroke.
 
 function RecipeList({
   search,
@@ -99,7 +99,7 @@ export function RecipePickerDialog({
   const [inputValue, setInputValue] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
 
-  // Debounce : met à jour la recherche effective 300ms après la dernière frappe
+  // Debounce: update effective search 300ms after the last keystroke
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(inputValue), 300)
     return () => clearTimeout(timer)

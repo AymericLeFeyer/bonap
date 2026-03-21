@@ -42,7 +42,7 @@ export class ShoppingRepository implements IShoppingRepository {
       return { id: existing.id, name: existing.name }
     }
 
-    // Aucune liste : on en crée une
+    // No list found: create one
     const created = await mealieApiClient.post<{ id: string; name: string }>(
       "/api/households/shopping/lists",
       { name: DEFAULT_LIST_NAME },

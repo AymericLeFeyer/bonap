@@ -32,7 +32,7 @@ function addDays(date: Date, n: number): Date {
   return d
 }
 
-// ─── MobileMealSection ────────────────────────────────────────────────────────
+// ─── MobileMealSection ───────────────────────────────────────────────────────
 
 interface MobileMealSectionProps {
   meals: MealieMealPlan[]
@@ -152,7 +152,7 @@ function MealCell({
       const meal = JSON.parse(raw) as MealieMealPlan
       onDrop(meal, date, entryType)
     } catch {
-      // données invalides — on ignore
+      // Invalid drag data — ignore
     }
   }
 
@@ -178,7 +178,7 @@ function MealCell({
               }}
               className="flex flex-col rounded-md bg-white/80 dark:bg-card shadow-sm cursor-grab active:cursor-grabbing overflow-hidden"
             >
-              {/* Image + nom */}
+              {/* Recipe image + name */}
               <div className="flex items-center gap-2 p-2">
                 {meal.recipe && (
                   <img
@@ -192,7 +192,7 @@ function MealCell({
                 </span>
               </div>
 
-              {/* Barre d'actions */}
+              {/* Action bar */}
               <div className="flex border-t border-border/40">
                 {meal.recipe?.slug && (
                   <button
@@ -217,7 +217,7 @@ function MealCell({
           )
         })}
 
-        {/* Actions : + et Restes */}
+        {/* Actions: add and leftovers */}
         <div className="flex gap-1">
           <button
             type="button"
@@ -282,7 +282,7 @@ export function PlanningPage() {
     if (!open) setPreviewSlug(null)
   }
 
-  // Calcul des jours affichés — aujourd'hui en 2ème colonne (offset -1)
+  // Compute displayed days — today in 2nd column (offset -1)
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
 
   const handleAddToCart = async () => {
@@ -290,7 +290,7 @@ export function PlanningPage() {
     const recipeIds = mealPlans
       .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.id)
       .map((m) => m.recipe!.id)
-    // Dédupliquer les recipeIds
+    // Deduplicate recipe IDs
     const unique = [...new Set(recipeIds)]
     await addRecipesToCart(unique)
   }
@@ -301,7 +301,7 @@ export function PlanningPage() {
   }
 
   const getPreviousMeal = (date: Date, type: string): MealieMealPlan | null => {
-    // Créneau chronologiquement précédent : midi → soir J-1 ; soir → midi du même jour
+    // Chronologically previous slot: lunch → previous day dinner; dinner → same day lunch
     const [prevDate, prevType] =
       type === "lunch"
         ? [addDays(date, -1), "dinner"]
@@ -333,7 +333,7 @@ export function PlanningPage() {
     targetDate: string,
     targetType: string,
   ) => {
-    // Eviter de drop sur la même cellule
+    // Avoid dropping on the same cell
     if (draggedMeal.date === targetDate && draggedMeal.entryType === targetType) return
     if (!draggedMeal.recipe) return
     await deleteMeal(draggedMeal.id)
@@ -342,13 +342,13 @@ export function PlanningPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-4 md:px-6 md:pb-6">
-      {/* Header sticky */}
+      {/* Sticky header */}
       <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur md:-mx-6 md:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-bold">Planning</h1>
 
           <div className="flex items-center gap-2">
-            {/* Bouton Ajouter au panier */}
+            {/* Add to cart button */}
             <Button
               variant="outline"
               size="sm"
@@ -368,7 +368,7 @@ export function PlanningPage() {
               </span>
             </Button>
 
-            {/* Sélecteur nombre de jours */}
+            {/* Day count selector */}
             <div className="flex items-center rounded-md border border-border overflow-hidden">
               {([3, 5, 7] as const).map((n) => (
                 <button
@@ -431,19 +431,19 @@ export function PlanningPage() {
 
       {!loading && !error && (
         <>
-          {/* ── Vue mobile : cartes verticales par jour ── */}
+          {/* ── Mobile view: vertical day cards ── */}
           <div className="flex flex-col gap-3 md:hidden">
             {days.slice(1).map((date) => {
               const isToday = new Date().toDateString() === date.toDateString()
               const dayLabel = DAY_LABELS[date.getDay()]
               return (
                 <div key={date.toISOString()} className="rounded-xl border border-border overflow-hidden shadow-sm">
-                  {/* En-tête du jour */}
+                  {/* Day header */}
                   <div className={`px-4 py-2 text-sm font-semibold ${isToday ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}>
                     <span className="uppercase tracking-wide opacity-70 text-xs mr-2">{dayLabel}</span>
                     {formatDayDate(date)}
                   </div>
-                  {/* Créneaux */}
+                  {/* Meal slots */}
                   {MEAL_TYPES.map(({ key, label, color }) => {
                     const dateStr = date.toISOString().slice(0, 10)
                     const meals = getMeals(date, key)
@@ -469,7 +469,7 @@ export function PlanningPage() {
             })}
           </div>
 
-          {/* ── Vue desktop : tableau ── */}
+          {/* ── Desktop view: table ── */}
           <div className="hidden md:block overflow-x-auto rounded-xl border border-border shadow-sm">
             <table className="w-full border-collapse text-sm table-fixed">
               <thead>

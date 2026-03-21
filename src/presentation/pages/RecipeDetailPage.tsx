@@ -6,6 +6,8 @@ import { Button } from "../components/ui/button.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { SeasonBadge } from "../components/SeasonBadge.tsx"
+import { RecipeIngredientsList } from "../components/RecipeIngredientsList.tsx"
+import { RecipeInstructionsList } from "../components/RecipeInstructionsList.tsx"
 import { Pencil } from "lucide-react"
 import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
@@ -116,7 +118,7 @@ export function RecipeDetailPage() {
               </div>
             )}
 
-            {/* Saisons — affichage + édition rapide */}
+            {/* Seasons — display + quick edit */}
             <div className="space-y-1.5">
               {getRecipeSeasonsFromTags(recipe.tags).length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -150,42 +152,13 @@ export function RecipeDetailPage() {
             )}
           </div>
 
-          {recipe.recipeIngredient && recipe.recipeIngredient.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">Ingrédients</h2>
-              <ul className="space-y-1.5">
-                {recipe.recipeIngredient.map((ing, i) => (
-                  <li key={i} className="text-sm">
-                    {ing.quantity != null && (
-                      <span className="font-medium">{ing.quantity}</span>
-                    )}{" "}
-                    {ing.unit?.name && <span>{ing.unit.name}</span>}{" "}
-                    {ing.food?.name && <span>{ing.food.name}</span>}
-                    {ing.note && (
-                      <span className="text-muted-foreground"> ({ing.note})</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <RecipeIngredientsList
+            ingredients={recipe.recipeIngredient ?? []}
+          />
 
-          {recipe.recipeInstructions && recipe.recipeInstructions.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">Instructions</h2>
-              <ol className="space-y-4">
-                {recipe.recipeInstructions.map((step, i) => (
-                  <li key={step.id} className="space-y-1">
-                    <p className="text-sm font-medium">
-                      Étape {i + 1}
-                      {step.title && ` — ${step.title}`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{step.text}</p>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
+          <RecipeInstructionsList
+            instructions={recipe.recipeInstructions ?? []}
+          />
         </article>
       )}
     </div>

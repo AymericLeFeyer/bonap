@@ -4,11 +4,11 @@ import { SEASONS } from "../types/mealie.ts"
 const SEASON_TAG_PREFIX = "saison-"
 
 /**
- * Retourne la saison courante basée sur la date du jour.
- * Printemps : mars-mai (3-5)
- * Été : juin-août (6-8)
- * Automne : septembre-novembre (9-11)
- * Hiver : décembre-février (12, 1-2)
+ * Returns the current season based on today's date.
+ * Spring: March–May (3–5)
+ * Summer: June–August (6–8)
+ * Autumn: September–November (9–11)
+ * Winter: December–February (12, 1–2)
  */
 export function getCurrentSeason(): Season {
   const month = new Date().getMonth() + 1 // 1-12
@@ -19,8 +19,8 @@ export function getCurrentSeason(): Season {
 }
 
 /**
- * Extrait les saisons d'une recette depuis ses tags Mealie.
- * Les tags de saison ont le préfixe "saison:" (ex: "saison:printemps").
+ * Extracts seasons from a recipe's Mealie tags.
+ * Season tags use the prefix "saison:" (e.g. "saison:printemps").
  */
 export function getRecipeSeasonsFromTags(tags: MealieTag[] | undefined): Season[] {
   if (!tags?.length) return []
@@ -32,7 +32,7 @@ export function getRecipeSeasonsFromTags(tags: MealieTag[] | undefined): Season[
 }
 
 /**
- * Indique si un tag est un tag de saison (préfixe "saison:").
+ * Returns true if the tag is a season tag (prefix "saison:").
  */
 export function isSeasonTag(tag: MealieTag): boolean {
   return tag.name.startsWith(SEASON_TAG_PREFIX)

@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.tsx"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { Loader2 } from "lucide-react"
+import { RecipeIngredientsList } from "./RecipeIngredientsList.tsx"
+import { RecipeInstructionsList } from "./RecipeInstructionsList.tsx"
 
 interface RecipeDetailModalProps {
   slug: string | null
@@ -60,42 +62,15 @@ export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps
                 )}
               </div>
 
-              {recipe.recipeIngredient && recipe.recipeIngredient.length > 0 && (
-                <section className="space-y-3">
-                  <h2 className="text-base font-semibold">Ingrédients</h2>
-                  <ul className="space-y-1.5">
-                    {recipe.recipeIngredient.map((ing, i) => (
-                      <li key={i} className="text-sm">
-                        {ing.quantity != null && (
-                          <span className="font-medium">{ing.quantity}</span>
-                        )}{" "}
-                        {ing.unit?.name && <span>{ing.unit.name}</span>}{" "}
-                        {ing.food?.name && <span>{ing.food.name}</span>}
-                        {ing.note && (
-                          <span className="text-muted-foreground"> ({ing.note})</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
+              <RecipeIngredientsList
+                ingredients={recipe.recipeIngredient ?? []}
+                headingSize="text-base"
+              />
 
-              {recipe.recipeInstructions && recipe.recipeInstructions.length > 0 && (
-                <section className="space-y-3">
-                  <h2 className="text-base font-semibold">Instructions</h2>
-                  <ol className="space-y-4">
-                    {recipe.recipeInstructions.map((step, i) => (
-                      <li key={step.id} className="space-y-1">
-                        <p className="text-sm font-medium">
-                          Étape {i + 1}
-                          {step.title && ` — ${step.title}`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{step.text}</p>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              )}
+              <RecipeInstructionsList
+                instructions={recipe.recipeInstructions ?? []}
+                headingSize="text-base"
+              />
             </article>
           )}
         </div>

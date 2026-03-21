@@ -14,24 +14,24 @@ interface SidebarProps {
   collapsed: boolean
   onToggleCollapsed: () => void
   onClose?: () => void
-  /** Rendu en tant que drawer mobile (pas de position fixed gérée ici) */
+  /** Rendered as a mobile drawer (fixed positioning handled by the parent) */
   variant?: "desktop" | "mobile"
 }
 
 export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desktop" }: SidebarProps) {
   const { resolvedTheme, toggleTheme } = useTheme()
   const isMobile = variant === "mobile"
-  // Sur mobile le drawer est toujours en mode "expanded"
+  // On mobile the drawer is always in "expanded" mode
   const isCollapsed = isMobile ? false : collapsed
 
   return (
     <aside
       className={cn(
         "flex flex-col border-r bg-card transition-all duration-300 ease-in-out",
-        // Desktop : fixed + largeur variable
+        // Desktop: fixed position + variable width
         !isMobile && "fixed inset-y-0 left-0 z-30 shadow-sm",
         !isMobile && (isCollapsed ? "w-16" : "w-60"),
-        // Mobile : pleine hauteur, largeur fixe (le parent gère le positionnement)
+        // Mobile: full height, fixed width (parent handles positioning)
         isMobile && "w-72 h-full",
       )}
     >
@@ -51,7 +51,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desk
           <UtensilsCrossed className="h-5 w-5 text-primary" />
         )}
 
-        {/* Bouton fermer drawer (mobile) */}
+        {/* Close drawer button (mobile) */}
         {isMobile && onClose && (
           <button
             type="button"
@@ -108,7 +108,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onClose, variant = "desk
         ))}
       </nav>
 
-      {/* Pied : lien Mealie + toggle thème */}
+      {/* Footer: Mealie link + theme toggle */}
       <div className={cn("border-t px-2 py-3 space-y-1", isCollapsed && "flex flex-col items-center space-y-1")}>
         <a
           href={import.meta.env.VITE_MEALIE_URL}

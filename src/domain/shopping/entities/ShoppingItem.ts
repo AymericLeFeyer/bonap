@@ -15,9 +15,9 @@ export interface ShoppingItem {
   unitName?: string
   foodName?: string
   label?: ShoppingLabel
-  /** Texte affiché (calculé par Mealie ou note brute) */
+  /** Display text (computed by Mealie or raw note) */
   display?: string
-  /** Type custom : article non alimentaire stocké en localStorage */
+  /** Item source: "local" means non-food item stored in localStorage */
   source: "mealie" | "local"
 }
 
