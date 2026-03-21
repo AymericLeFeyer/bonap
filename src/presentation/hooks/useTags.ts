@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
 import type { MealieTag } from "../../shared/types/mealie.ts"
-import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
+import { GetTagsUseCase } from "../../application/organizer/usecases/GetTagsUseCase.ts"
+import { TagRepository } from "../../infrastructure/mealie/repositories/TagRepository.ts"
 
-interface RawTagsResponse {
-  items: MealieTag[]
-}
+const getTagsUseCase = new GetTagsUseCase(new TagRepository())
 
 export function useTags() {
   const [tags, setTags] = useState<MealieTag[]>([])
@@ -14,8 +13,8 @@ export function useTags() {
   const fetchTags = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await mealieApiClient.get<RawTagsResponse>("/api/organizers/tags")
-      setTags(data.items)
+      const data = await getTagsUseCase.execute()
+      setTags(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur chargement tags")
     } finally {
