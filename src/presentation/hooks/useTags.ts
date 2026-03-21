@@ -14,7 +14,7 @@ export function useTags() {
   const fetchTags = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await mealieApiClient.get<RawTagsResponse>("/api/tags")
+      const data = await mealieApiClient.get<RawTagsResponse>("/api/organizers/tags")
       setTags(data.items)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur chargement tags")
