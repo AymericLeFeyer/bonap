@@ -13,6 +13,9 @@ const DEFAULT_LIST_NAME = "Bonap"
 const HABITUELS_LIST_NAME = "Habituels"
 
 function mapItem(raw: MealieShoppingItem): ShoppingItem {
+  const recipeNames = (raw.recipeReferences ?? [])
+    .map((r) => r.recipe?.name)
+    .filter((n): n is string => Boolean(n))
   return {
     id: raw.id,
     shoppingListId: raw.shoppingListId,
@@ -27,6 +30,7 @@ function mapItem(raw: MealieShoppingItem): ShoppingItem {
       ? { id: raw.label.id, name: raw.label.name, color: raw.label.color }
       : undefined,
     display: raw.display,
+    recipeNames: recipeNames.length > 0 ? recipeNames : undefined,
     source: "mealie",
   }
 }

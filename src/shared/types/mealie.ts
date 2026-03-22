@@ -133,6 +133,11 @@ export interface MealieShoppingList {
   labelSettings?: { label: MealieShoppingLabel }[]
 }
 
+export interface MealieShoppingItemRecipeRef {
+  recipeId: string
+  recipe?: { id: string; name: string; slug: string }
+}
+
 export interface MealieShoppingItem {
   id: string
   shoppingListId: string
@@ -145,6 +150,7 @@ export interface MealieShoppingItem {
   food?: { id: string; name: string }
   label?: MealieShoppingLabel
   display?: string
+  recipeReferences?: MealieShoppingItemRecipeRef[]
 }
 
 export interface MealieShoppingItemCreate {

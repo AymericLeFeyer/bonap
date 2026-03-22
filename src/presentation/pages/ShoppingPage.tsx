@@ -75,14 +75,21 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
         </button>
       </div>
 
-      {/* Name */}
-      <span
-        className={cn(
-          "flex-1 text-sm leading-tight",
-          item.checked && "line-through text-muted-foreground",
+      {/* Name + recipe references */}
+      <span className="flex-1 min-w-0">
+        <span
+          className={cn(
+            "text-sm leading-tight",
+            item.checked && "line-through text-muted-foreground",
+          )}
+        >
+          {name}
+        </span>
+        {item.recipeNames && item.recipeNames.length > 0 && (
+          <span className="ml-1 text-xs text-muted-foreground">
+            ({item.recipeNames.join(", ")})
+          </span>
         )}
-      >
-        {name}
       </span>
 
       {/* Category selector — far right */}

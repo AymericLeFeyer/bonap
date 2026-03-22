@@ -17,6 +17,8 @@ export interface ShoppingItem {
   label?: ShoppingLabel
   /** Display text (computed by Mealie or raw note) */
   display?: string
+  /** Names of recipes that require this item */
+  recipeNames?: string[]
   source: "mealie"
 }
 
