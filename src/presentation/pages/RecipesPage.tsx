@@ -8,7 +8,7 @@ import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
-import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine, LayoutGrid, Table2, RefreshCw } from "lucide-react"
+import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine, LayoutGrid, Table2, Clock, RefreshCw } from "lucide-react"
 import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getCurrentSeason, getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
@@ -176,38 +176,48 @@ export function RecipesPage() {
     <div className="space-y-6">
       {/* Header sticky */}
       <div className="sticky top-0 z-10 -mx-4 -mt-4 md:-mx-6 md:-mt-6 bg-background px-4 pt-4 md:px-6 md:pt-6 pb-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold">Mes recettes</h1>
-          <div className="flex items-center gap-2">
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Réinitialiser
-              </button>
+
+        {/* Title row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-2xl font-bold">Mes recettes</h1>
+            {filteredRecipes.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {filteredRecipes.length} recette{filteredRecipes.length > 1 ? "s" : ""}
+              </span>
             )}
-            {/* View toggle */}
-            <div className="flex rounded-md border border-input overflow-hidden">
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* View mode segmented control */}
+            <div className="flex rounded-lg border border-input overflow-hidden bg-background">
               <button
                 type="button"
                 onClick={() => setViewMode("cards")}
-                className={`flex items-center px-2 py-1.5 text-sm transition-colors ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent"}`}
                 aria-label="Vue cartes"
+                className={`flex items-center px-2.5 py-1.5 text-sm transition-colors ${
+                  viewMode === "cards"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted/50"
+                }`}
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`flex items-center px-2 py-1.5 text-sm transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent"}`}
                 aria-label="Vue tableau"
+                className={`flex items-center px-2.5 py-1.5 text-sm transition-colors ${
+                  viewMode === "table"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted/50"
+                }`}
               >
                 <Table2 className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Importer */}
             <a
               href={`${(import.meta.env.VITE_MEALIE_URL as string ?? "").replace(/\/+$/, "")}/g/home/r/create/url`}
               target="_blank"
@@ -217,6 +227,8 @@ export function RecipesPage() {
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Importer</span>
             </a>
+
+            {/* Nouvelle recette */}
             <Button
               size="sm"
               onClick={() => setNewRecipeDialogOpen(true)}
@@ -228,9 +240,9 @@ export function RecipesPage() {
           </div>
         </div>
 
-        {/* Filter bar */}
-        <div className="space-y-3">
-          {/* Search */}
+        {/* Filter bar — 2 lines max */}
+        <div className="space-y-2">
+          {/* Line 1: search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -250,88 +262,106 @@ export function RecipesPage() {
             )}
           </div>
 
-          {/* Season filter */}
-          <div className="flex flex-wrap gap-1.5">
-            {SEASONS.map((season: Season) => {
-              const active = selectedSeasons.includes(season)
-              return (
-                <Badge
-                  key={season}
-                  variant={active ? "default" : "outline"}
-                  className="cursor-pointer select-none transition-colors"
-                  onClick={() => toggleSeason(season)}
-                >
-                  {SEASON_LABELS[season]}
-                </Badge>
-              )
-            })}
-          </div>
-
-          {/* Time filter */}
-          <div className="flex flex-wrap gap-1.5">
-            {TIME_OPTIONS.filter((opt) => opt.value !== undefined).map((opt) => {
-              const active = maxTotalTime === opt.value
-              return (
-                <Badge
-                  key={opt.label}
-                  variant={active ? "default" : "outline"}
-                  className="cursor-pointer select-none transition-colors"
-                  onClick={() => handleTimeFilter(opt.value)}
-                >
-                  {opt.label}
-                </Badge>
-              )
-            })}
-          </div>
-
-          {/* No ingredients filter */}
-          <div className="flex flex-wrap gap-1.5">
-            <Badge
-              variant={noIngredients ? "default" : "outline"}
-              className="cursor-pointer select-none transition-colors"
-              onClick={() => setNoIngredients((prev) => !prev)}
-            >
-              Sans ingrédients
-            </Badge>
-          </div>
-
-          {/* Category filters */}
-          {categories.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {categories.map((cat) => {
-                const active = selectedCategories.includes(cat.slug)
+          {/* Line 2: all filters in one scrollable row */}
+          <div className="relative flex items-center gap-2">
+            <div className="flex gap-1.5 overflow-x-auto flex-nowrap scrollbar-hide pb-0.5">
+              {/* Seasons */}
+              {SEASONS.map((season: Season) => {
+                const active = selectedSeasons.includes(season)
                 return (
                   <Badge
-                    key={cat.id}
+                    key={season}
                     variant={active ? "default" : "outline"}
-                    className="cursor-pointer select-none transition-colors"
-                    onClick={() => toggleCategory(cat.slug)}
+                    className="cursor-pointer select-none transition-colors whitespace-nowrap shrink-0"
+                    onClick={() => toggleSeason(season)}
                   >
-                    {cat.name}
+                    {SEASON_LABELS[season]}
                   </Badge>
                 )
               })}
-            </div>
-          )}
 
-          {/* Tag filters */}
-          {tags.filter((t) => !isSeasonTag(t)).length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {tags.filter((t) => !isSeasonTag(t)).map((tag) => {
-                const active = selectedTags.includes(tag.slug)
+              {/* Separator dot */}
+              {(categories.length > 0 || tags.filter((t) => !isSeasonTag(t)).length > 0 || true) && (
+                <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+              )}
+
+              {/* Time filters */}
+              {TIME_OPTIONS.filter((opt) => opt.value !== undefined).map((opt) => {
+                const active = maxTotalTime === opt.value
                 return (
                   <Badge
-                    key={tag.id}
-                    variant={active ? "secondary" : "outline"}
-                    className="cursor-pointer select-none transition-colors"
-                    onClick={() => toggleTag(tag.slug)}
+                    key={opt.label}
+                    variant={active ? "default" : "outline"}
+                    className="cursor-pointer select-none transition-colors whitespace-nowrap shrink-0"
+                    onClick={() => handleTimeFilter(opt.value)}
                   >
-                    {tag.name}
+                    {opt.label}
                   </Badge>
                 )
               })}
+
+              {/* No ingredients */}
+              <Badge
+                variant={noIngredients ? "default" : "outline"}
+                className="cursor-pointer select-none transition-colors whitespace-nowrap shrink-0"
+                onClick={() => setNoIngredients((prev) => !prev)}
+              >
+                Sans ingrédients
+              </Badge>
+
+              {/* Category filters */}
+              {categories.length > 0 && (
+                <>
+                  <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+                  {categories.map((cat) => {
+                    const active = selectedCategories.includes(cat.slug)
+                    return (
+                      <Badge
+                        key={cat.id}
+                        variant={active ? "default" : "outline"}
+                        className="cursor-pointer select-none transition-colors whitespace-nowrap shrink-0"
+                        onClick={() => toggleCategory(cat.slug)}
+                      >
+                        {cat.name}
+                      </Badge>
+                    )
+                  })}
+                </>
+              )}
+
+              {/* Tag filters */}
+              {tags.filter((t) => !isSeasonTag(t)).length > 0 && (
+                <>
+                  <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+                  {tags.filter((t) => !isSeasonTag(t)).map((tag) => {
+                    const active = selectedTags.includes(tag.slug)
+                    return (
+                      <Badge
+                        key={tag.id}
+                        variant={active ? "secondary" : "outline"}
+                        className="cursor-pointer select-none transition-colors whitespace-nowrap shrink-0"
+                        onClick={() => toggleTag(tag.slug)}
+                      >
+                        {tag.name}
+                      </Badge>
+                    )
+                  })}
+                </>
+              )}
             </div>
-          )}
+
+            {/* Clear filters button */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors border-l border-border pl-2 ml-1"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span className="hidden sm:inline">Effacer</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -369,11 +399,11 @@ export function RecipesPage() {
         </div>
       )}
 
-      {/* Recipe table */}
+      {/* Recipe table — custom rows */}
       {viewMode === "table" && filteredRecipes.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{filteredRecipes.length} recette{filteredRecipes.length > 1 ? "s" : ""}</p>
+        <div>
+          {/* Load details toolbar */}
+          <div className="mb-3 flex items-center justify-end">
             <Button
               size="sm"
               variant="outline"
@@ -385,61 +415,80 @@ export function RecipesPage() {
               Charger les détails
             </Button>
           </div>
-          <div className="rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Nom</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Prép.</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Cuisson</th>
-                  <th className="px-3 py-2 text-left font-medium">Ingrédients</th>
-                  <th className="px-3 py-2 text-left font-medium">Instructions</th>
-                  <th className="px-3 py-2 text-left font-medium">Tags</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecipes.map((recipe) => {
-                  const detail = detailedRecipes.get(recipe.slug)
-                  const ingredients = detail?.recipeIngredient
-                  const instructions = detail?.recipeInstructions
-                  const nonSeasonTags = (recipe.tags ?? []).filter((t) => !isSeasonTag(t))
-                  return (
-                    <tr key={recipe.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-3 py-2 font-medium">
-                        <Link to={`/recipes/${recipe.slug}`} className="hover:underline text-foreground">
-                          {recipe.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{formatDuration(recipe.prepTime)}</td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{formatDuration(recipe.cookTime)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {ingredients
-                          ? ingredients.length > 0
-                            ? <span title={ingredients.map((i) => i.note ?? i.food?.name ?? "").filter(Boolean).join(", ")}>{ingredients.length} ingrédient{ingredients.length > 1 ? "s" : ""}</span>
-                            : <span className="italic">Aucun</span>
-                          : <span className="text-muted-foreground/50">—</span>
-                        }
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {instructions
-                          ? instructions.length > 0
-                            ? `${instructions.length} étape${instructions.length > 1 ? "s" : ""}`
-                            : <span className="italic">Aucune</span>
-                          : <span className="text-muted-foreground/50">—</span>
-                        }
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {nonSeasonTags.map((t) => (
-                            <Badge key={t.id} variant="secondary" className="text-xs py-0">{t.name}</Badge>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+
+          {/* Column headers */}
+          <div className="grid grid-cols-[2fr_72px_72px_1fr_auto] items-center gap-3 border-b border-border px-4 pb-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nom</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground text-right">Prép.</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground text-right">Cuisson</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tags</span>
+            <span className="w-8" />
+          </div>
+
+          {/* Rows */}
+          <div>
+            {filteredRecipes.map((recipe) => {
+              const detail = detailedRecipes.get(recipe.slug)
+              const ingredients = detail?.recipeIngredient
+              const nonSeasonTags = (recipe.tags ?? []).filter((t) => !isSeasonTag(t))
+              const prepTime = formatDuration(recipe.prepTime)
+              const cookTime = formatDuration(recipe.cookTime)
+
+              return (
+                <div
+                  key={recipe.id}
+                  className="grid grid-cols-[2fr_72px_72px_1fr_auto] items-center gap-3 border-b border-border/40 px-4 py-2.5 last:border-0 hover:bg-muted/30 transition-colors"
+                >
+                  {/* Name */}
+                  <div className="min-w-0">
+                    <Link
+                      to={`/recipes/${recipe.slug}`}
+                      className="text-sm font-medium text-foreground hover:text-primary transition-colors truncate block"
+                    >
+                      {recipe.name}
+                    </Link>
+                    {ingredients !== undefined && (
+                      <span className="text-xs text-muted-foreground/70">
+                        {ingredients.length > 0
+                          ? `${ingredients.length} ingrédient${ingredients.length > 1 ? "s" : ""}`
+                          : "Aucun ingrédient"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Prep time */}
+                  <div className="flex items-center justify-end gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                    {prepTime !== "—" && <Clock className="h-3 w-3 shrink-0" />}
+                    <span>{prepTime}</span>
+                  </div>
+
+                  {/* Cook time */}
+                  <div className="flex items-center justify-end gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                    {cookTime !== "—" && <Clock className="h-3 w-3 shrink-0" />}
+                    <span>{cookTime}</span>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {nonSeasonTags.map((t) => (
+                      <Badge key={t.id} variant="secondary" className="text-xs py-0 px-1.5">
+                        {t.name}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end">
+                    <Link
+                      to={`/recipes/${recipe.slug}`}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Voir
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -451,7 +500,6 @@ export function RecipesPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
-
 
       <RecipeFormDialog
         open={newRecipeDialogOpen}
