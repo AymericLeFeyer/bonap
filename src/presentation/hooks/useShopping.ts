@@ -134,14 +134,12 @@ export function useShopping() {
       for (const recipe of recipes) {
         const ingredients = recipe.recipeIngredient ?? []
         for (const ing of ingredients) {
-          const rawNote = ing.note ?? [
-            ing.quantity != null ? String(ing.quantity) : "",
-            ing.unit?.name ?? "",
-            ing.food?.name ?? "",
-          ].filter(Boolean).join(" ")
-          if (!rawNote.trim()) continue
-          const key = extractFoodKey(rawNote)
-          const existing = key ? findExisting(currentItems, key) : undefined
+          // Prefer the already-parsed food name, otherwise extract from note
+          const cleanNote = ing.food?.name?.trim()
+            ?? (ing.note ? extractFoodKey(ing.note) || ing.note.trim() : "")
+          if (!cleanNote) continue
+          const key = extractFoodKey(cleanNote) || cleanNote.toLowerCase()
+          const existing = findExisting(currentItems, key)
           if (existing) {
             const updated = await shoppingRepository.updateItem(list.id, {
               id: existing.id,
@@ -156,15 +154,12 @@ export function useShopping() {
             })
             currentItems = currentItems.map((i) => (i.id === existing.id ? updated : i))
           } else {
-            // Add with the clean food name (stripped of quantities/units) as note
-            const cleanNote = key || rawNote.trim()
             await shoppingRepository.addItem(list.id, {
               shoppingListId: list.id,
               note: cleanNote,
               isFood: false,
               quantity: 1,
             })
-            // Optimistically add to snapshot to catch duplicates within the loop
             currentItems = [...currentItems, {
               id: `tmp-${Date.now()}-${Math.random()}`,
               shoppingListId: list.id,
@@ -173,7 +168,7 @@ export function useShopping() {
               isFood: false,
               note: cleanNote,
               quantity: 1,
-              source: "mealie",
+              source: "mealie" as const,
             }]
           }
         }
@@ -319,9 +314,10 @@ export function useShopping() {
         display: existing.display,
       })
     } else {
+      const cleanNote = key || item.foodName || item.note
       await shoppingRepository.addItem(list.id, {
         shoppingListId: list.id,
-        note: item.note,
+        note: cleanNote,
         isFood: item.isFood,
         quantity: 1,
         labelId: item.label?.id,
