@@ -33,7 +33,7 @@ interface MealieItemRowProps {
 }
 
 function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onUpdateLabel }: MealieItemRowProps) {
-  const name = item.note ?? item.foodName ?? "Article sans nom"
+  const name = item.foodName ?? item.note ?? "Article sans nom"
   const qty = item.quantity ?? 0
 
   return (
