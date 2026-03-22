@@ -8,32 +8,32 @@
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* ── Palette chaude food-friendly (light) ── */
-  --color-background: oklch(0.97 0.012 80);
-  --color-foreground: oklch(0.2 0.02 60);
+  --color-background: oklch(0.97 0.010 75);
+  --color-foreground: oklch(0.18 0.02 60);
 
-  --color-card: oklch(1 0.005 80);
-  --color-card-foreground: oklch(0.2 0.02 60);
+  --color-card: oklch(1 0.004 75);
+  --color-card-foreground: oklch(0.18 0.02 60);
 
-  --color-primary: oklch(0.62 0.18 42);          /* orange terracotta */
+  --color-primary: oklch(0.62 0.18 42);          /* orange terracotta — surchargé par ThemeService */
   --color-primary-foreground: oklch(0.99 0 0);
 
-  --color-secondary: oklch(0.93 0.03 80);        /* beige chaud */
-  --color-secondary-foreground: oklch(0.3 0.04 60);
+  --color-secondary: oklch(0.93 0.025 78);        /* beige chaud */
+  --color-secondary-foreground: oklch(0.30 0.04 60);
 
-  --color-muted: oklch(0.93 0.02 80);
-  --color-muted-foreground: oklch(0.52 0.04 65);
+  --color-muted: oklch(0.93 0.018 78);
+  --color-muted-foreground: oklch(0.50 0.035 65);
 
-  --color-accent: oklch(0.88 0.08 80);           /* ambre doux */
-  --color-accent-foreground: oklch(0.25 0.04 60);
+  --color-accent: oklch(0.90 0.06 78);            /* ambre doux */
+  --color-accent-foreground: oklch(0.22 0.04 60);
 
   --color-destructive: oklch(0.577 0.245 27.325);
   --color-destructive-foreground: oklch(0.99 0 0);
 
-  --color-border: oklch(0.88 0.025 75);
-  --color-input: oklch(0.91 0.02 75);
+  --color-border: oklch(0.88 0.020 72);
+  --color-input: oklch(0.92 0.018 72);
   --color-ring: oklch(0.62 0.18 42);
 
-  --radius-sm: 0.3rem;
+  --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
@@ -41,35 +41,39 @@
 
 /* ── Dark mode ── */
 .dark {
-  --color-background: oklch(0.16 0.015 60);
-  --color-foreground: oklch(0.93 0.01 75);
+  --color-background: oklch(0.14 0.012 55);
+  --color-foreground: oklch(0.93 0.010 75);
 
-  --color-card: oklch(0.20 0.018 60);
-  --color-card-foreground: oklch(0.93 0.01 75);
+  --color-card: oklch(0.19 0.015 58);
+  --color-card-foreground: oklch(0.93 0.010 75);
 
-  --color-primary: oklch(0.68 0.18 42);
-  --color-primary-foreground: oklch(0.1 0.01 60);
+  --color-primary: oklch(0.70 0.18 42);           /* surchargé par ThemeService */
+  --color-primary-foreground: oklch(0.10 0.010 55);
 
-  --color-secondary: oklch(0.26 0.02 65);
-  --color-secondary-foreground: oklch(0.85 0.015 75);
+  --color-secondary: oklch(0.25 0.018 62);
+  --color-secondary-foreground: oklch(0.86 0.012 75);
 
-  --color-muted: oklch(0.24 0.018 62);
-  --color-muted-foreground: oklch(0.62 0.03 68);
+  --color-muted: oklch(0.23 0.015 60);
+  --color-muted-foreground: oklch(0.60 0.028 68);
 
-  --color-accent: oklch(0.30 0.04 70);
-  --color-accent-foreground: oklch(0.90 0.015 75);
+  --color-accent: oklch(0.28 0.035 68);
+  --color-accent-foreground: oklch(0.90 0.012 75);
 
   --color-destructive: oklch(0.55 0.22 27);
   --color-destructive-foreground: oklch(0.97 0 0);
 
-  --color-border: oklch(0.30 0.02 65);
-  --color-input: oklch(0.28 0.018 65);
-  --color-ring: oklch(0.68 0.18 42);
+  --color-border: oklch(0.28 0.018 62);
+  --color-input: oklch(0.26 0.015 62);
+  --color-ring: oklch(0.70 0.18 42);
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
+    /* Transitions douces globales pour le changement de thème */
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
   }
 
   body {
@@ -77,5 +81,13 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Transitions douces sur les éléments interactifs */
+  a,
+  button {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
   }
 }

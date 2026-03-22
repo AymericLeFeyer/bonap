@@ -23,7 +23,7 @@ export function Layout() {
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+          "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 md:hidden",
           mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
         onClick={closeMobile}
@@ -53,19 +53,24 @@ export function Layout() {
           collapsed && "md:ml-16",
           // Mobile: no margin
           "ml-0",
-          "p-4 md:p-6",
+          "px-4 py-6 md:px-8 md:py-8",
         )}
       >
-        {/* Mobile burger button */}
-        <div className="mb-4 flex items-center md:hidden">
+        {/* Mobile header with burger */}
+        <div className="mb-6 flex items-center gap-3 md:hidden">
           <button
             type="button"
             onClick={openMobile}
-            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             aria-label="Ouvrir le menu"
           >
             <Menu className="h-5 w-5" />
           </button>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-extrabold tracking-tight">
+              Bon<span className="text-primary">ap</span>
+            </span>
+          </div>
         </div>
 
         <Outlet />
