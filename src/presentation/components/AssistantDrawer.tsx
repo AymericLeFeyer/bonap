@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Sparkles, X, Send, Trash2, Loader2, Bot, User, Wrench } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 import { Button } from "./ui/button.tsx"
 import { Input } from "./ui/input.tsx"
 import { useAssistant } from "../hooks/useAssistant.ts"
@@ -133,8 +134,28 @@ export function AssistantDrawer() {
                 "max-w-[80%] rounded-lg px-3 py-2 text-sm leading-relaxed",
                 msg.role === "user" ? "bg-primary text-primary-foreground" : msg.role === "tool" ? "bg-muted/50 text-muted-foreground italic text-xs" : "bg-muted",
               )}>
-                {msg.content || (msg.isStreaming ? <span className="inline-block w-4 h-3 animate-pulse bg-current rounded opacity-60" /> : null)}
-                {msg.isStreaming && msg.content && <span className="ml-0.5 inline-block w-1.5 h-3.5 animate-pulse bg-current rounded opacity-60 align-middle" />}
+                {msg.role === "assistant" && msg.content ? (
+                  <>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="mb-1 ml-3 list-disc space-y-0.5">{children}</ul>,
+                        ol: ({ children }) => <ol className="mb-1 ml-3 list-decimal space-y-0.5">{children}</ol>,
+                        li: ({ children }) => <li>{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        code: ({ children }) => <code className="rounded bg-black/10 px-1 font-mono text-xs">{children}</code>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                    {msg.isStreaming && <span className="ml-0.5 inline-block w-1.5 h-3.5 animate-pulse bg-current rounded opacity-60 align-middle" />}
+                  </>
+                ) : (
+                  <>
+                    {msg.content || (msg.isStreaming ? <span className="inline-block w-4 h-3 animate-pulse bg-current rounded opacity-60" /> : null)}
+                    {msg.isStreaming && msg.content && <span className="ml-0.5 inline-block w-1.5 h-3.5 animate-pulse bg-current rounded opacity-60 align-middle" />}
+                  </>
+                )}
               </div>
             </div>
           ))}
