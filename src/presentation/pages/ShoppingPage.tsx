@@ -86,8 +86,8 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
           {name}
         </span>
         {item.recipeNames && item.recipeNames.length > 0 && (
-          <span className="ml-1 text-xs text-muted-foreground">
-            ({item.recipeNames.join(", ")})
+          <span className="block text-xs text-muted-foreground">
+            {item.recipeNames.join(", ")}
           </span>
         )}
       </span>
