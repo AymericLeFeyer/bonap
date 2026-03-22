@@ -67,12 +67,12 @@ export function useShopping() {
         position: existing.position,
         isFood: existing.isFood,
         note: existing.note,
-        quantity: (existing.quantity ?? 1) + (quantity ?? 1),
+        quantity: (existing.quantity ?? 1) + 1,
         labelId: existing.label?.id,
         display: existing.display,
       })
     } else {
-      await addItemUseCase.execute(list.id, note, quantity, labelId)
+      await addItemUseCase.execute(list.id, note, 1, labelId)
     }
     const result = await getShoppingItemsUseCase.execute()
     setList(result.list)
@@ -314,7 +314,7 @@ export function useShopping() {
         position: existing.position,
         isFood: existing.isFood,
         note: existing.note,
-        quantity: (existing.quantity ?? 1) + (item.quantity ?? 1),
+        quantity: (existing.quantity ?? 1) + 1,
         labelId: existing.label?.id,
         display: existing.display,
       })
@@ -323,7 +323,7 @@ export function useShopping() {
         shoppingListId: list.id,
         note: item.note,
         isFood: item.isFood,
-        quantity: item.quantity ?? 1,
+        quantity: 1,
         labelId: item.label?.id,
       })
     }
