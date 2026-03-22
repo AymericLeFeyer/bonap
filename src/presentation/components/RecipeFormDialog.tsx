@@ -29,12 +29,20 @@ function buildInitialIngredients(recipe?: MealieRecipe): RecipeFormIngredient[] 
   if (!recipe?.recipeIngredient?.length) {
     return [{ quantity: "", unit: "", food: "", note: "" }]
   }
-  return recipe.recipeIngredient.map((ing) => ({
-    quantity: ing.quantity != null ? String(ing.quantity) : "",
-    unit: ing.unit?.name ?? "",
-    food: ing.food?.name ?? "",
-    note: ing.note ?? "",
-  }))
+  return recipe.recipeIngredient.map((ing) => {
+    // We save ingredients as plain text notes (to avoid Mealie's UUID requirement on food/unit).
+    // If structured food/unit data exists (e.g. recipe imported via Mealie), flatten into note.
+    if (ing.food?.name || ing.unit?.name) {
+      const parts = [
+        ing.quantity != null ? String(ing.quantity) : "",
+        ing.unit?.name ?? "",
+        ing.food?.name ?? "",
+        ing.note ?? "",
+      ].filter(Boolean)
+      return { quantity: "", unit: "", food: "", note: parts.join(" ") }
+    }
+    return { quantity: "", unit: "", food: "", note: ing.note ?? "" }
+  })
 }
 
 function buildInitialInstructions(recipe?: MealieRecipe): RecipeFormInstruction[] {
@@ -340,39 +348,12 @@ export function RecipeFormDialog({
                   <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                   <Input
                     type="text"
-                    placeholder="Qté"
-                    value={ing.quantity}
-                    onChange={(e) => updateIngredient(index, "quantity", e.target.value)}
-                    disabled={loading}
-                    className="w-16 shrink-0"
-                    aria-label={`Quantité ingrédient ${index + 1}`}
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Unité"
-                    value={ing.unit}
-                    onChange={(e) => updateIngredient(index, "unit", e.target.value)}
-                    disabled={loading}
-                    className="w-24 shrink-0"
-                    aria-label={`Unité ingrédient ${index + 1}`}
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Ingrédient"
-                    value={ing.food}
-                    onChange={(e) => updateIngredient(index, "food", e.target.value)}
-                    disabled={loading}
-                    className="flex-1 min-w-0"
-                    aria-label={`Nom ingrédient ${index + 1}`}
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Note"
+                    placeholder="ex : 200 g de farine tamisée"
                     value={ing.note}
                     onChange={(e) => updateIngredient(index, "note", e.target.value)}
                     disabled={loading}
-                    className="w-28 shrink-0"
-                    aria-label={`Note ingrédient ${index + 1}`}
+                    className="flex-1 min-w-0"
+                    aria-label={`Ingrédient ${index + 1}`}
                   />
                   <Button
                     type="button"

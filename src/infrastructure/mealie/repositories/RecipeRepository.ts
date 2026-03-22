@@ -83,12 +83,11 @@ export class RecipeRepository implements IRecipeRepository {
       description: data.description || undefined,
       prepTime: this.minutesToIso(data.prepTime),
       recipeCategory: data.categories,
-      recipeIngredient: data.recipeIngredient.map((ing) => ({
-        quantity: ing.quantity ? parseFloat(ing.quantity) : undefined,
-        unit: ing.unit ? { name: ing.unit } : undefined,
-        food: ing.food ? { name: ing.food } : undefined,
-        note: ing.note || undefined,
-      })),
+      recipeIngredient: data.recipeIngredient
+        .filter((ing) => ing.quantity || ing.unit || ing.food || ing.note)
+        .map((ing) => ({
+          note: [ing.quantity, ing.unit, ing.food, ing.note].filter(Boolean).join(" "),
+        })),
       recipeInstructions: data.recipeInstructions
         .filter((step) => step.text.trim())
         .map((step, i) => ({
