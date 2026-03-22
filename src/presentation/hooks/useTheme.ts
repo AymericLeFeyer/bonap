@@ -1,56 +1,45 @@
 import { useCallback, useEffect, useState } from "react"
+import { themeService } from "../../infrastructure/theme/ThemeService.ts"
+import type { Theme, AccentColor } from "../../infrastructure/theme/ThemeService.ts"
 
-export type Theme = "light" | "dark" | "system"
-
-const STORAGE_KEY = "bonap-theme"
+export type { Theme, AccentColor }
 
 function getSystemPreference(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
-function applyTheme(theme: Theme): void {
-  const resolved = theme === "system" ? getSystemPreference() : theme
-  document.documentElement.classList.toggle("dark", resolved === "dark")
-}
-
-function getStoredTheme(): Theme {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === "light" || stored === "dark" || stored === "system") return stored
-  } catch (_) {}
-  return "system"
-}
-
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(getStoredTheme)
+  const [theme, setThemeState] = useState<Theme>(() => themeService.getTheme())
+  const [accentColor, setAccentColorState] = useState<AccentColor>(() => themeService.getAccentColor())
 
-  // Apply on mount and listen to system preference changes when theme === 'system'
+  // Appliquer le thème à chaque changement et écouter les changements système
   useEffect(() => {
-    applyTheme(theme)
+    themeService.apply()
 
     if (theme !== "system") return
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)")
-    const handler = () => applyTheme("system")
+    const handler = () => themeService.apply()
     mq.addEventListener("change", handler)
     return () => mq.removeEventListener("change", handler)
-  }, [theme])
+  }, [theme, accentColor])
 
   const setTheme = useCallback((next: Theme) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, next)
-    } catch (_) {}
+    themeService.setTheme(next)
     setThemeState(next)
   }, [])
 
+  const setAccentColor = useCallback((color: AccentColor) => {
+    themeService.setAccentColor(color)
+    setAccentColorState(color)
+  }, [])
+
+  // Conserver toggleTheme pour compatibilité (Sidebar l'utilise encore mais on va le retirer)
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
-      // Simple toggle light ↔ dark (bypassing system)
       const resolved = prev === "system" ? getSystemPreference() : prev
       const next: Theme = resolved === "dark" ? "light" : "dark"
-      try {
-        localStorage.setItem(STORAGE_KEY, next)
-      } catch (_) {}
+      themeService.setTheme(next)
       return next
     })
   }, [])
@@ -58,5 +47,5 @@ export function useTheme() {
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? getSystemPreference() : theme
 
-  return { theme, resolvedTheme, setTheme, toggleTheme }
+  return { theme, resolvedTheme, setTheme, toggleTheme, accentColor, setAccentColor }
 }
