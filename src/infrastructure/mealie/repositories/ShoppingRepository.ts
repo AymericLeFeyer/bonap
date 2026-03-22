@@ -65,9 +65,9 @@ export class ShoppingRepository implements IShoppingRepository {
   async getItems(listId: string): Promise<{ items: ShoppingItem[]; labels: ShoppingLabel[] }> {
     const [raw, recipesRaw] = await Promise.all([
       mealieApiClient.get<MealieShoppingList>(`/api/households/shopping/lists/${listId}`),
-      mealieApiClient.get<{ items: Array<{ id: string; name: string }> }>("/api/recipes?page=1&perPage=-1").catch(() => ({ items: [] })),
+      mealieApiClient.get<{ items?: Array<{ id: string; name: string }> }>("/api/recipes?page=1&perPage=500").catch(() => ({ items: [] })),
     ])
-    const recipeById = new Map(recipesRaw.items.map((r) => [r.id, r.name]))
+    const recipeById = new Map((recipesRaw.items ?? []).map((r) => [r.id, r.name]))
     const labels: ShoppingLabel[] = (raw.labelSettings ?? []).map((s) => ({
       id: s.label.id,
       name: s.label.name,
