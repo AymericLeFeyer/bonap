@@ -1,6 +1,5 @@
 import { useState, useRef } from "react"
 import {
-  ShoppingCart,
   Loader2,
   AlertCircle,
   Plus,
@@ -65,7 +64,7 @@ function LabelDropdown({ labels, value, onChange, className }: LabelDropdownProp
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((p) => !p) }}
-        className="flex h-6 items-center gap-1 rounded-full bg-muted px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="flex h-6 items-center gap-1 rounded-full bg-muted px-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
       >
         {selectedLabel ? (
           <>
@@ -79,11 +78,11 @@ function LabelDropdown({ labels, value, onChange, className }: LabelDropdownProp
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[130px] rounded-xl border border-border bg-card shadow-warm-md overflow-hidden">
+        <div className="absolute right-0 top-full z-50 mt-1 min-w-[130px] rounded-[var(--radius-xl)] border border-border/50 bg-card shadow-warm-md overflow-hidden">
           <button
             type="button"
             onClick={() => handleSelect(undefined)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-accent transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-secondary transition-colors"
           >
             <span className="h-2 w-2 rounded-full bg-border" />
             Sans catégorie
@@ -93,7 +92,7 @@ function LabelDropdown({ labels, value, onChange, className }: LabelDropdownProp
               key={l.id}
               type="button"
               onClick={() => handleSelect(l.id)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors border-t border-border/30"
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-secondary transition-colors border-t border-border/30"
             >
               <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: labelColor(l.name) }} />
               <span className="truncate">{l.name}</span>
@@ -132,7 +131,7 @@ function FormLabelSelect({ labels, value, onChange, disabled }: FormLabelSelectP
         type="button"
         onClick={() => !disabled && setOpen((p) => !p)}
         disabled={disabled}
-        className="flex h-8 items-center gap-1.5 rounded-xl border border-input bg-background px-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+        className="flex h-8 items-center gap-1.5 rounded-[var(--radius-lg)] border border-input bg-card px-2.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
       >
         {selected ? (
           <>
@@ -146,11 +145,11 @@ function FormLabelSelect({ labels, value, onChange, disabled }: FormLabelSelectP
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-border bg-card shadow-warm-md overflow-hidden">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[140px] rounded-[var(--radius-xl)] border border-border/50 bg-card shadow-warm-md overflow-hidden">
           <button
             type="button"
             onClick={() => { onChange(""); setOpen(false) }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-accent transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-secondary transition-colors"
           >
             <span className="h-2 w-2 rounded-full bg-border" />
             Catégorie
@@ -160,7 +159,7 @@ function FormLabelSelect({ labels, value, onChange, disabled }: FormLabelSelectP
               key={l.id}
               type="button"
               onClick={() => { onChange(l.id); setOpen(false) }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors border-t border-border/30"
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-secondary transition-colors border-t border-border/30"
             >
               <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: labelColor(l.name) }} />
               <span className="truncate">{l.name}</span>
@@ -189,7 +188,7 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
   const qty = item.quantity ?? 0
 
   return (
-    <li className="flex min-h-[48px] items-center gap-3 border-b border-border/25 px-4 last:border-0 hover:bg-muted/20 transition-colors group">
+    <li className="flex min-h-[48px] items-center gap-3 border-b border-border/25 px-4 last:border-0 hover:bg-secondary/30 transition-colors group">
       {/* Checkbox custom */}
       <button
         type="button"
@@ -199,7 +198,7 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
           "shrink-0 h-5 w-5 rounded-full border-2 transition-all flex items-center justify-center",
           item.checked
             ? "bg-primary border-primary"
-            : "border-border hover:border-primary/60",
+            : "border-border hover:border-primary/50",
         )}
       >
         {item.checked && <Check className="h-3 w-3 text-primary-foreground stroke-[3]" />}
@@ -315,7 +314,7 @@ function HabituelItemRow({ item, labels, cartItems, onAddToCart, onDelete, onUpd
   }
 
   return (
-    <li className="flex min-h-[48px] items-center gap-3 border-b border-border/25 px-4 last:border-0 hover:bg-muted/20 transition-colors group">
+    <li className="flex min-h-[48px] items-center gap-3 border-b border-border/25 px-4 last:border-0 hover:bg-secondary/30 transition-colors group">
       {!editing && (
         <button
           type="button"
@@ -408,12 +407,15 @@ interface GroupHeaderProps {
 function GroupHeader({ label, isFirst }: GroupHeaderProps) {
   const isNone = label === "Sans catégorie"
   return (
-    <div className={cn("flex items-center gap-2 px-4 py-1.5 bg-secondary/40", isFirst && "rounded-t-2xl")}>
+    <div className={cn(
+      "flex items-center gap-2 px-4 py-1.5 bg-secondary/50",
+      isFirst && "rounded-t-[var(--radius-xl)]",
+    )}>
       <span
-        className="h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: isNone ? undefined : labelColor(label) }}
+        className="h-[7px] w-[7px] rounded-full shrink-0"
+        style={{ backgroundColor: isNone ? "oklch(0.80 0.014 68)" : labelColor(label) }}
       />
-      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
         {label}
       </span>
     </div>
@@ -655,20 +657,19 @@ export function ShoppingPage() {
   return (
     <div className="flex flex-col gap-6 pb-8">
       {/* ── En-tête ── */}
-      <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur md:-mx-8 md:px-8">
+      <div className="sticky top-0 z-20 -mx-4 md:-mx-7 bg-background/95 px-4 md:px-7 pb-3 pt-5 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-              <ShoppingCart className="h-4 w-4 text-primary" />
-            </div>
-            <h1 className="font-heading text-xl font-bold tracking-tight">Liste de courses</h1>
-          </div>
+          <h1 className="font-heading text-2xl font-bold">Liste de courses</h1>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={reload}
               disabled={loading}
-              className="rounded-xl p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)]",
+                "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                "transition-colors disabled:opacity-50",
+              )}
               aria-label="Rafraîchir"
             >
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
@@ -677,7 +678,13 @@ export function ShoppingPage() {
               href={`${(import.meta.env.VITE_MEALIE_URL as string ?? "").replace(/\/+$/, "")}/group/data/labels`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors"
+              className={cn(
+                "flex items-center gap-1.5 rounded-[var(--radius-lg)]",
+                "border border-border bg-card px-2.5 py-1.5",
+                "text-xs font-semibold text-muted-foreground",
+                "shadow-subtle hover:bg-secondary hover:text-foreground",
+                "transition-all duration-150",
+              )}
               title="Gérer les catégories"
             >
               <Tag className="h-3.5 w-3.5" />
@@ -689,7 +696,7 @@ export function ShoppingPage() {
 
       {/* Erreur */}
       {error && (
-        <div className="flex items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+        <div className="flex items-center gap-3 rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-4 text-destructive">
           <AlertCircle className="h-5 w-5 shrink-0" />
           <span className="text-sm">{error}</span>
         </div>
@@ -697,7 +704,7 @@ export function ShoppingPage() {
 
       {loading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" />
         </div>
       )}
 
@@ -736,7 +743,7 @@ export function ShoppingPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/60 bg-card shadow-sm">
+            <div className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle">
               {/* Barre de progression */}
               {totalCount > 0 && (
                 <div className="px-4 pt-3 pb-2">
@@ -763,9 +770,9 @@ export function ShoppingPage() {
               />
 
               {/* Formulaire d'ajout */}
-              <div className="border-t border-border/50 bg-secondary/20 p-3 rounded-b-2xl overflow-hidden">
+              <div className="border-t border-border/40 bg-secondary/20 p-3 rounded-b-[var(--radius-2xl)] overflow-hidden">
                 <form onSubmit={(e) => void handleAddItem(e)} className="flex gap-2">
-                  <div className="flex shrink-0 items-center rounded-xl border border-input bg-background overflow-hidden">
+                  <div className="flex shrink-0 items-center rounded-[var(--radius-lg)] border border-input bg-card overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setNewItemQty((q) => Math.max(1, q - 1))}
@@ -789,7 +796,7 @@ export function ShoppingPage() {
                     value={newItemNote}
                     onChange={(e) => setNewItemNote(e.target.value)}
                     placeholder="Ajouter un article..."
-                    className="h-8 min-w-0 flex-1 text-sm rounded-xl"
+                    className="h-8 min-w-0 flex-1 text-sm"
                     disabled={addingItem}
                   />
                   {labels.length > 0 && (
@@ -803,7 +810,7 @@ export function ShoppingPage() {
                   <Button
                     type="submit"
                     size="sm"
-                    className="h-8 shrink-0 rounded-xl"
+                    className="h-8 shrink-0"
                     disabled={addingItem || !newItemNote.trim()}
                   >
                     {addingItem ? (
@@ -839,7 +846,7 @@ export function ShoppingPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-border/60 bg-card shadow-sm">
+            <div className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle">
               <GroupedHabituels
                 items={habituelsItems}
                 cartItems={items}
@@ -851,14 +858,14 @@ export function ShoppingPage() {
               />
 
               {/* Formulaire d'ajout habituel */}
-              <div className="border-t border-border/50 bg-secondary/20 p-3 rounded-b-2xl overflow-hidden">
+              <div className="border-t border-border/40 bg-secondary/20 p-3 rounded-b-[var(--radius-2xl)] overflow-hidden">
                 <form onSubmit={(e) => void handleAddHabituel(e)} className="flex gap-2">
                   <Input
                     ref={newHabituelInputRef}
                     value={newHabituelNote}
                     onChange={(e) => setNewHabituelNote(e.target.value)}
                     placeholder="Ajouter un habituel..."
-                    className="h-8 flex-1 text-sm rounded-xl"
+                    className="h-8 flex-1 text-sm"
                     disabled={addingHabituel}
                   />
                   {labels.length > 0 && (
@@ -872,7 +879,7 @@ export function ShoppingPage() {
                   <Button
                     type="submit"
                     size="sm"
-                    className="h-8 shrink-0 rounded-xl"
+                    className="h-8 shrink-0"
                     disabled={addingHabituel || !newHabituelNote.trim()}
                   >
                     {addingHabituel ? (

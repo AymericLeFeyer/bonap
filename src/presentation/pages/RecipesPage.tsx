@@ -11,12 +11,14 @@ import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
-import { Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw, Plus, PenLine, ExternalLink, Clock } from "lucide-react"
+import {
+  Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw,
+  Plus, PenLine, ExternalLink, Clock,
+} from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getCurrentSeason, getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
 import { getRecipesUseCase, getRecipeUseCase } from "../../infrastructure/container.ts"
-import { SeasonBadge } from "../components/SeasonBadge.tsx"
 import { RecipeIngredientsList } from "../components/RecipeIngredientsList.tsx"
 import { RecipeInstructionsList } from "../components/RecipeInstructionsList.tsx"
 import { cn } from "../../lib/utils.ts"
@@ -174,16 +176,28 @@ export function RecipesPage() {
       })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* ── En-tête sticky ── */}
-      <div className="sticky top-0 z-10 -mx-4 -mt-4 md:-mx-8 md:-mt-8 bg-background/95 backdrop-blur px-4 pt-4 md:px-8 md:pt-8 pb-4 border-b border-border/60">
-
+      <div
+        className={cn(
+          "sticky top-0 z-10 -mx-4 -mt-5 md:-mx-7 md:-mt-7",
+          "bg-background/95 backdrop-blur-md",
+          "px-4 pt-5 md:px-7 md:pt-6 pb-4",
+          "border-b border-border/40",
+        )}
+      >
         {/* Ligne titre */}
         <div className="flex items-center justify-between mb-4 gap-3">
           <div className="flex items-baseline gap-2.5">
-            <h1 className="font-heading text-2xl font-bold tracking-tight">Mes recettes</h1>
+            <h1 className="font-heading text-2xl font-bold">Mes recettes</h1>
             {filteredRecipes.length > 0 && (
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5",
+                  "text-[11px] font-bold text-muted-foreground",
+                  "bg-secondary",
+                )}
+              >
                 {filteredRecipes.length}
               </span>
             )}
@@ -195,9 +209,16 @@ export function RecipesPage() {
               href={`${(import.meta.env.VITE_MEALIE_URL as string ?? "").replace(/\/+$/, "")}/g/home/r/create/url`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-[var(--radius-lg)]",
+                "border border-border bg-card px-3 py-1.5",
+                "text-sm font-semibold text-muted-foreground",
+                "shadow-subtle",
+                "hover:bg-secondary hover:text-foreground hover:border-border",
+                "transition-all duration-150",
+              )}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Importer</span>
             </a>
 
@@ -205,32 +226,32 @@ export function RecipesPage() {
             <Button
               size="sm"
               onClick={() => setNewRecipeDialogOpen(true)}
-              className="gap-1.5 rounded-xl"
+              className="gap-1.5"
             >
-              <PenLine className="h-4 w-4" />
+              <PenLine className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Nouvelle recette</span>
             </Button>
           </div>
         </div>
 
         {/* Barre de filtres */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {/* Recherche */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <Input
               placeholder="Rechercher une recette..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-9 rounded-xl"
+              className="pl-9 pr-9"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -245,7 +266,7 @@ export function RecipesPage() {
                   <Badge
                     key={season}
                     variant={active ? "default" : "outline"}
-                    className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0 rounded-full"
+                    className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0"
                     onClick={() => toggleSeason(season)}
                   >
                     {SEASON_LABELS[season]}
@@ -253,7 +274,7 @@ export function RecipesPage() {
                 )
               })}
 
-              <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+              <span className="flex items-center px-0.5 text-border/80 select-none shrink-0 text-sm">·</span>
 
               {/* Temps */}
               {TIME_OPTIONS.filter((opt) => opt.value !== undefined).map((opt) => {
@@ -262,7 +283,7 @@ export function RecipesPage() {
                   <Badge
                     key={opt.label}
                     variant={active ? "default" : "outline"}
-                    className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0 rounded-full"
+                    className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0"
                     onClick={() => handleTimeFilter(opt.value)}
                   >
                     {opt.label}
@@ -273,7 +294,7 @@ export function RecipesPage() {
               {/* Sans ingrédients */}
               <Badge
                 variant={noIngredients ? "default" : "outline"}
-                className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0 rounded-full"
+                className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0"
                 onClick={() => setNoIngredients((prev) => !prev)}
               >
                 Sans ingrédients
@@ -282,14 +303,14 @@ export function RecipesPage() {
               {/* Catégories */}
               {categories.length > 0 && (
                 <>
-                  <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+                  <span className="flex items-center px-0.5 text-border/80 select-none shrink-0 text-sm">·</span>
                   {categories.map((cat) => {
                     const active = selectedCategories.includes(cat.slug)
                     return (
                       <Badge
                         key={cat.id}
                         variant={active ? "default" : "outline"}
-                        className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0 rounded-full"
+                        className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0"
                         onClick={() => toggleCategory(cat.slug)}
                       >
                         {cat.name}
@@ -302,14 +323,14 @@ export function RecipesPage() {
               {/* Tags */}
               {tags.filter((t) => !isSeasonTag(t)).length > 0 && (
                 <>
-                  <span className="flex items-center px-0.5 text-border select-none shrink-0">·</span>
+                  <span className="flex items-center px-0.5 text-border/80 select-none shrink-0 text-sm">·</span>
                   {tags.filter((t) => !isSeasonTag(t)).map((tag) => {
                     const active = selectedTags.includes(tag.slug)
                     return (
                       <Badge
                         key={tag.id}
                         variant={active ? "secondary" : "outline"}
-                        className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0 rounded-full"
+                        className="cursor-pointer select-none transition-all whitespace-nowrap shrink-0"
                         onClick={() => toggleTag(tag.slug)}
                       >
                         {tag.name}
@@ -325,7 +346,11 @@ export function RecipesPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors border-l border-border pl-2 ml-1"
+                className={cn(
+                  "shrink-0 flex items-center gap-1",
+                  "text-xs text-muted-foreground hover:text-foreground",
+                  "transition-colors border-l border-border/60 pl-2 ml-1",
+                )}
               >
                 <RotateCcw className="h-3 w-3" />
                 <span className="hidden sm:inline">Effacer</span>
@@ -337,8 +362,8 @@ export function RecipesPage() {
 
       {/* Erreur */}
       {error && (
-        <div className="flex flex-col items-center gap-2 py-24 text-destructive">
-          <AlertCircle className="h-8 w-8" />
+        <div className="flex items-center gap-3 rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5 shrink-0" />
           <p className="text-sm">{error}</p>
         </div>
       )}
@@ -346,15 +371,18 @@ export function RecipesPage() {
       {/* État vide */}
       {!loading && !error && filteredRecipes.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-24 text-muted-foreground">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary">
-            <UtensilsCrossed className="h-7 w-7" />
+          <div className={cn(
+            "flex h-16 w-16 items-center justify-center rounded-[var(--radius-2xl)]",
+            "bg-secondary",
+          )}>
+            <UtensilsCrossed className="h-7 w-7 text-muted-foreground/60" />
           </div>
-          <p className="text-sm font-medium">Aucune recette trouvée</p>
+          <p className="text-sm font-semibold">Aucune recette trouvée</p>
           {hasActiveFilters && (
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-1 text-sm text-primary underline underline-offset-2 hover:opacity-80"
+              className="mt-1 text-sm text-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
             >
               Effacer les filtres
             </button>
@@ -380,7 +408,7 @@ export function RecipesPage() {
 
       {(loading || noIngredientsLoading) && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" />
         </div>
       )}
 
@@ -389,7 +417,11 @@ export function RecipesPage() {
         <>
           {/* Backdrop */}
           <div
-            className={cn("fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] min-h-screen", drawerClosing ? "animate-fade-out" : "animate-fade-in")}
+            className={cn(
+              "fixed inset-0 z-40 min-h-screen",
+              "bg-foreground/15 backdrop-blur-[2px]",
+              drawerClosing ? "animate-fade-out" : "animate-fade-in",
+            )}
             onClick={closeDrawer}
           />
           <RecipeDrawer
@@ -456,15 +488,29 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
   }
 
   return (
-    <div className={cn("fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-card shadow-2xl border-l border-border/60", closing ? "animate-slide-out-right" : "animate-slide-in-right")}>
+    <div
+      className={cn(
+        "fixed inset-y-0 right-0 z-50",
+        "flex w-full max-w-md flex-col",
+        "bg-card border-l border-border/40",
+        "shadow-warm-lg",
+        closing ? "animate-slide-out-right" : "animate-slide-in-right",
+      )}
+    >
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-5 py-4">
-        <span className="font-heading text-base font-bold">Recette</span>
-        <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3.5">
+        <span className="font-heading text-base font-bold tracking-tight">Recette</span>
+        <div className="flex items-center gap-1.5">
           {recipe && (
             <Link
               to={`/recipes/${recipe.slug}`}
-              className="flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              className={cn(
+                "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                "border border-border px-2.5 py-1.5",
+                "text-xs font-semibold text-muted-foreground",
+                "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                "transition-all duration-150",
+              )}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Page complète
@@ -473,46 +519,69 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)]",
+              "text-muted-foreground hover:text-foreground hover:bg-secondary",
+              "transition-colors",
+            )}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Contenu scrollable */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
           </div>
         )}
 
         {recipe && (
-          <article className="space-y-6 pb-8">
+          <article className="space-y-5 pb-8">
             {/* Image */}
-            <img
-              src={`/api/media/recipes/${recipe.id}/images/original.webp`}
-              alt={recipe.name}
-              className="aspect-video w-full object-cover"
-            />
+            <div className="relative">
+              <img
+                src={`/api/media/recipes/${recipe.id}/images/original.webp`}
+                alt={recipe.name}
+                className="aspect-video w-full object-cover"
+              />
+              {/* Dégradé bas pour transition vers le contenu */}
+              <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-card to-transparent" />
+            </div>
 
             <div className="space-y-4 px-5">
               {/* Nom */}
-              <h1 className="font-heading text-xl font-bold leading-snug">{recipe.name}</h1>
+              <h1 className="font-heading text-xl font-bold leading-snug tracking-tight">{recipe.name}</h1>
 
               {/* Temps */}
               {(recipe.prepTime || recipe.cookTime) && (
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  {recipe.prepTime && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />Prép. {formatDuration(recipe.prepTime)}</span>}
-                  {recipe.cookTime && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />Cuisson {formatDuration(recipe.cookTime)}</span>}
+                <div className="flex flex-wrap gap-3">
+                  {recipe.prepTime && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 text-primary/60" />
+                      <span className="font-medium">Prép.</span> {formatDuration(recipe.prepTime)}
+                    </span>
+                  )}
+                  {recipe.cookTime && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 text-primary/60" />
+                      <span className="font-medium">Cuisson</span> {formatDuration(recipe.cookTime)}
+                    </span>
+                  )}
                 </div>
               )}
 
               {/* Toggle catégories */}
               {allCategories.length > 0 && (
-                <div className="space-y-2 rounded-xl border border-border/50 p-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Modifier les catégories</p>
+                <div className={cn(
+                  "space-y-2.5 rounded-[var(--radius-xl)]",
+                  "border border-border/50 bg-secondary/30 p-3.5",
+                )}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                    Catégories
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {allCategories.map((cat) => {
                       const active = (recipe.recipeCategory ?? []).some((c) => c.id === cat.id)
@@ -520,7 +589,7 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
                         <Badge
                           key={cat.id}
                           variant={active ? "default" : "outline"}
-                          className="cursor-pointer select-none text-xs"
+                          className="cursor-pointer select-none"
                           onClick={() => void handleToggleCategory(cat)}
                         >
                           {categoriesLoading ? "…" : cat.name}
@@ -532,8 +601,13 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
               )}
 
               {/* Toggle saisons */}
-              <div className="space-y-2 rounded-xl border border-border/50 p-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Modifier les saisons</p>
+              <div className={cn(
+                "space-y-2.5 rounded-[var(--radius-xl)]",
+                "border border-border/50 bg-secondary/30 p-3.5",
+              )}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                  Saisons
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {SEASONS.map((season: Season) => {
                     const active = getRecipeSeasonsFromTags(recipe.tags).includes(season)
@@ -541,7 +615,7 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
                       <Badge
                         key={season}
                         variant={active ? "default" : "outline"}
-                        className="cursor-pointer select-none text-xs"
+                        className="cursor-pointer select-none"
                         onClick={() => void handleToggleSeason(season)}
                       >
                         {seasonsLoading ? "…" : SEASON_LABELS[season]}
@@ -551,6 +625,13 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
                 </div>
               </div>
             </div>
+
+            {/* Séparateur éditorial */}
+            {((recipe.recipeIngredient ?? []).length > 0 || (recipe.recipeInstructions ?? []).length > 0) && (
+              <div className="px-5">
+                <div className="divider-editorial" />
+              </div>
+            )}
 
             {/* Ingrédients */}
             {(recipe.recipeIngredient ?? []).length > 0 && (

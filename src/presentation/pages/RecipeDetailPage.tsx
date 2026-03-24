@@ -18,23 +18,23 @@ import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 function RecipeDetailSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
-      <div className="aspect-video w-full rounded-lg bg-muted" />
+      <div className="aspect-video w-full rounded-[var(--radius-xl)] bg-muted" />
       <div className="space-y-3">
-        <div className="h-8 w-2/3 rounded bg-muted" />
+        <div className="h-8 w-2/3 rounded-[var(--radius-md)] bg-muted" />
         <div className="flex gap-2">
           <div className="h-6 w-20 rounded-full bg-muted" />
           <div className="h-6 w-20 rounded-full bg-muted" />
         </div>
         <div className="flex gap-4">
-          <div className="h-5 w-32 rounded bg-muted" />
-          <div className="h-5 w-32 rounded bg-muted" />
+          <div className="h-5 w-32 rounded-[var(--radius-sm)] bg-muted" />
+          <div className="h-5 w-32 rounded-[var(--radius-sm)] bg-muted" />
         </div>
       </div>
       <div className="space-y-2">
-        <div className="h-6 w-32 rounded bg-muted" />
-        <div className="h-4 w-full rounded bg-muted" />
-        <div className="h-4 w-5/6 rounded bg-muted" />
-        <div className="h-4 w-4/6 rounded bg-muted" />
+        <div className="h-6 w-32 rounded-[var(--radius-sm)] bg-muted" />
+        <div className="h-4 w-full rounded-[var(--radius-sm)] bg-muted" />
+        <div className="h-4 w-5/6 rounded-[var(--radius-sm)] bg-muted" />
+        <div className="h-4 w-4/6 rounded-[var(--radius-sm)] bg-muted" />
       </div>
     </div>
   )
@@ -95,7 +95,7 @@ export function RecipeDetailPage() {
       {loading && <RecipeDetailSkeleton />}
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -111,14 +111,16 @@ export function RecipeDetailPage() {
 
       {recipe && (
         <article className="space-y-6">
-          <img
-            src={`/api/media/recipes/${recipe.id}/images/original.webp`}
-            alt={recipe.name}
-            className="aspect-video w-full rounded-lg object-cover"
-          />
+          <div className="overflow-hidden rounded-[var(--radius-xl)]">
+            <img
+              src={`/api/media/recipes/${recipe.id}/images/original.webp`}
+              alt={recipe.name}
+              className="aspect-video w-full object-cover"
+            />
+          </div>
 
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold">{recipe.name}</h1>
+            <h1 className="font-heading text-2xl font-bold leading-snug tracking-tight">{recipe.name}</h1>
 
             {allCategories.length > 0 && (
               <div className="flex flex-wrap gap-1.5">

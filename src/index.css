@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wdth,wght@9..144,75..125,400..900&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wdth,wght,ital@9..144,75..125,100..900,0..1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap');
 @import "tailwindcss";
 
 /* Tailwind v4 : faire répondre dark: à la classe .dark plutôt qu'à prefers-color-scheme */
@@ -9,71 +9,86 @@
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Fraunces", ui-serif, Georgia, serif;
 
-  /* ── Palette chaude food-friendly (light) ── */
-  --color-background: oklch(0.97 0.012 72);
-  --color-foreground: oklch(0.16 0.025 58);
+  /* ── Palette food-editorial (light) ── */
+  /* Fond : parchemin chaud, légèrement texturé */
+  --color-background: oklch(0.975 0.010 72);
+  --color-foreground: oklch(0.15 0.028 50);
 
-  --color-card: oklch(1 0.006 72);
-  --color-card-foreground: oklch(0.16 0.025 58);
+  /* Card : blanc cassé légèrement plus froid que le fond */
+  --color-card: oklch(1 0.004 80);
+  --color-card-foreground: oklch(0.15 0.028 50);
 
-  --color-primary: oklch(0.62 0.18 42);          /* orange terracotta — surchargé par ThemeService */
-  --color-primary-foreground: oklch(0.99 0 0);
+  /* Primary : terracotta profond — couleur signature */
+  --color-primary: oklch(0.58 0.175 38);
+  --color-primary-foreground: oklch(0.99 0.003 80);
 
-  --color-secondary: oklch(0.94 0.022 76);        /* beige chaud */
-  --color-secondary-foreground: oklch(0.30 0.04 60);
+  /* Secondary : beige sable */
+  --color-secondary: oklch(0.94 0.018 75);
+  --color-secondary-foreground: oklch(0.28 0.035 55);
 
-  --color-muted: oklch(0.93 0.016 74);
-  --color-muted-foreground: oklch(0.52 0.030 62);
+  /* Muted : beige plus neutre */
+  --color-muted: oklch(0.92 0.012 72);
+  --color-muted-foreground: oklch(0.50 0.028 60);
 
-  --color-accent: oklch(0.91 0.055 82);            /* ambre doux */
-  --color-accent-foreground: oklch(0.22 0.04 60);
+  /* Accent : ambre doré */
+  --color-accent: oklch(0.90 0.060 80);
+  --color-accent-foreground: oklch(0.20 0.040 55);
 
-  --color-destructive: oklch(0.577 0.245 27.325);
+  /* Destructive */
+  --color-destructive: oklch(0.56 0.230 25);
   --color-destructive-foreground: oklch(0.99 0 0);
 
-  --color-border: oklch(0.89 0.016 70);
-  --color-input: oklch(0.93 0.014 72);
-  --color-ring: oklch(0.62 0.18 42);
+  /* Border / Input / Ring */
+  --color-border: oklch(0.88 0.014 68);
+  --color-input: oklch(0.90 0.010 70);
+  --color-ring: oklch(0.58 0.175 38);
 
+  /* ── Radius — plus généreux et cohérent ── */
+  --radius-xs: 0.375rem;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
-  --radius-2xl: 1.75rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-full: 9999px;
+
+  /* ── Spacing ── */
+  --spacing-section: 1.5rem;
 }
 
 /* ── Dark mode ── */
 .dark {
-  --color-background: oklch(0.13 0.014 52);
-  --color-foreground: oklch(0.93 0.010 75);
+  --color-background: oklch(0.120 0.018 48);
+  --color-foreground: oklch(0.94 0.008 75);
 
-  --color-card: oklch(0.17 0.016 55);
-  --color-card-foreground: oklch(0.93 0.010 75);
+  --color-card: oklch(0.165 0.018 50);
+  --color-card-foreground: oklch(0.94 0.008 75);
 
-  --color-primary: oklch(0.70 0.18 42);           /* surchargé par ThemeService */
-  --color-primary-foreground: oklch(0.10 0.010 55);
+  --color-primary: oklch(0.66 0.175 38);
+  --color-primary-foreground: oklch(0.10 0.012 50);
 
-  --color-secondary: oklch(0.23 0.018 58);
-  --color-secondary-foreground: oklch(0.86 0.012 75);
+  --color-secondary: oklch(0.215 0.018 55);
+  --color-secondary-foreground: oklch(0.88 0.010 75);
 
-  --color-muted: oklch(0.22 0.015 57);
-  --color-muted-foreground: oklch(0.60 0.025 65);
+  --color-muted: oklch(0.200 0.014 54);
+  --color-muted-foreground: oklch(0.58 0.022 64);
 
-  --color-accent: oklch(0.26 0.030 64);
-  --color-accent-foreground: oklch(0.90 0.012 75);
+  --color-accent: oklch(0.240 0.030 60);
+  --color-accent-foreground: oklch(0.92 0.010 75);
 
-  --color-destructive: oklch(0.55 0.22 27);
+  --color-destructive: oklch(0.52 0.210 25);
   --color-destructive-foreground: oklch(0.97 0 0);
 
-  --color-border: oklch(0.28 0.016 58);
-  --color-input: oklch(0.25 0.014 58);
-  --color-ring: oklch(0.70 0.18 42);
+  --color-border: oklch(0.260 0.016 55);
+  --color-input: oklch(0.230 0.014 54);
+  --color-ring: oklch(0.66 0.175 38);
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    /* Transitions douces globales pour le changement de thème */
+    font-size: 15px;
     transition:
       background-color 0.25s ease,
       color 0.25s ease;
@@ -84,35 +99,54 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
   }
 
-  /* Transitions douces sur les éléments interactifs */
-  a,
-  button {
+  /* Heading : petites capitales et chasse légèrement condensée */
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+    font-feature-settings: "ss01", "ss03";
+    letter-spacing: -0.02em;
+  }
+
+  a, button {
     transition-property: color, background-color, border-color, box-shadow, transform, opacity;
     transition-duration: 150ms;
-    transition-timing-function: ease;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Focus visible : anneau fin et coloré */
+  :focus-visible {
+    outline: 2px solid oklch(0.58 0.175 38 / 0.6);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 }
 
+/* ── Keyframes ── */
 @keyframes slide-in-from-right {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-out-to-right {
-  from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
 }
 
 @keyframes fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @layer utilities {
@@ -128,27 +162,95 @@
     display: none;
   }
 
+  /* Scrollbar fine et discrète */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.80 0.016 70) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(0.80 0.016 70);
+    border-radius: 9999px;
+  }
+
+  /* Animations */
   .animate-slide-in-right {
-    animation: slide-in-from-right 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: slide-in-from-right 0.30s cubic-bezier(0.22, 0.68, 0, 1.2) both;
   }
 
   .animate-slide-out-right {
-    animation: slide-out-to-right 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: slide-out-to-right 0.22s cubic-bezier(0.4, 0, 1, 1) both;
   }
 
   .animate-fade-in {
-    animation: fade-in 0.2s ease both;
+    animation: fade-in 0.20s ease both;
   }
 
   .animate-fade-out {
-    animation: fade-out 0.2s ease both;
+    animation: fade-out 0.18s ease both;
   }
 
-  /* Ombre chaude subtile */
-  .shadow-warm {
-    box-shadow: 0 2px 8px -2px oklch(0.62 0.18 42 / 0.12), 0 1px 3px -1px oklch(0 0 0 / 0.06);
+  .animate-scale-in {
+    animation: scale-in 0.18s ease both;
   }
+
+  /* ── Ombres éditoriales ── */
+  /* Ombre warm légère — pour les cartes au repos */
+  .shadow-warm {
+    box-shadow:
+      0 1px 2px oklch(0 0 0 / 0.04),
+      0 2px 8px -2px oklch(0.58 0.175 38 / 0.10);
+  }
+
+  /* Ombre warm medium — pour hover / focus */
   .shadow-warm-md {
-    box-shadow: 0 4px 16px -4px oklch(0.62 0.18 42 / 0.16), 0 2px 6px -2px oklch(0 0 0 / 0.08);
+    box-shadow:
+      0 2px 4px oklch(0 0 0 / 0.06),
+      0 6px 20px -4px oklch(0.58 0.175 38 / 0.18),
+      0 1px 3px oklch(0 0 0 / 0.04);
+  }
+
+  /* Ombre warm forte — pour les drawers, modals */
+  .shadow-warm-lg {
+    box-shadow:
+      0 4px 8px oklch(0 0 0 / 0.08),
+      0 16px 48px -8px oklch(0.58 0.175 38 / 0.20),
+      0 2px 6px oklch(0 0 0 / 0.06);
+  }
+
+  /* Ombre neutre subtile */
+  .shadow-subtle {
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  }
+
+  /* Inset subtil pour les inputs */
+  .shadow-inset-sm {
+    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.04);
+  }
+
+  /* ── Textures visuelles ── */
+  /* Séparateur éditorial */
+  .divider-editorial {
+    @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  /* Fond texturé léger pour sections spéciales */
+  .bg-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* Indicateur actif sidebar — pill verticale */
+  .nav-indicator {
+    @apply absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary;
+  }
+
+  /* Tag pill condensé */
+  .pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors;
   }
 }

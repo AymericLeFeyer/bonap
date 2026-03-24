@@ -26,45 +26,56 @@ export function Layout() {
       {/* ── Contenu principal ── */}
       <main
         className={cn(
-          "transition-[margin-left] duration-300 ease-in-out",
+          "transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
           /* Desktop : marge gauche selon état sidebar */
-          "md:ml-64",
-          collapsed && "md:ml-16",
+          "md:ml-[240px]",
+          collapsed && "md:ml-[60px]",
           /* Mobile : plein écran */
           "ml-0",
           /* Padding contenu */
-          "px-4 py-6 md:px-8 md:py-8",
+          "px-4 py-5 md:px-7 md:py-7",
           /* Extra espace bas pour nav mobile */
-          "pb-24 md:pb-8",
+          "pb-24 md:pb-7",
         )}
       >
         <Outlet />
       </main>
 
       {/* ── Navigation basse mobile ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-border/60 bg-card/95 backdrop-blur-md md:hidden">
-        <div className="flex h-16 items-stretch">
+      <nav
+        className={cn(
+          "fixed bottom-0 inset-x-0 z-50 md:hidden",
+          "border-t border-border/40 bg-card/95 backdrop-blur-md",
+          /* Ombre vers le haut */
+          "shadow-[0_-1px_8px_oklch(0_0_0/0.06)]",
+        )}
+      >
+        <div className="flex h-[58px] items-stretch">
           {mobileNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors",
+                  "relative flex flex-1 flex-col items-center justify-center gap-[3px]",
+                  "text-[9.5px] font-semibold tracking-[0.02em] uppercase",
+                  "transition-colors duration-150",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground",
+                    : "text-muted-foreground/60 hover:text-muted-foreground",
                 )
               }
             >
               {({ isActive }) => (
                 <>
+                  {/* Indicateur top */}
                   {isActive && (
-                    <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-primary" />
+                    <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-7 rounded-full bg-primary" />
                   )}
                   <item.icon
                     className={cn(
-                      "h-5 w-5 transition-transform duration-150",
+                      "h-[19px] w-[19px]",
+                      "transition-transform duration-150",
                       isActive && "scale-110",
                     )}
                   />

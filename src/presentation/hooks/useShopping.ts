@@ -55,7 +55,7 @@ export function useShopping() {
     })
   }, [])
 
-  const addItem = useCallback(async (note: string, quantity?: number, labelId?: string) => {
+  const addItem = useCallback(async (note: string, _quantity?: number, labelId?: string) => {
     if (!list) return
     const key = extractFoodKey(note)
     const existing = key ? findExisting(items, key) : undefined

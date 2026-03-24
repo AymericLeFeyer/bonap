@@ -20,29 +20,34 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-30 flex flex-col",
-        "border-r border-border/50 bg-card",
-        "transition-all duration-300 ease-in-out",
-        collapsed ? "w-16" : "w-64",
-        "shadow-sm",
+        "border-r border-border/40 bg-card",
+        "transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        collapsed ? "w-[60px]" : "w-[240px]",
+        /* Ombre très douce sur le côté droit */
+        "shadow-[2px_0_12px_oklch(0_0_0/0.04)]",
       )}
     >
       {/* ── Logo ── */}
       <div
         className={cn(
-          "flex h-16 items-center border-b border-border/50 shrink-0",
-          collapsed ? "justify-center px-2" : "justify-between px-5",
+          "flex h-[60px] shrink-0 items-center border-b border-border/40",
+          collapsed ? "justify-center px-3" : "justify-between px-4",
         )}
       >
         {!collapsed ? (
           <>
-            <img src="/logo_bonap.png" alt="bonap" className="h-10 object-contain" />
+            <img src="/logo_bonap.png" alt="bonap" className="h-9 object-contain" />
             <button
               type="button"
               onClick={onToggleCollapsed}
-              className="rounded-xl p-1.5 text-muted-foreground transition-colors hover:bg-primary/8 hover:text-foreground"
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)]",
+                "text-muted-foreground",
+                "transition-colors hover:bg-secondary hover:text-foreground",
+              )}
               aria-label="Replier la sidebar"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </button>
           </>
         ) : (
@@ -51,10 +56,10 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5 scrollbar-hide">
         {!collapsed && (
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-            Menu
+          <p className="mb-2 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40">
+            Navigation
           </p>
         )}
 
@@ -64,43 +69,54 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                "relative flex items-center rounded-xl text-sm font-medium transition-all duration-150",
-                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
+                "relative flex items-center rounded-[var(--radius-lg)] text-sm transition-all duration-150",
+                collapsed ? "justify-center p-2.5" : "gap-3 px-2.5 py-2",
                 isActive
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "text-muted-foreground hover:bg-primary/8 hover:text-foreground",
+                  ? "bg-primary/8 text-primary font-semibold"
+                  : "text-muted-foreground font-medium hover:bg-secondary hover:text-foreground",
               )
             }
             title={collapsed ? item.label : undefined}
           >
             {({ isActive }) => (
               <>
+                {/* Indicateur actif — pill gauche */}
                 {isActive && !collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-[18px] w-[3px] rounded-r-full bg-primary" />
                 )}
                 <item.icon
                   className={cn(
-                    "h-4 w-4 shrink-0 transition-transform",
-                    isActive && "text-primary scale-110",
+                    "h-[17px] w-[17px] shrink-0",
+                    isActive ? "text-primary" : "text-muted-foreground/70",
+                    "transition-transform duration-150",
+                    isActive && "scale-110",
                   )}
                 />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <span className="text-[13.5px] leading-none">{item.label}</span>
+                )}
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
+      {/* ── Séparateur ── */}
+      <div className="mx-3 h-px bg-border/40" />
+
       {/* ── Footer ── */}
-      <div className="border-t border-border/50 px-2 py-3 space-y-0.5">
+      <div className="px-2 py-3 space-y-0.5">
         {collapsed && (
           <button
             type="button"
             onClick={onToggleCollapsed}
-            className="flex w-full items-center justify-center rounded-xl p-2.5 text-muted-foreground transition-colors hover:bg-primary/8 hover:text-foreground"
+            className={cn(
+              "flex w-full items-center justify-center rounded-[var(--radius-lg)] p-2.5",
+              "text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+            )}
             aria-label="Déplier la sidebar"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}
 
@@ -108,16 +124,16 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           to="/settings"
           className={({ isActive }) =>
             cn(
-              "flex items-center rounded-xl text-sm font-medium transition-colors",
-              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full",
+              "flex items-center rounded-[var(--radius-lg)] text-[13.5px] font-medium transition-colors",
+              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-2.5 py-2 w-full",
               isActive
-                ? "bg-primary/10 text-primary font-semibold"
-                : "text-muted-foreground hover:bg-primary/8 hover:text-foreground",
+                ? "bg-primary/8 text-primary font-semibold"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
             )
           }
           title={collapsed ? "Paramètres" : undefined}
         >
-          <Settings className="h-4 w-4 shrink-0" />
+          <Settings className="h-[17px] w-[17px] shrink-0" />
           {!collapsed && <span>Paramètres</span>}
         </NavLink>
 
@@ -126,12 +142,13 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "flex items-center rounded-xl text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/8 hover:text-foreground",
-            collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full",
+            "flex items-center rounded-[var(--radius-lg)] text-[13.5px] font-medium",
+            "text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+            collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-2.5 py-2 w-full",
           )}
           title="Ouvrir Mealie"
         >
-          <ExternalLink className="h-4 w-4 shrink-0" />
+          <ExternalLink className="h-[17px] w-[17px] shrink-0" />
           {!collapsed && <span>Mealie</span>}
         </a>
       </div>

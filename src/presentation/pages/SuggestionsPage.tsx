@@ -12,6 +12,7 @@ import {
 } from "../../infrastructure/container.ts"
 import type { MealieRecipe, MealieMealPlan } from "../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../shared/utils/season.ts"
+import { cn } from "../../lib/utils.ts"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -185,10 +186,10 @@ export function SuggestionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="font-heading text-2xl font-bold flex items-center gap-2.5">
           <Sparkles className="h-6 w-6 text-primary" />
           Suggestions de repas
         </h1>
@@ -199,14 +200,19 @@ export function SuggestionsPage() {
 
       {/* No LLM configured warning */}
       {!isConfigured && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="flex-1 text-sm text-amber-800 dark:text-amber-300">
+        <div className={cn(
+          "flex items-start gap-3 rounded-[var(--radius-xl)]",
+          "border border-[oklch(0.78_0.08_80)] bg-[oklch(0.97_0.04_80)]",
+          "dark:border-[oklch(0.32_0.06_70)] dark:bg-[oklch(0.22_0.04_70)]",
+          "p-4",
+        )}>
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[oklch(0.52_0.14_60)] dark:text-[oklch(0.72_0.14_72)]" />
+          <div className="flex-1 text-sm text-[oklch(0.38_0.10_55)] dark:text-[oklch(0.80_0.08_72)]">
             <strong>Aucun fournisseur IA configuré.</strong> Configurez une clé API pour utiliser cette fonctionnalité.
           </div>
           <Link
             to="/settings"
-            className="flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
+            className="flex items-center gap-1 text-sm font-semibold text-[oklch(0.42_0.12_55)] hover:text-[oklch(0.28_0.12_50)] dark:text-[oklch(0.72_0.12_72)] transition-colors"
           >
             <Settings className="h-3.5 w-3.5" />
             Paramètres
@@ -216,9 +222,9 @@ export function SuggestionsPage() {
       )}
 
       {/* Criteria */}
-      <div className="space-y-4 rounded-lg border p-4">
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Critères prédéfinis</p>
+      <div className="space-y-4 rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle p-5">
+        <div className="space-y-2.5">
+          <p className="text-sm font-semibold">Critères prédéfinis</p>
           <div className="flex flex-wrap gap-2">
             {CRITERIA_CHIPS.map((c) => (
               <Badge
@@ -233,8 +239,8 @@ export function SuggestionsPage() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="free-text" className="text-sm font-medium">
+        <div className="space-y-2">
+          <label htmlFor="free-text" className="text-sm font-semibold">
             Ou décrivez vos envies
           </label>
           <textarea
@@ -243,7 +249,13 @@ export function SuggestionsPage() {
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
             rows={2}
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+            className={cn(
+              "flex w-full rounded-[var(--radius-lg)] border border-input bg-card",
+              "px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/60",
+              "shadow-[inset_0_1px_2px_oklch(0_0_0/0.04)]",
+              "focus-visible:outline-none focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/30",
+              "resize-none transition-[border-color,box-shadow] duration-150",
+            )}
           />
         </div>
 
@@ -262,23 +274,19 @@ export function SuggestionsPage() {
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+      {(error || addError) && (
+        <div className="flex items-start gap-2 rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-3 text-sm text-destructive">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
-      {addError && (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          {addError}
+          {error ?? addError}
         </div>
       )}
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">{suggestions.length} suggestion{suggestions.length > 1 ? "s" : ""}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-muted-foreground/50">
+            {suggestions.length} suggestion{suggestions.length > 1 ? "s" : ""}
+          </p>
           {suggestions.map((s) => (
             <SuggestionCard
               key={s.slug}
@@ -307,16 +315,20 @@ interface SuggestionCardProps {
 
 function SuggestionCard({ suggestion, recipe, isAdding, isAdded, onAdd }: SuggestionCardProps) {
   return (
-    <div className="rounded-lg border bg-card p-4 transition-colors hover:border-primary/30">
+    <div className={cn(
+      "rounded-[var(--radius-xl)] border bg-card shadow-subtle",
+      "p-4 transition-all duration-150",
+      "hover:border-primary/20 hover:shadow-warm",
+    )}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
             to={`/recipes/${suggestion.slug}`}
-            className="font-medium hover:underline"
+            className="text-[13.5px] font-semibold hover:text-primary transition-colors"
           >
             {suggestion.name}
           </Link>
-          <p className="mt-0.5 text-sm text-muted-foreground">{suggestion.reason}</p>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground leading-relaxed">{suggestion.reason}</p>
         </div>
         <Button
           size="sm"
@@ -330,7 +342,7 @@ function SuggestionCard({ suggestion, recipe, isAdding, isAdded, onAdd }: Sugges
           ) : (
             <CalendarPlus className="h-3.5 w-3.5" />
           )}
-          {isAdded ? "Ajouté ✓" : "Ajouter"}
+          {isAdded ? "Ajouté" : "Ajouter"}
         </Button>
       </div>
     </div>

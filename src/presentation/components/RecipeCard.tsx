@@ -21,21 +21,27 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
       className="group block"
       onClick={onSelect ? (e) => { e.preventDefault(); onSelect(recipe.slug) } : undefined}
     >
-      <div className={cn(
-          "overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-200 hover:shadow-warm-md hover:-translate-y-0.5",
-          selected ? "border-primary ring-2 ring-primary/30" : "border-border/50 hover:border-primary/30",
-        )}>
+      <div
+        className={cn(
+          "overflow-hidden rounded-[var(--radius-xl)] border bg-card",
+          "transition-all duration-200",
+          selected
+            ? "border-primary ring-2 ring-primary/25 shadow-warm-md"
+            : "border-border/50 shadow-subtle hover:shadow-warm-md hover:-translate-y-0.5 hover:border-primary/20",
+        )}
+      >
         {/* Image carrée */}
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
           <img
             src={imageUrl}
             alt={recipe.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
-          {/* Dégradé bas toujours visible */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-          {/* Badges saison */}
+          {/* Dégradé bas — toujours visible, plus sophistiqué */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-transparent" />
+
+          {/* Badges saison — top left */}
           {seasons.length > 0 && (
             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {seasons.map((season) => (
@@ -44,13 +50,17 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
             </div>
           )}
 
-          {/* Badges catégories */}
+          {/* Badges catégories — bottom left, sur le dégradé */}
           {categories.length > 0 && (
-            <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-              {categories.slice(0, 3).map((cat) => (
+            <div className="absolute bottom-2.5 left-2.5 flex flex-wrap gap-1">
+              {categories.slice(0, 2).map((cat) => (
                 <span
                   key={cat.id}
-                  className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
+                  className={cn(
+                    "rounded-full px-2 py-0.5",
+                    "text-[9.5px] font-semibold text-white/90 uppercase tracking-[0.04em]",
+                    "bg-black/35 backdrop-blur-sm",
+                  )}
                 >
                   {cat.name}
                 </span>
@@ -61,7 +71,13 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
 
         {/* Nom */}
         <div className="px-3 pb-3 pt-2.5">
-          <h3 className="truncate text-sm font-semibold leading-snug text-card-foreground group-hover:text-primary transition-colors duration-150">
+          <h3
+            className={cn(
+              "line-clamp-2 text-[12.5px] font-semibold leading-snug",
+              "text-card-foreground transition-colors duration-150",
+              "group-hover:text-primary",
+            )}
+          >
             {recipe.name}
           </h3>
         </div>

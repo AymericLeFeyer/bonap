@@ -13,16 +13,21 @@ export function RecipeInstructionsList({
   if (instructions.length === 0) return null
 
   return (
-    <section className="space-y-3">
-      <h2 className={`${headingSize} font-semibold`}>Instructions</h2>
-      <ol className="space-y-4">
+    <section className="space-y-4">
+      <h2 className={`font-heading ${headingSize} font-bold tracking-tight`}>Instructions</h2>
+      <ol className="space-y-5">
         {instructions.map((step, i) => (
-          <li key={step.id} className="space-y-1">
-            <p className="text-sm font-medium">
-              Étape {i + 1}
-              {step.title && ` — ${step.title}`}
-            </p>
-            <p className="text-sm text-muted-foreground">{step.text}</p>
+          <li key={step.id} className="flex gap-3">
+            {/* Numéro d'étape */}
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/8 text-[11px] font-bold text-primary mt-0.5">
+              {i + 1}
+            </span>
+            <div className="space-y-0.5 flex-1">
+              {step.title && (
+                <p className="text-sm font-semibold">{step.title}</p>
+              )}
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.text}</p>
+            </div>
           </li>
         ))}
       </ol>

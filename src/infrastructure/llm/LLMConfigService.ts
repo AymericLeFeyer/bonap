@@ -1,5 +1,5 @@
 import type { LLMConfig, LLMProvider } from "../../shared/types/llm.ts"
-import { DEFAULT_LLM_CONFIG, LLM_PROVIDERS } from "../../shared/types/llm.ts"
+import { DEFAULT_LLM_CONFIG } from "../../shared/types/llm.ts"
 
 const STORAGE_KEY = "bonap_llm_config"
 

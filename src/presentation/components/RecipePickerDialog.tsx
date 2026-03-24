@@ -55,9 +55,9 @@ function RecipeList({
             key={recipe.id}
             type="button"
             onClick={() => onSelect(recipe)}
-            className="group flex flex-col gap-1.5 rounded-lg p-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="group flex flex-col gap-1.5 rounded-[var(--radius-lg)] p-1.5 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+            <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] bg-muted">
               <img
                 src={`/api/media/recipes/${recipe.id}/images/min-original.webp`}
                 alt={recipe.name}
