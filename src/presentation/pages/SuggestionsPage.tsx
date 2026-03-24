@@ -1,14 +1,16 @@
-import { useState } from "react"
-import { Sparkles, Loader2, AlertCircle, CalendarPlus, Settings, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Sparkles, Loader2, AlertCircle, CalendarPlus, Settings, ChevronRight, Plus } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "../components/ui/button.tsx"
 import { Badge } from "../components/ui/badge.tsx"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
 import { llmChat } from "../../infrastructure/llm/LLMService.ts"
 import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
 import {
   getRecipesUseCase,
   getPlanningRangeUseCase,
   addMealUseCase,
+  deleteMealUseCase,
 } from "../../infrastructure/container.ts"
 import type { MealieRecipe, MealieMealPlan } from "../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../shared/utils/season.ts"
@@ -38,7 +40,15 @@ const CRITERIA_CHIPS = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+function formatDayFr(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00")
+  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
 }
 
 async function fetchAllRecipes(): Promise<MealieRecipe[]> {
@@ -56,23 +66,6 @@ async function fetchRecentPlanning(): Promise<MealieMealPlan[]> {
   const start = new Date(today)
   start.setDate(start.getDate() - 14)
   return getPlanningRangeUseCase.execute(toDateStr(start), toDateStr(today))
-}
-
-async function fetchNextFreePlanning(): Promise<{ date: string; entryType: string } | null> {
-  const today = new Date()
-  const end = new Date(today)
-  end.setDate(end.getDate() + 14)
-  const meals = await getPlanningRangeUseCase.execute(toDateStr(today), toDateStr(end))
-  const occupied = new Set(meals.map((m) => `${m.date}-${m.entryType}`))
-  for (let i = 0; i <= 14; i++) {
-    const d = new Date(today)
-    d.setDate(d.getDate() + i)
-    const dateStr = toDateStr(d)
-    for (const slot of ["lunch", "dinner"]) {
-      if (!occupied.has(`${dateStr}-${slot}`)) return { date: dateStr, entryType: slot }
-    }
-  }
-  return null
 }
 
 function buildPrompt(recipes: MealieRecipe[], planning: MealieMealPlan[], criteria: string[], freeText: string) {
@@ -133,9 +126,9 @@ export function SuggestionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [recipeMap, setRecipeMap] = useState<Map<string, MealieRecipe>>(new Map())
-  const [addingSlug, setAddingSlug] = useState<string | null>(null)
   const [addedSlug, setAddedSlug] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
+  const [pickingFor, setPickingFor] = useState<{ suggestion: Suggestion; recipeId: string } | null>(null)
 
   const isConfigured = llmConfigService.isConfigured()
 
@@ -149,6 +142,7 @@ export function SuggestionsPage() {
     setLoading(true)
     setError(null)
     setSuggestions([])
+    setAddedSlug(null)
     try {
       const [recipes, planning] = await Promise.all([fetchAllRecipes(), fetchRecentPlanning()])
       const map = new Map(recipes.map((r) => [r.slug, r]))
@@ -166,22 +160,19 @@ export function SuggestionsPage() {
     }
   }
 
-  const handleAddToPlanning = async (suggestion: Suggestion, recipeId: string) => {
-    setAddingSlug(suggestion.slug)
-    setAddedSlug(null)
+  const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
+    if (!pickingFor) return
     setAddError(null)
     try {
-      const slot = await fetchNextFreePlanning()
-      if (!slot) {
-        setAddError("Aucun créneau libre trouvé dans les 14 prochains jours.")
-        return
+      if (existingMealId !== undefined) {
+        await deleteMealUseCase.execute(existingMealId)
       }
-      await addMealUseCase.execute(slot.date, slot.entryType, recipeId)
-      setAddedSlug(suggestion.slug)
+      await addMealUseCase.execute(date, entryType, pickingFor.recipeId)
+      setAddedSlug(pickingFor.suggestion.slug)
+      setPickingFor(null)
     } catch (e) {
       setAddError(e instanceof Error ? e.message : "Erreur lors de l'ajout au planning")
-    } finally {
-      setAddingSlug(null)
+      setPickingFor(null)
     }
   }
 
@@ -292,13 +283,20 @@ export function SuggestionsPage() {
               key={s.slug}
               suggestion={s}
               recipe={recipeMap.get(s.slug)}
-              isAdding={addingSlug === s.slug}
               isAdded={addedSlug === s.slug}
-              onAdd={handleAddToPlanning}
+              onAdd={(suggestion, recipeId) => setPickingFor({ suggestion, recipeId })}
             />
           ))}
         </div>
       )}
+
+      {/* Planning slot picker dialog */}
+      <PlanningSlotPicker
+        open={pickingFor !== null}
+        onOpenChange={(v) => { if (!v) setPickingFor(null) }}
+        recipeName={pickingFor?.suggestion.name ?? ""}
+        onSelect={handleSlotSelect}
+      />
     </div>
   )
 }
@@ -308,43 +306,200 @@ export function SuggestionsPage() {
 interface SuggestionCardProps {
   suggestion: Suggestion
   recipe?: MealieRecipe
-  isAdding: boolean
   isAdded: boolean
   onAdd: (suggestion: Suggestion, recipeId: string) => void
 }
 
-function SuggestionCard({ suggestion, recipe, isAdding, isAdded, onAdd }: SuggestionCardProps) {
+function SuggestionCard({ suggestion, recipe, isAdded, onAdd }: SuggestionCardProps) {
+  const imageUrl = recipe ? `/api/media/recipes/${recipe.id}/images/min-original.webp` : null
+  const [imgError, setImgError] = useState(false)
+
   return (
     <div className={cn(
-      "rounded-[var(--radius-xl)] border bg-card shadow-subtle",
-      "p-4 transition-all duration-150",
-      "hover:border-primary/20 hover:shadow-warm",
+      "rounded-[var(--radius-xl)] border bg-card shadow-subtle overflow-hidden",
+      "transition-all duration-150 hover:border-primary/20 hover:shadow-warm",
     )}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            to={`/recipes/${suggestion.slug}`}
-            className="text-[13.5px] font-semibold hover:text-primary transition-colors"
+      <div className="flex items-stretch gap-0">
+        {/* Image */}
+        {imageUrl && !imgError && (
+          <div className="w-20 shrink-0 bg-muted/30">
+            <img
+              src={imageUrl}
+              alt={suggestion.name}
+              onError={() => setImgError(true)}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex flex-1 items-start justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <Link
+              to={`/recipes/${suggestion.slug}`}
+              className="text-[13.5px] font-semibold hover:text-primary transition-colors"
+            >
+              {suggestion.name}
+            </Link>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground leading-relaxed">{suggestion.reason}</p>
+          </div>
+          <Button
+            size="sm"
+            variant={isAdded ? "outline" : "default"}
+            onClick={() => recipe && onAdd(suggestion, recipe.id)}
+            disabled={isAdded || !recipe}
+            className="shrink-0 gap-1.5"
           >
-            {suggestion.name}
-          </Link>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground leading-relaxed">{suggestion.reason}</p>
-        </div>
-        <Button
-          size="sm"
-          variant={isAdded ? "outline" : "default"}
-          onClick={() => recipe && onAdd(suggestion, recipe.id)}
-          disabled={isAdding || isAdded || !recipe}
-          className="shrink-0 gap-1.5"
-        >
-          {isAdding ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
             <CalendarPlus className="h-3.5 w-3.5" />
-          )}
-          {isAdded ? "Ajouté" : "Ajouter"}
-        </Button>
+            {isAdded ? "Ajouté" : "Ajouter"}
+          </Button>
+        </div>
       </div>
     </div>
+  )
+}
+
+// ─── PlanningSlotPicker ───────────────────────────────────────────────────────
+
+interface PlanningSlotPickerProps {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  recipeName: string
+  onSelect: (date: string, entryType: string, existingMealId?: number) => Promise<void>
+}
+
+function PlanningSlotPicker({ open, onOpenChange, recipeName, onSelect }: PlanningSlotPickerProps) {
+  const [slots, setSlots] = useState<MealieMealPlan[]>([])
+  const [loading, setLoading] = useState(false)
+  const [addingSlot, setAddingSlot] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    const today = new Date()
+    const end = new Date(today)
+    end.setDate(end.getDate() + 13)
+    getPlanningRangeUseCase
+      .execute(toDateStr(today), toDateStr(end))
+      .then(setSlots)
+      .catch(() => setSlots([]))
+      .finally(() => setLoading(false))
+  }, [open])
+
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    return toDateStr(d)
+  })
+
+  const mealMap = new Map(slots.map((m) => [`${m.date}-${m.entryType}`, m]))
+
+  const handleSlotClick = async (date: string, entryType: string) => {
+    const key = `${date}-${entryType}`
+    const existing = mealMap.get(key)
+    setAddingSlot(key)
+    try {
+      await onSelect(date, entryType, existing?.id)
+    } finally {
+      setAddingSlot(null)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-base">
+            Où placer ce plat ?
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">{recipeName}</p>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="max-h-[60vh] overflow-y-auto space-y-1 pr-1 -mr-1">
+            {days.map((date) => {
+              const lunch = mealMap.get(`${date}-lunch`)
+              const dinner = mealMap.get(`${date}-dinner`)
+              return (
+                <div key={date} className="grid grid-cols-[88px_1fr_1fr] items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground capitalize truncate">
+                    {formatDayFr(date)}
+                  </span>
+                  <SlotButton
+                    meal={lunch}
+                    label="Déj."
+                    isAdding={addingSlot === `${date}-lunch`}
+                    onClick={() => handleSlotClick(date, "lunch")}
+                  />
+                  <SlotButton
+                    meal={dinner}
+                    label="Dîner"
+                    isAdding={addingSlot === `${date}-dinner`}
+                    onClick={() => handleSlotClick(date, "dinner")}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <p className="text-[11px] text-muted-foreground/50 text-center pt-1">
+          Cliquez sur un créneau vide pour l'ajouter, ou sur un repas existant pour le remplacer.
+        </p>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── SlotButton ───────────────────────────────────────────────────────────────
+
+function SlotButton({ meal, label, isAdding, onClick }: {
+  meal?: MealieMealPlan
+  label: string
+  isAdding: boolean
+  onClick: () => void
+}) {
+  if (isAdding) {
+    return (
+      <div className="h-8 flex items-center justify-center rounded-[var(--radius-md)] border border-primary/30 bg-primary/5">
+        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (meal) {
+    return (
+      <button
+        onClick={onClick}
+        title={`Remplacer : ${meal.recipe?.name ?? meal.title}`}
+        className={cn(
+          "h-8 px-2 text-left rounded-[var(--radius-md)] border border-border",
+          "bg-muted/40 hover:border-destructive/40 hover:bg-destructive/5",
+          "transition-colors group overflow-hidden",
+        )}
+      >
+        <span className="text-[11px] text-foreground/70 group-hover:text-destructive truncate block leading-none">
+          {meal.recipe?.name ?? meal.title ?? label}
+        </span>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "h-8 px-2 rounded-[var(--radius-md)] border border-dashed border-border/50",
+        "hover:border-primary/50 hover:bg-primary/5",
+        "transition-colors flex items-center justify-center gap-1",
+      )}
+    >
+      <Plus className="h-3 w-3 text-muted-foreground/40" />
+      <span className="text-[11px] text-muted-foreground/40">{label}</span>
+    </button>
   )
 }

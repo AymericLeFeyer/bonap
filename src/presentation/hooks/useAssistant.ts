@@ -6,6 +6,8 @@ import {
   addMealUseCase,
   createRecipeUseCase,
   getPlanningRangeUseCase,
+  getCategoriesUseCase,
+  getTagsUseCase,
 } from "../../infrastructure/container.ts"
 import type { MealieRecipe, MealieMealPlan } from "../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../shared/utils/season.ts"
@@ -25,7 +27,10 @@ export interface ChatMessage {
 // ─── Context helpers ──────────────────────────────────────────────────────────
 
 function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
 }
 
 async function buildSystemContext(): Promise<string> {
@@ -35,9 +40,11 @@ async function buildSystemContext(): Promise<string> {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekStart.getDate() + 6)
 
-  const [recipesPage, planning] = await Promise.all([
+  const [recipesPage, planning, categories, tags] = await Promise.all([
     getRecipesUseCase.execute(1, 200),
     getPlanningRangeUseCase.execute(toDateStr(weekStart), toDateStr(weekEnd)).catch(() => [] as MealieMealPlan[]),
+    getCategoriesUseCase.execute().catch(() => []),
+    getTagsUseCase.execute().catch(() => []),
   ])
 
   const recipesSummary = recipesPage.items
@@ -52,9 +59,17 @@ async function buildSystemContext(): Promise<string> {
     ? planning.map((m: MealieMealPlan) => `- ${m.date} ${m.entryType === "lunch" ? "déj." : "dîner"}: ${m.recipe?.name ?? m.title ?? "?"}`).join("\n")
     : "Aucun repas planifié cette semaine."
 
+  const categoriesList = categories.map((c) => c.name).join(", ")
+  const tagsList = tags.map((t) => t.name).join(", ")
+
   return `Tu es Bonap, un assistant culinaire intelligent et sympathique.
 Tu connais la bibliothèque de recettes de l'utilisateur et son planning de la semaine.
 Tu peux suggérer des repas, ajouter des plats au planning, créer des recettes et répondre à toutes les questions culinaires.
+
+Catégories disponibles dans la bibliothèque : ${categoriesList || "aucune"}
+Tags disponibles dans la bibliothèque : ${tagsList || "aucun"}
+
+Quand l'utilisateur décrit un type de plat avec ses propres mots (ex: "gamelle possible", "truc rapide", "plat de saison"), cherche d'abord si une catégorie ou un tag existant correspond sémantiquement, et filtre les recettes en conséquence. Par exemple "gamelle possible" peut correspondre au tag "Facile en restes", "truc rapide" peut correspondre à la catégorie "Rapide", etc. Adapte-toi au vocabulaire de l'utilisateur sans lui demander de préciser s'il existe une correspondance évidente.
 
 Recettes disponibles :
 ${recipesSummary}

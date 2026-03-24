@@ -324,7 +324,7 @@ export function PlanningPage() {
   }
 
   const getMeals = (date: Date, type: string): MealieMealPlan[] => {
-    const key = date.toISOString().slice(0, 10)
+    const key = formatDate(date)
     return mealPlans.filter((m) => m.date === key && m.entryType === type)
   }
 
@@ -333,7 +333,7 @@ export function PlanningPage() {
       type === "lunch"
         ? [addDays(date, -1), "dinner"]
         : [date, "lunch"]
-    const prevKey = prevDate.toISOString().slice(0, 10)
+    const prevKey = formatDate(prevDate)
     const prevMeals = mealPlans.filter((m) => m.date === prevKey && m.entryType === prevType)
     return prevMeals.length > 0 ? prevMeals[0] : null
   }
@@ -352,7 +352,7 @@ export function PlanningPage() {
   const handleLeftovers = async (date: Date, entryType: string) => {
     const prev = getPreviousMeal(date, entryType)
     if (!prev?.recipe) return
-    await addMeal(date.toISOString().slice(0, 10), entryType, prev.recipe.id)
+    await addMeal(formatDate(date), entryType, prev.recipe.id)
   }
 
   const handleDrop = async (
@@ -492,7 +492,7 @@ export function PlanningPage() {
                     {formatDayDate(date)}
                   </div>
                   {MEAL_TYPES.map(({ key, label, color }) => {
-                    const dateStr = date.toISOString().slice(0, 10)
+                    const dateStr = formatDate(date)
                     const meals = getMeals(date, key)
                     const prevMeal = getPreviousMeal(date, key)
                     return (
@@ -565,7 +565,7 @@ export function PlanningPage() {
                       </span>
                     </td>
                     {days.map((date) => {
-                      const dateStr = date.toISOString().slice(0, 10)
+                      const dateStr = formatDate(date)
                       const meals = getMeals(date, key)
                       const prevMeal = getPreviousMeal(date, key)
                       return (
