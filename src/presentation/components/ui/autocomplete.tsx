@@ -57,18 +57,32 @@ export function Autocomplete({
     setHighlighted(-1)
   }, [value])
 
-  // Recalcule la position du dropdown à chaque ouverture
+  // Recalcule la position du dropdown à l'ouverture et à chaque scroll/resize
   useEffect(() => {
-    if (!open || !inputRef.current) return
+    if (!open) return
 
-    const rect = inputRef.current.getBoundingClientRect()
-    setDropdownStyle({
-      position: "fixed",
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-      zIndex: 9999,
-    })
+    const update = () => {
+      if (!inputRef.current) return
+      const rect = inputRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const dropdownHeight = 192 // max-h-48 = 12rem = 192px
+      const showAbove = spaceBelow < dropdownHeight + 8 && rect.top > dropdownHeight
+      setDropdownStyle({
+        position: "fixed",
+        top: showAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      })
+    }
+
+    update()
+    window.addEventListener("scroll", update, true)
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("scroll", update, true)
+      window.removeEventListener("resize", update)
+    }
   }, [open])
 
   const selectItem = (item: AutocompleteOption) => {

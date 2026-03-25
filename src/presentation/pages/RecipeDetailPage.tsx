@@ -1,12 +1,10 @@
-import { useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { Button } from "../components/ui/button.tsx"
 import { Badge } from "../components/ui/badge.tsx"
-import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { SeasonBadge } from "../components/SeasonBadge.tsx"
 import { RecipeIngredientsList } from "../components/RecipeIngredientsList.tsx"
 import { RecipeInstructionsList } from "../components/RecipeInstructionsList.tsx"
@@ -43,15 +41,11 @@ function RecipeDetailSkeleton() {
 
 export function RecipeDetailPage() {
   const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   const { recipe, loading, error, setRecipe } = useRecipe(slug)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
   const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
   const { categories: allCategories } = useCategories()
-
-  const handleEditSuccess = (updated: MealieRecipe) => {
-    setRecipe(updated)
-  }
 
   const handleToggleCategory = async (cat: MealieCategory) => {
     if (!recipe) return
@@ -84,7 +78,7 @@ export function RecipeDetailPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setEditDialogOpen(true)}
+            onClick={() => navigate(`/recipes/${recipe.slug}/edit`)}
             className="gap-1.5"
           >
             <Pencil className="h-4 w-4" />
@@ -99,15 +93,6 @@ export function RecipeDetailPage() {
         <div className="rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-4 text-sm text-destructive">
           {error}
         </div>
-      )}
-
-      {recipe && (
-        <RecipeFormDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          recipe={recipe}
-          onSuccess={handleEditSuccess}
-        />
       )}
 
       {recipe && (

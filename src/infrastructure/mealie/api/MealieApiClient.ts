@@ -75,6 +75,22 @@ export class MealieApiClient implements IMealieApiClient {
     await this.request<void>("DELETE", path)
   }
 
+  async uploadImage(slug: string, file: File): Promise<void> {
+    const formData = new FormData()
+    formData.append("image", file)
+    formData.append("extension", file.name.split(".").pop() ?? "jpg")
+    const url = `${baseUrl}/api/recipes/${slug}/image`
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!response.ok) {
+      const message = await response.text().catch(() => response.statusText)
+      throw new MealieApiError(message, response.status)
+    }
+  }
+
   async postSse<T>(path: string, body: unknown): Promise<T> {
     const response = await fetch(`${baseUrl}${path}`, {
       method: "POST",

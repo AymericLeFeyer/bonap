@@ -22,6 +22,10 @@ export class CreateRecipeUseCase {
   async execute(data: RecipeFormData): Promise<MealieRecipe> {
     const slug = await this.recipeRepository.create(data.name)
     const resolvedData = await resolveIngredients(data, this.foodRepository, this.unitRepository)
-    return this.recipeRepository.update(slug, resolvedData)
+    const recipe = await this.recipeRepository.update(slug, resolvedData)
+    if (data.imageFile) {
+      await this.recipeRepository.uploadImage(slug, data.imageFile)
+    }
+    return recipe
   }
 }

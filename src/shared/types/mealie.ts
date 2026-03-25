@@ -83,6 +83,8 @@ export interface RecipeFormData {
   name: string
   description: string
   prepTime: string
+  cookTime: string
+  imageFile?: File
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
   seasons: Season[]

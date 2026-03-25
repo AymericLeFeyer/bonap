@@ -83,6 +83,7 @@ export class RecipeRepository implements IRecipeRepository {
       name: data.name,
       description: data.description || undefined,
       prepTime: this.minutesToIso(data.prepTime),
+      cookTime: this.minutesToIso(data.cookTime),
       recipeCategory: data.categories,
       recipeIngredient: data.recipeIngredient
         .filter((ing) => ing.quantity || ing.unit || ing.food || ing.note)
@@ -125,6 +126,10 @@ export class RecipeRepository implements IRecipeRepository {
       tags: [...data.tags, ...seasonTags],
     }
     return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, payload)
+  }
+
+  async uploadImage(slug: string, file: File): Promise<void> {
+    return mealieApiClient.uploadImage(slug, file)
   }
 
   async updateCategories(slug: string, categories: MealieCategory[]): Promise<MealieRecipe> {

@@ -7,7 +7,6 @@ import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
-import { RecipeFormDialog } from "../components/RecipeFormDialog.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
@@ -38,7 +37,6 @@ export function RecipesPage() {
   const [noIngredients, setNoIngredients] = useState(false)
   const [noIngredientRecipes, setNoIngredientRecipes] = useState<MealieRecipe[] | null>(null)
   const [noIngredientsLoading, setNoIngredientsLoading] = useState(false)
-  const [newRecipeDialogOpen, setNewRecipeDialogOpen] = useState(false)
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [drawerClosing, setDrawerClosing] = useState(false)
   const navigate = useNavigate()
@@ -225,7 +223,7 @@ export function RecipesPage() {
             {/* Nouvelle recette */}
             <Button
               size="sm"
-              onClick={() => setNewRecipeDialogOpen(true)}
+              onClick={() => navigate("/recipes/new")}
               className="gap-1.5"
             >
               <PenLine className="h-3.5 w-3.5" />
@@ -433,11 +431,6 @@ export function RecipesPage() {
         </>
       )}
 
-      <RecipeFormDialog
-        open={newRecipeDialogOpen}
-        onOpenChange={setNewRecipeDialogOpen}
-        onSuccess={(recipe: MealieRecipe) => navigate(`/recipes/${recipe.slug}`)}
-      />
     </div>
   )
 }
