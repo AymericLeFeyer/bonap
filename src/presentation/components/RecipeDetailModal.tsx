@@ -3,6 +3,7 @@ import { useRecipe } from "../hooks/useRecipe.ts"
 import { Loader2 } from "lucide-react"
 import { RecipeIngredientsList } from "./RecipeIngredientsList.tsx"
 import { RecipeInstructionsList } from "./RecipeInstructionsList.tsx"
+import { formatDuration } from "../../shared/utils/duration.ts"
 
 interface RecipeDetailModalProps {
   slug: string | null
@@ -56,8 +57,8 @@ export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps
 
                 {(recipe.prepTime || recipe.cookTime) && (
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {recipe.prepTime && <span>Préparation : {recipe.prepTime}</span>}
-                    {recipe.cookTime && <span>Cuisson : {recipe.cookTime}</span>}
+                    {recipe.prepTime && <span>Préparation : {formatDuration(recipe.prepTime)}</span>}
+                    {recipe.cookTime && <span>Cuisson : {formatDuration(recipe.cookTime)}</span>}
                   </div>
                 )}
               </div>

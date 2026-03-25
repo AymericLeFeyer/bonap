@@ -14,6 +14,7 @@ import { Pencil } from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
+import { formatDuration } from "../../shared/utils/duration.ts"
 
 function RecipeDetailSkeleton() {
   return (
@@ -168,8 +169,8 @@ export function RecipeDetailPage() {
 
             {(recipe.prepTime || recipe.cookTime) && (
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                {recipe.prepTime && <span>Préparation : {recipe.prepTime}</span>}
-                {recipe.cookTime && <span>Cuisson : {recipe.cookTime}</span>}
+                {recipe.prepTime && <span>Préparation : {formatDuration(recipe.prepTime)}</span>}
+                {recipe.cookTime && <span>Cuisson : {formatDuration(recipe.cookTime)}</span>}
               </div>
             )}
           </div>

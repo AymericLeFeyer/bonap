@@ -30,7 +30,7 @@ interface RecipeFormDialogProps {
 
 function buildInitialIngredients(recipe?: MealieRecipe): RecipeFormIngredient[] {
   if (!recipe?.recipeIngredient?.length) {
-    return [{ quantity: "", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" }]
+    return [{ quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" }]
   }
   const structured = recipe.recipeIngredient
     .filter((ing) => ing.food?.name || ing.unit?.name || (ing.quantity != null && ing.quantity !== 0) || ing.note)
@@ -43,7 +43,7 @@ function buildInitialIngredients(recipe?: MealieRecipe): RecipeFormIngredient[] 
       note: ing.note ?? "",
     }))
   // Toujours une ligne vide à la fin pour faciliter l'ajout
-  return [...structured, { quantity: "", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" }]
+  return [...structured, { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" }]
 }
 
 function buildInitialInstructions(recipe?: MealieRecipe): RecipeFormInstruction[] {
@@ -120,7 +120,7 @@ function RecipeFormContent({ recipe, onClose, onSuccess }: RecipeFormContentProp
       ...prev,
       recipeIngredient: [
         ...prev.recipeIngredient,
-        { quantity: "", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" },
+        { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" },
       ],
     }))
   }
