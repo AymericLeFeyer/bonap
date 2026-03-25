@@ -444,16 +444,22 @@ export function RecipesPage() {
 
 // ─── Drawer recette ────────────────────────────────────────────────────────────
 
-function formatDuration(iso?: string): string {
-  if (!iso) return ""
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
-  if (!match) return ""
-  const h = parseInt(match[1] ?? "0")
-  const m = parseInt(match[2] ?? "0")
+function formatDuration(value?: string): string {
+  if (!value) return ""
+  let totalMinutes: number
+  if (/^\d+$/.test(value.trim())) {
+    totalMinutes = parseInt(value.trim(), 10)
+  } else {
+    const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+    if (!match) return ""
+    totalMinutes = parseInt(match[1] ?? "0") * 60 + parseInt(match[2] ?? "0")
+  }
+  if (totalMinutes <= 0) return ""
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
   if (h > 0 && m > 0) return `${h}h${m}`
   if (h > 0) return `${h}h`
-  if (m > 0) return `${m} min`
-  return ""
+  return `${m} min`
 }
 
 interface RecipeDrawerProps {

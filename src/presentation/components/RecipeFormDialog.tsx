@@ -53,9 +53,15 @@ function buildInitialInstructions(recipe?: MealieRecipe): RecipeFormInstruction[
   return recipe.recipeInstructions.map((step) => ({ text: step.text }))
 }
 
-function parsePrepTimeToMinutes(iso?: string): string {
-  if (!iso) return ""
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+function parsePrepTimeToMinutes(value?: string): string {
+  if (!value) return ""
+  // Entier ou string numérique → déjà en minutes
+  if (/^\d+$/.test(value.trim())) {
+    const n = parseInt(value.trim(), 10)
+    return n > 0 ? String(n) : ""
+  }
+  // Format ISO 8601
+  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
   if (!match) return ""
   const hours = parseInt(match[1] ?? "0")
   const minutes = parseInt(match[2] ?? "0")
