@@ -1,6 +1,6 @@
-# Bonap — Home Assistant Addon Repository
+# AyLabs — Home Assistant Addons
 
-This repository contains the [Home Assistant](https://www.home-assistant.io/) addon for [Bonap](https://github.com/AymericLeFeyer/bonap), an ergonomic front-end for [Mealie](https://mealie.io).
+This repository contains [Home Assistant](https://www.home-assistant.io/) addons maintained by [AyLabs](https://github.com/AymericLeFeyer).
 
 ## Installation
 
@@ -8,22 +8,12 @@ This repository contains the [Home Assistant](https://www.home-assistant.io/) ad
 2. Click the **three-dot menu** (top right) and select **Repositories**
 3. Paste the following URL and click **Add**:
    ```
-   https://github.com/AymericLeFeyer/bonap
+   https://github.com/AymericLeFeyer/aylabs-ha-addons
    ```
-4. Refresh the page — **Bonap** will appear in the store
-5. Click **Bonap → Install**
+4. Refresh the page — addons will appear in the store
 
-## Configuration
-
-After installation, go to the addon **Configuration** tab and fill in:
-
-- **Mealie URL** — URL of your Mealie instance (e.g. `http://192.168.1.100:9000`)
-- **Mealie API Token** — Bearer token from Mealie → Profile → API Tokens
-
-Click **Save**, then **Start**.
-
-## Addons in this repository
+## Addons
 
 | Addon | Description |
 |---|---|
-| [Bonap](bonap/) | Ergonomic front-end for Mealie |
+| [Bonap](bonap/) | Ergonomic front-end for [Mealie](https://mealie.io) — recipes, meal planning, shopping list and AI suggestions |
