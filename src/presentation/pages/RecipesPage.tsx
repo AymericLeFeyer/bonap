@@ -6,13 +6,14 @@ import { useTags } from "../hooks/useTags.ts"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
+import { useGridColumns } from "../hooks/useGridColumns.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import {
   Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw,
-  Plus, PenLine, ExternalLink, Clock,
+  Plus, PenLine, ExternalLink, Clock, LayoutGrid,
 } from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
@@ -39,6 +40,7 @@ export function RecipesPage() {
   const [noIngredientsLoading, setNoIngredientsLoading] = useState(false)
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [drawerClosing, setDrawerClosing] = useState(false)
+  const { columns, increment, decrement, canIncrement, canDecrement } = useGridColumns()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -202,6 +204,55 @@ export function RecipesPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Contrôle colonnes */}
+            <div
+              className={cn(
+                "flex items-center gap-1 rounded-[var(--radius-lg)]",
+                "border border-border bg-card px-1.5 py-1",
+                "shadow-subtle",
+              )}
+            >
+              <button
+                type="button"
+                onClick={decrement}
+                disabled={!canDecrement}
+                aria-label="Moins de colonnes"
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-[var(--radius-md)]",
+                  "text-muted-foreground transition-colors",
+                  canDecrement
+                    ? "hover:bg-secondary hover:text-foreground"
+                    : "opacity-30 cursor-not-allowed",
+                )}
+              >
+                <span className="text-sm font-bold leading-none">−</span>
+              </button>
+              <span
+                className={cn(
+                  "flex items-center gap-1 px-1",
+                  "text-xs font-semibold text-muted-foreground select-none",
+                )}
+              >
+                <LayoutGrid className="h-3 w-3" />
+                <span className="tabular-nums">{columns}</span>
+              </span>
+              <button
+                type="button"
+                onClick={increment}
+                disabled={!canIncrement}
+                aria-label="Plus de colonnes"
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-[var(--radius-md)]",
+                  "text-muted-foreground transition-colors",
+                  canIncrement
+                    ? "hover:bg-secondary hover:text-foreground"
+                    : "opacity-30 cursor-not-allowed",
+                )}
+              >
+                <span className="text-sm font-bold leading-none">+</span>
+              </button>
+            </div>
+
             {/* Importer depuis Mealie */}
             <a
               href={`${(import.meta.env.VITE_MEALIE_URL as string ?? "").replace(/\/+$/, "")}/g/home/r/create/url`}
@@ -390,7 +441,10 @@ export function RecipesPage() {
 
       {/* Grille */}
       {filteredRecipes.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        >
           {filteredRecipes.map((recipe) => (
             <RecipeCard
               key={recipe.id}
