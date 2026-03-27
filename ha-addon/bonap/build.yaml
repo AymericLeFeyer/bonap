@@ -1,0 +1,8 @@
+build_from:
+  aarch64: ghcr.io/hassio-addons/base:alpine
+  amd64: ghcr.io/hassio-addons/base:alpine
+  armv7: ghcr.io/hassio-addons/base:alpine
+
+# The build context must be the repository root (not this directory)
+# because the Dockerfile's Stage 1 copies the full Bonap source.
+# See: https://developers.home-assistant.io/docs/add-ons/configuration/#add-on-build-options

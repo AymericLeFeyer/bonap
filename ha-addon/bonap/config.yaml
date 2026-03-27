@@ -1,0 +1,44 @@
+name: Bonap
+version: "1.0.0"
+slug: bonap
+description: Ergonomic front-end for Mealie — recipes, meal planning, shopping list and AI suggestions.
+url: https://github.com/AymericLeFeyer/bonap
+arch:
+  - aarch64
+  - amd64
+  - armv7
+
+# Pre-built image published by CI to GHCR.
+# HA Supervisor substitutes {arch} automatically (e.g. latest-amd64).
+image: ghcr.io/aymericlefeyer/bonap-ha-addon:latest-{arch}
+
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: Bonap web interface
+
+webui: http://[HOST]:[PORT:3000]
+
+ingress: true
+ingress_port: 3000
+ingress_stream: false
+
+panel_icon: mdi:food-fork-drink
+panel_title: Bonap
+
+options:
+  mealie_url: ""
+  mealie_token: ""
+
+schema:
+  mealie_url: str
+  mealie_token: str
+
+homeassistant_api: false
+hassio_api: false
+
+map:
+  - data:rw
+
+# No privileged access needed
+privileged: []

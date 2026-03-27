@@ -1,0 +1,11 @@
+configuration:
+  mealie_url:
+    name: Mealie URL
+    description: >-
+      Full URL of your Mealie instance as accessible from the browser.
+      Example: http://192.168.1.100:9000 or https://mealie.yourdomain.com
+  mealie_token:
+    name: Mealie API Token
+    description: >-
+      Bearer token generated in Mealie under Profile → API Tokens.
+      This token is stored locally and never sent outside your network.

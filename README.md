@@ -67,6 +67,25 @@ Bonap is available at [http://localhost:3000](http://localhost:3000).
 
 ---
 
+### Option C — Home Assistant addon
+
+If you run Home Assistant OS or Supervised, you can install Bonap as a native HA addon.
+
+1. Go to **Settings → Add-ons → Add-on Store**
+2. Click the **three-dot menu** (top right) → **Repositories**
+3. Add the following URL:
+   ```
+   https://github.com/AymericLeFeyer/bonap
+   ```
+4. Refresh — **Bonap** appears in the store. Install it.
+5. In the **Configuration** tab, set your Mealie URL and API token, then **Start**.
+
+Bonap will be accessible via the **OPEN WEB UI** button and from the HA sidebar (ingress).
+
+> See [`ha-addon/`](ha-addon/) for the full addon source.
+
+---
+
 ## Quick start — Local dev
 
 ```bash
