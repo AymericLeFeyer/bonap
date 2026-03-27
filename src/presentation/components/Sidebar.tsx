@@ -52,7 +52,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             </button>
           </>
         ) : (
-          <img src="/bonap.png" alt="bonap" className="h-8 w-8 object-contain" />
+          <img src={`${getIngressBasename()}/bonap.png`} alt="bonap" className="h-8 w-8 object-contain" />
         )}
       </div>
 
