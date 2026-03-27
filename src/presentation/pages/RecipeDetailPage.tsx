@@ -18,8 +18,10 @@ import {
   GripVertical,
   ImagePlus,
   Check,
+  UtensilsCrossed,
 } from "lucide-react"
 import { useState, useRef, useCallback, useEffect, type ReactNode, type ChangeEvent } from "react"
+import { CookingMode } from "../components/CookingMode.tsx"
 import type {
   MealieRecipe,
   MealieCategory,
@@ -293,6 +295,7 @@ export function RecipeDetailPage() {
   const [formData, setFormData] = useState<RecipeFormData | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [cookingMode, setCookingMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Initialise formData once recipe is loaded
@@ -421,6 +424,16 @@ export function RecipeDetailPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
+    <>
+      {cookingMode && recipe && formData && (
+        <CookingMode
+          recipeName={recipe.name}
+          ingredients={recipe.recipeIngredient ?? []}
+          instructions={recipe.recipeInstructions ?? []}
+          onClose={() => setCookingMode(false)}
+        />
+      )}
+
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -428,40 +441,54 @@ export function RecipeDetailPage() {
           <Link to="/recipes">&larr; Recettes</Link>
         </Button>
 
-        {isDirty && recipe && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {recipe && (
             <Button
+              variant="outline"
               size="sm"
-              variant="ghost"
-              onClick={() => {
-                setFormData(buildFormData(recipe))
-                setImagePreview(`/api/media/recipes/${recipe.id}/images/original.webp`)
-                setIsDirty(false)
-              }}
-              disabled={saving}
-            >
-              Annuler
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => void handleSave()}
-              disabled={saving || !formData?.name.trim()}
+              onClick={() => setCookingMode(true)}
               className="gap-1.5"
             >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Enregistrement…
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  Enregistrer
-                </>
-              )}
+              <UtensilsCrossed className="h-4 w-4" />
+              Mode cuisine
             </Button>
-          </div>
-        )}
+          )}
+
+          {isDirty && recipe && (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setFormData(buildFormData(recipe))
+                  setImagePreview(`/api/media/recipes/${recipe.id}/images/original.webp`)
+                  setIsDirty(false)
+                }}
+                disabled={saving}
+              >
+                Annuler
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => void handleSave()}
+                disabled={saving || !formData?.name.trim()}
+                className="gap-1.5"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
 
       </div>
 
@@ -802,5 +829,6 @@ export function RecipeDetailPage() {
         </article>
       )}
     </div>
+    </>
   )
 }

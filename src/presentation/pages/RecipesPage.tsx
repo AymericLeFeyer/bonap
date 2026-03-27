@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { CookingMode } from "../components/CookingMode.tsx"
 import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
@@ -494,6 +495,7 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
   const { recipe, setRecipe, loading } = useRecipe(slug)
   const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
   const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
+  const [cookingMode, setCookingMode] = useState(false)
 
   const handleToggleSeason = async (season: Season) => {
     if (!recipe) return
@@ -515,6 +517,15 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
   }
 
   return (
+    <>
+      {cookingMode && recipe && (
+        <CookingMode
+          recipeName={recipe.name}
+          ingredients={recipe.recipeIngredient ?? []}
+          instructions={recipe.recipeInstructions ?? []}
+          onClose={() => setCookingMode(false)}
+        />
+      )}
     <div
       className={cn(
         "fixed inset-y-0 right-0 z-50",
@@ -529,19 +540,35 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
         <span className="font-heading text-base font-bold tracking-tight">Recette</span>
         <div className="flex items-center gap-1.5">
           {recipe && (
-            <Link
-              to={`/recipes/${recipe.slug}`}
-              className={cn(
-                "flex items-center gap-1.5 rounded-[var(--radius-md)]",
-                "border border-border px-2.5 py-1.5",
-                "text-xs font-semibold text-muted-foreground",
-                "hover:text-foreground hover:border-border/80 hover:bg-secondary",
-                "transition-all duration-150",
-              )}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Page complète
-            </Link>
+            <>
+              <button
+                type="button"
+                onClick={() => setCookingMode(true)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                  "border border-border px-2.5 py-1.5",
+                  "text-xs font-semibold text-muted-foreground",
+                  "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                  "transition-all duration-150",
+                )}
+              >
+                <UtensilsCrossed className="h-3.5 w-3.5" />
+                Mode cuisine
+              </button>
+              <Link
+                to={`/recipes/${recipe.slug}`}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                  "border border-border px-2.5 py-1.5",
+                  "text-xs font-semibold text-muted-foreground",
+                  "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                  "transition-all duration-150",
+                )}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Page complète
+              </Link>
+            </>
           )}
           <button
             type="button"
@@ -677,5 +704,6 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
         )}
       </div>
     </div>
+    </>
   )
 }

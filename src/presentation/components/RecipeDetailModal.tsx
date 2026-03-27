@@ -1,24 +1,68 @@
+import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.tsx"
 import { useRecipe } from "../hooks/useRecipe.ts"
-import { Loader2 } from "lucide-react"
+import { Loader2, UtensilsCrossed } from "lucide-react"
 import { RecipeIngredientsList } from "./RecipeIngredientsList.tsx"
 import { RecipeInstructionsList } from "./RecipeInstructionsList.tsx"
 import { formatDuration } from "../../shared/utils/duration.ts"
+import { Button } from "./ui/button.tsx"
+import { CookingMode } from "./CookingMode.tsx"
+import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
 
 interface RecipeDetailModalProps {
   slug: string | null
   onOpenChange: (open: boolean) => void
 }
 
+interface CookingSnapshot {
+  name: string
+  ingredients: MealieIngredient[]
+  instructions: MealieInstruction[]
+}
+
 export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps) {
   const { recipe, loading, error } = useRecipe(slug ?? undefined)
+  const [cookingSnapshot, setCookingSnapshot] = useState<CookingSnapshot | null>(null)
+
+  const handleStartCooking = () => {
+    if (!recipe) return
+    setCookingSnapshot({
+      name: recipe.name,
+      ingredients: recipe.recipeIngredient ?? [],
+      instructions: recipe.recipeInstructions ?? [],
+    })
+    onOpenChange(false)
+  }
 
   return (
-    <Dialog open={!!slug} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{recipe?.name ?? " "}</DialogTitle>
-        </DialogHeader>
+    <>
+      {cookingSnapshot && (
+        <CookingMode
+          recipeName={cookingSnapshot.name}
+          ingredients={cookingSnapshot.ingredients}
+          instructions={cookingSnapshot.instructions}
+          onClose={() => setCookingSnapshot(null)}
+        />
+      )}
+
+      <Dialog open={!!slug} onOpenChange={onOpenChange}>
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-3 pr-6">
+              <DialogTitle className="truncate">{recipe?.name ?? " "}</DialogTitle>
+              {recipe && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartCooking}
+                  className="shrink-0 gap-1.5"
+                >
+                  <UtensilsCrossed className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Mode cuisine</span>
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           {loading && (
@@ -74,8 +118,9 @@ export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps
               />
             </article>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
