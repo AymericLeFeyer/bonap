@@ -1,6 +1,6 @@
 services:
   bonap:
-    image: ghcr.io/votre-user/bonap:latest
+    image: ghcr.io/AymericLeFeyer/bonap:latest
     # Pour builder localement : remplacer la ligne image par :
     # build: .
     ports:
