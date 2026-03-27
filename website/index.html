@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title>Bonap — L'interface Mealie que vous méritiez</title>
+  <meta name="description" content="Bonap est une interface moderne pour Mealie : gestion de recettes, planning de repas, liste de courses intelligente et suggestions IA. Self-hosted, open-source, élégant." />
+  <meta name="keywords" content="Mealie, recettes, planning repas, liste de courses, suggestions IA, self-hosted, open-source, React" />
+  <link rel="canonical" href="https://bonap.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bonap.app/" />
+  <meta property="og:title" content="Bonap — L'interface Mealie que vous méritiez" />
+  <meta property="og:description" content="Interface moderne pour Mealie : recettes, planning, courses intelligentes et suggestions IA. Self-hosted, open-source." />
+  <meta property="og:image" content="https://bonap.app/og-image.png" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:locale:alternate" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Bonap — L'interface Mealie que vous méritiez" />
+  <meta name="twitter:description" content="Interface moderne pour Mealie : recettes, planning, courses intelligentes et suggestions IA." />
+  <meta name="twitter:image" content="https://bonap.app/og-image.png" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Bonap",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "description": "Interface moderne et enrichie pour Mealie, le gestionnaire de recettes self-hosted.",
+    "url": "https://bonap.app/",
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: 'oklch(0.62 0.18 42)',
+              light: 'oklch(0.72 0.16 42)',
+              dark: 'oklch(0.52 0.20 42)',
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --primary: oklch(0.62 0.18 42);
+      --primary-light: oklch(0.72 0.16 42);
+      --primary-glow: oklch(0.62 0.18 42 / 0.3);
+      --primary-subtle: oklch(0.62 0.18 42 / 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: oklch(0.4 0.05 250); border-radius: 3px; }
+
+    /* Primary color utilities */
+    .text-primary { color: var(--primary); }
+    .bg-primary { background-color: var(--primary); }
+    .border-primary { border-color: var(--primary); }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+      padding: 0.625rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-light);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1.5px solid oklch(0.35 0.02 250);
+      color: inherit;
+      padding: 0.625rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .dark .btn-secondary { border-color: oklch(0.35 0.02 250); color: oklch(0.85 0.02 250); }
+    .light .btn-secondary, html:not(.dark) .btn-secondary { border-color: oklch(0.75 0.02 250); color: oklch(0.25 0.02 250); }
+    .btn-secondary:hover {
+      background-color: var(--primary-subtle);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Glow effect for hero */
+    .hero-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, oklch(0.62 0.18 42 / 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Feature card hover */
+    .feature-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+    }
+    .dark .feature-card:hover {
+      box-shadow: 0 8px 32px oklch(0 0 0 / 0.4);
+    }
+    html:not(.dark) .feature-card:hover {
+      box-shadow: 0 8px 32px oklch(0.7 0.02 250 / 0.5);
+    }
+
+    /* Step line connector */
+    .step-line {
+      position: absolute;
+      top: 28px;
+      left: calc(50% + 28px);
+      right: calc(-50% + 28px);
+      height: 1px;
+      background: linear-gradient(to right, var(--primary), transparent);
+    }
+
+    /* Screenshot placeholder */
+    .screenshot-placeholder {
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        oklch(0.25 0.02 250 / 0.3) 10px,
+        oklch(0.25 0.02 250 / 0.3) 11px
+      );
+    }
+    html:not(.dark) .screenshot-placeholder {
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        oklch(0.85 0.02 250 / 0.5) 10px,
+        oklch(0.85 0.02 250 / 0.5) 11px
+      );
+    }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, var(--primary) 0%, oklch(0.75 0.12 55) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Badge pill */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      background-color: var(--primary-subtle);
+      color: var(--primary);
+      border: 1px solid var(--primary-glow);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .animate-fade-in-up { animation: fadeInUp 0.6s ease both; }
+    .animate-fade-in { animation: fadeIn 0.4s ease both; }
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+
+    /* Code block */
+    .code-block {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    /* Nav link */
+    .nav-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+      text-decoration: none;
+    }
+    .dark .nav-link { color: oklch(0.7 0.02 250); }
+    html:not(.dark) .nav-link { color: oklch(0.4 0.02 250); }
+    .nav-link:hover { color: var(--primary); }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      background: oklch(0.3 0.02 250);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+      outline: none;
+    }
+    .toggle.active { background: var(--primary); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle.active::after { transform: translateX(18px); }
+
+    /* Lang toggle */
+    .lang-btn {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      background: transparent;
+      letter-spacing: 0.03em;
+    }
+    .lang-btn.active {
+      background: var(--primary-subtle);
+      color: var(--primary);
+    }
+    .dark .lang-btn:not(.active) { color: oklch(0.55 0.02 250); }
+    html:not(.dark) .lang-btn:not(.active) { color: oklch(0.55 0.02 250); }
+
+    /* Section divider */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, oklch(0.3 0.02 250), transparent);
+    }
+    html:not(.dark) .section-divider {
+      background: linear-gradient(to right, transparent, oklch(0.85 0.02 250), transparent);
+    }
+
+    /* Mealie badge */
+    .mealie-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: oklch(0.22 0.06 155 / 0.8);
+      color: oklch(0.75 0.12 155);
+      border: 1px solid oklch(0.75 0.12 155 / 0.3);
+    }
+
+    /* Responsive utility */
+    @media (max-width: 640px) {
+      .hero-glow { width: 300px; height: 300px; }
+    }
+  </style>
+</head>
+<body class="dark:bg-slate-950 bg-slate-50 dark:text-slate-100 text-slate-900 transition-colors duration-300">
+
+  <!-- Background grid pattern -->
+  <div class="fixed inset-0 pointer-events-none" aria-hidden="true">
+    <div class="dark:opacity-30 opacity-20" style="background-image: linear-gradient(oklch(0.5 0.02 250 / 0.15) 1px, transparent 1px), linear-gradient(90deg, oklch(0.5 0.02 250 / 0.15) 1px, transparent 1px); background-size: 48px 48px; width: 100%; height: 100%;"></div>
+  </div>
+
+  <!-- ===================== NAVBAR ===================== -->
+  <nav class="sticky top-0 z-50 dark:bg-slate-950/80 bg-white/80 backdrop-blur-md border-b dark:border-slate-800 border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-2 font-bold text-lg tracking-tight" style="color: var(--primary);">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect width="28" height="28" rx="7" fill="var(--primary)" fill-opacity="0.15"/>
+          <path d="M8 20V10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round"/>
+          <path d="M6 20h16" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round"/>
+          <path d="M12 14h4M12 17h4" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="14" cy="11" r="1.5" fill="var(--primary)" fill-opacity="0.8"/>
+        </svg>
+        Bonap
+      </a>
+
+      <!-- Nav links (desktop) -->
+      <div class="hidden md:flex items-center gap-6">
+        <a href="#features" class="nav-link" data-i18n="nav.features">Fonctionnalités</a>
+        <a href="#how-it-works" class="nav-link" data-i18n="nav.howItWorks">Installation</a>
+        <a href="#screenshots" class="nav-link" data-i18n="nav.screenshots">Aperçu</a>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-3">
+
+        <!-- Lang toggle -->
+        <div class="flex items-center gap-0.5">
+          <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">FR</button>
+          <span class="dark:text-slate-600 text-slate-300 text-xs">/</span>
+          <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+        </div>
+
+        <!-- Theme toggle -->
+        <button
+          id="theme-toggle"
+          onclick="toggleTheme()"
+          class="p-1.5 rounded-lg dark:hover:bg-slate-800 hover:bg-slate-100 transition-colors"
+          aria-label="Toggle theme"
+          title="Toggle dark/light mode"
+        >
+          <!-- Sun icon (shown in dark mode) -->
+          <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:block dark:text-slate-400">
+            <circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.22" y1="4.22" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.78" y2="19.78"/>
+            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="block dark:hidden text-slate-500">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+        <!-- GitHub CTA -->
+        <a href="https://github.com/aymeric-giraudet/bonap" target="_blank" rel="noopener" class="btn-primary text-sm px-3 py-1.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="relative overflow-hidden pt-20 pb-24 sm:pt-28 sm:pb-32">
+    <div class="hero-glow" aria-hidden="true"></div>
+
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+
+      <!-- Top badge -->
+      <div class="inline-flex items-center justify-center mb-6 animate-fade-in">
+        <span class="badge">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+            <path d="M6 1L7.5 4.5H11L8.25 6.75L9.5 10L6 8L2.5 10L3.75 6.75L1 4.5H4.5L6 1Z"/>
+          </svg>
+          <span data-i18n="hero.badge">Open-source &amp; Self-hosted</span>
+        </span>
+        <span class="mealie-badge ml-2">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="5"/></svg>
+          Mealie
+        </span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
+        <span data-i18n="hero.headline1">Cuisinez plus malin,</span><br/>
+        <span class="gradient-text" data-i18n="hero.headline2">organisez sans effort.</span>
+      </h1>
+
+      <!-- Subline -->
+      <p class="text-lg sm:text-xl dark:text-slate-400 text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up delay-200" data-i18n="hero.subline">
+        Bonap remplace l'interface de Mealie par une expérience fluide et enrichie — recettes intelligentes, planning visuel, liste de courses contextuelle et suggestions IA. Votre cuisine, enfin bien gérée.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up delay-300">
+        <a href="https://github.com/aymeric-giraudet/bonap" target="_blank" rel="noopener" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span data-i18n="hero.cta.github">Voir sur GitHub</span>
+        </a>
+        <a href="#how-it-works" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span data-i18n="hero.cta.install">Démarrer en 5 min</span>
+        </a>
+      </div>
+
+      <!-- Tech stack pills -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mt-12 animate-fade-in-up delay-400">
+        <span class="text-xs dark:text-slate-600 text-slate-400 font-medium mr-1" data-i18n="hero.builtWith">Construit avec</span>
+        <span class="px-2.5 py-1 rounded-md text-xs font-semibold dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600">React 19</span>
+        <span class="px-2.5 py-1 rounded-md text-xs font-semibold dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600">TypeScript</span>
+        <span class="px-2.5 py-1 rounded-md text-xs font-semibold dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600">Tailwind CSS</span>
+        <span class="px-2.5 py-1 rounded-md text-xs font-semibold dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600">shadcn/ui</span>
+        <span class="px-2.5 py-1 rounded-md text-xs font-semibold dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600">Vite</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider max-w-5xl mx-auto"></div>
+
+  <!-- ===================== FEATURES ===================== -->
+  <section id="features" class="py-20 sm:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--primary);" data-i18n="features.label">Fonctionnalités</p>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight" data-i18n="features.title">Tout ce dont vous avez besoin</h2>
+        <p class="mt-4 dark:text-slate-400 text-slate-500 max-w-xl mx-auto" data-i18n="features.subtitle">Six modules pensés pour transformer votre relation avec la cuisine quotidienne.</p>
+      </div>
+
+      <!-- Feature grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Feature: Recettes -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2" data-i18n="features.recipes.title">Bibliothèque de recettes</h3>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.recipes.desc">Recherche avancée, filtres par saison, durée et catégorie. Scroll infini. Édition complète avec ingrédients et instructions.</p>
+        </div>
+
+        <!-- Feature: Planning -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              <rect x="8" y="14" width="3" height="3" rx="0.5" fill="var(--primary)" fill-opacity="0.5" stroke="none"/>
+              <rect x="13" y="14" width="3" height="3" rx="0.5" fill="var(--primary)" fill-opacity="0.3" stroke="none"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2" data-i18n="features.planning.title">Planning de repas</h3>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.planning.desc">Calendrier glissant 3/5/7 jours. Ajoutez déjeuners et dîners d'un clic. Navigation fluide avec prefetch intelligent.</p>
+        </div>
+
+        <!-- Feature: Shopping -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+              <circle cx="9" cy="16" r="1" fill="var(--primary)" stroke="none"/>
+              <circle cx="13" cy="16" r="1" fill="var(--primary)" fill-opacity="0.5" stroke="none"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2" data-i18n="features.shopping.title">Liste de courses intelligente</h3>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.shopping.desc">Import automatique des ingrédients depuis vos recettes. Liste "Habituels" séparée. Groupement par rayon, mémorisation des labels.</p>
+        </div>
+
+        <!-- Feature: AI -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200 relative overflow-hidden">
+          <div class="absolute inset-0 opacity-5 pointer-events-none" style="background: radial-gradient(ellipse at 70% -20%, var(--primary) 0%, transparent 60%);"></div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4 relative" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+              <circle cx="8.5" cy="13.5" r="1.5" fill="var(--primary)"/><circle cx="15.5" cy="13.5" r="1.5" fill="var(--primary)"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-2 mb-2">
+            <h3 class="font-semibold text-base" data-i18n="features.ai.title">Suggestions IA</h3>
+            <span class="badge text-xs px-1.5 py-0.5" data-i18n="features.ai.badge">Nouveau</span>
+          </div>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.ai.desc">Assistant conversationnel embarqué. Suggestions personnalisées selon vos stocks, saison et historique. Compatible Anthropic, OpenAI, Google et Ollama.</p>
+        </div>
+
+        <!-- Feature: Stats -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              <line x1="2" y1="20" x2="22" y2="20"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2" data-i18n="features.stats.title">Statistiques &amp; insights</h3>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.stats.desc">Top recettes, top ingrédients, streak de planification, taux de restes, couverture du catalogue. Périodes 30j / 90j / 12m.</p>
+        </div>
+
+        <!-- Feature: Theme -->
+        <div class="feature-card rounded-2xl p-6 dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: var(--primary-subtle);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="13.5" cy="6.5" r=".5" fill="var(--primary)"/><circle cx="17.5" cy="10.5" r=".5" fill="var(--primary)"/>
+              <circle cx="8.5" cy="7.5" r=".5" fill="var(--primary)" fill-opacity="0.6"/><circle cx="6.5" cy="12.5" r=".5" fill="var(--primary)" fill-opacity="0.6"/>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2" data-i18n="features.theme.title">Thème personnalisable</h3>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="features.theme.desc">Dark / light / système. Couleur d'accent au choix parmi 8 palettes oklch soigneusement sélectionnées. Interface qui vous ressemble.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider max-w-5xl mx-auto"></div>
+
+  <!-- ===================== HOW IT WORKS ===================== -->
+  <section id="how-it-works" class="py-20 sm:py-28">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+
+      <div class="text-center mb-16">
+        <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--primary);" data-i18n="howto.label">Installation</p>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight" data-i18n="howto.title">En route en 5 minutes</h2>
+        <p class="mt-4 dark:text-slate-400 text-slate-500 max-w-xl mx-auto" data-i18n="howto.subtitle">Bonap se connecte à votre instance Mealie existante. Aucune migration, aucune perte de données.</p>
+      </div>
+
+      <!-- Steps -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Step 1 -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 text-white" style="background: var(--primary);">1</div>
+            <h3 class="font-semibold text-sm" data-i18n="howto.step1.title">Installer Mealie</h3>
+          </div>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed pl-0 sm:pl-0" data-i18n="howto.step1.desc">Déployez Mealie sur votre serveur avec Docker. Une instance existante fonctionne directement.</p>
+          <div class="dark:bg-slate-900 bg-slate-100 rounded-lg p-3 code-block dark:text-slate-300 text-slate-700 text-xs mt-auto">
+            <span class="dark:text-slate-500 text-slate-400"># docker-compose.yml</span><br/>
+            docker compose up -d
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 text-white" style="background: var(--primary);">2</div>
+            <h3 class="font-semibold text-sm" data-i18n="howto.step2.title">Lancer Bonap</h3>
+          </div>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="howto.step2.desc">Clonez le repo ou utilisez l'addon Home Assistant inclus dans le dépôt.</p>
+          <div class="dark:bg-slate-900 bg-slate-100 rounded-lg p-3 code-block dark:text-slate-300 text-slate-700 text-xs mt-auto">
+            <span class="dark:text-slate-500 text-slate-400"># ou via npm</span><br/>
+            git clone &amp;&amp; npm run dev
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 text-white" style="background: var(--primary);">3</div>
+            <h3 class="font-semibold text-sm" data-i18n="howto.step3.title">Configurer</h3>
+          </div>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="howto.step3.desc">Renseignez l'URL de votre Mealie et votre token API dans le fichier <code class="code-block">.env</code>.</p>
+          <div class="dark:bg-slate-900 bg-slate-100 rounded-lg p-3 code-block dark:text-slate-300 text-slate-700 text-xs mt-auto">
+            VITE_MEALIE_URL=...<br/>
+            VITE_MEALIE_TOKEN=...
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0" style="background: var(--primary-subtle); color: var(--primary);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-sm" data-i18n="howto.step4.title">Profitez</h3>
+          </div>
+          <p class="text-sm dark:text-slate-400 text-slate-500 leading-relaxed" data-i18n="howto.step4.desc">Toutes vos recettes Mealie sont disponibles immédiatement dans la nouvelle interface.</p>
+          <div class="dark:bg-slate-900 bg-slate-100 rounded-lg p-3 text-xs dark:text-slate-400 text-slate-500 leading-relaxed mt-auto" data-i18n="howto.step4.enjoy">
+            Vos recettes, planning et courses — au même endroit, plus agréable a utiliser.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Home Assistant note -->
+      <div class="mt-10 rounded-2xl dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: oklch(0.22 0.08 270 / 0.3);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 9.5L12 3l9 6.5V21H3V9.5Z" stroke="oklch(0.7 0.12 270)" stroke-width="1.75" stroke-linejoin="round"/>
+            <rect x="9" y="15" width="6" height="6" rx="1" stroke="oklch(0.7 0.12 270)" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-sm" data-i18n="howto.ha.title">Addon Home Assistant inclus</p>
+          <p class="text-sm dark:text-slate-400 text-slate-500 mt-0.5" data-i18n="howto.ha.desc">Un addon HA est fourni dans le dépôt pour une intégration native dans votre instance Home Assistant.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider max-w-5xl mx-auto"></div>
+
+  <!-- ===================== SCREENSHOTS ===================== -->
+  <section id="screenshots" class="py-20 sm:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+
+      <div class="text-center mb-16">
+        <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--primary);" data-i18n="screenshots.label">Aperçu</p>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight" data-i18n="screenshots.title">Une interface qui change tout</h2>
+        <p class="mt-4 dark:text-slate-400 text-slate-500 max-w-xl mx-auto" data-i18n="screenshots.subtitle">Conçue pour être rapide, claire et agréable à utiliser au quotidien.</p>
+      </div>
+
+      <!-- Main screenshot -->
+      <div class="rounded-2xl overflow-hidden border dark:border-slate-800 border-slate-200 mb-6 aspect-[16/9] screenshot-placeholder flex items-center justify-center relative">
+        <div class="text-center dark:text-slate-600 text-slate-400">
+          <!-- Replace with actual screenshot -->
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-3 opacity-50" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <p class="text-sm font-medium" data-i18n="screenshots.main">Screenshot — Page Recettes</p>
+        </div>
+        <!-- Badge overlay -->
+        <div class="absolute bottom-4 left-4 right-4 flex gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold dark:bg-slate-950/80 bg-white/80 backdrop-blur-sm dark:text-slate-300 text-slate-600 border dark:border-slate-700 border-slate-200" data-i18n="screenshots.badge1">Filtres multi-critères</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold dark:bg-slate-950/80 bg-white/80 backdrop-blur-sm dark:text-slate-300 text-slate-600 border dark:border-slate-700 border-slate-200" data-i18n="screenshots.badge2">Scroll infini</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold dark:bg-slate-950/80 bg-white/80 backdrop-blur-sm dark:text-slate-300 text-slate-600 border dark:border-slate-700 border-slate-200" data-i18n="screenshots.badge3">Mobile-first</span>
+        </div>
+      </div>
+
+      <!-- Secondary screenshots grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <div class="rounded-xl overflow-hidden border dark:border-slate-800 border-slate-200 aspect-[4/3] screenshot-placeholder flex items-center justify-center">
+          <!-- Replace with actual screenshot -->
+          <div class="text-center dark:text-slate-600 text-slate-400">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2 opacity-50" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p class="text-xs" data-i18n="screenshots.planning">Screenshot — Planning</p>
+          </div>
+        </div>
+
+        <div class="rounded-xl overflow-hidden border dark:border-slate-800 border-slate-200 aspect-[4/3] screenshot-placeholder flex items-center justify-center">
+          <!-- Replace with actual screenshot -->
+          <div class="text-center dark:text-slate-600 text-slate-400">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2 opacity-50" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <p class="text-xs" data-i18n="screenshots.assistant">Screenshot — Assistant IA</p>
+          </div>
+        </div>
+
+        <div class="rounded-xl overflow-hidden border dark:border-slate-800 border-slate-200 aspect-[4/3] screenshot-placeholder flex items-center justify-center">
+          <!-- Replace with actual screenshot -->
+          <div class="text-center dark:text-slate-600 text-slate-400">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2 opacity-50" aria-hidden="true">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+            </svg>
+            <p class="text-xs" data-i18n="screenshots.stats">Screenshot — Statistiques</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider max-w-5xl mx-auto"></div>
+
+  <!-- ===================== CTA SECTION ===================== -->
+  <section class="py-20 sm:py-28">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4" data-i18n="cta.title">Prêt à transformer votre cuisine&nbsp;?</h2>
+      <p class="dark:text-slate-400 text-slate-500 mb-10 text-lg" data-i18n="cta.subtitle">Open-source, gratuit, sans trackers. Vos données restent chez vous.</p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <a href="https://github.com/aymeric-giraudet/bonap" target="_blank" rel="noopener" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span data-i18n="cta.github">Voir sur GitHub</span>
+        </a>
+        <a href="https://github.com/aymeric-giraudet/bonap#readme" target="_blank" rel="noopener" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span data-i18n="cta.docs">Documentation</span>
+        </a>
+      </div>
+
+      <!-- License note -->
+      <p class="mt-10 text-xs dark:text-slate-600 text-slate-400">
+        <span data-i18n="cta.license">Distribué sous licence</span>
+        <a href="https://github.com/aymeric-giraudet/bonap/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-primary underline underline-offset-2 ml-1">MIT</a>
+        &mdash;
+        <span data-i18n="cta.mealieNote">Nécessite une instance</span>
+        <a href="https://mealie.io" target="_blank" rel="noopener" class="hover:text-primary underline underline-offset-2 ml-1">Mealie</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="border-t dark:border-slate-800 border-slate-200 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm dark:text-slate-500 text-slate-400">
+
+      <div class="flex items-center gap-2">
+        <span style="color: var(--primary); font-weight: 700;">Bonap</span>
+        <span>&mdash;</span>
+        <span data-i18n="footer.tagline">Interface Mealie open-source</span>
+      </div>
+
+      <div class="flex items-center gap-5">
+        <a href="https://github.com/aymeric-giraudet/bonap" target="_blank" rel="noopener" class="hover:text-primary transition-colors flex items-center gap-1.5" data-i18n="footer.github">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+        <a href="https://mealie.io" target="_blank" rel="noopener" class="hover:text-primary transition-colors" data-i18n="footer.mealie">Mealie</a>
+        <a href="https://github.com/aymeric-giraudet/bonap/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-primary transition-colors" data-i18n="footer.license">Licence MIT</a>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ===================== JS ===================== -->
+  <script>
+    // ========================
+    // i18n data
+    // ========================
+    const i18n = {
+      fr: {
+        'nav.features': 'Fonctionnalités',
+        'nav.howItWorks': 'Installation',
+        'nav.screenshots': 'Aperçu',
+        'hero.badge': 'Open-source & Self-hosted',
+        'hero.headline1': 'Cuisinez plus malin,',
+        'hero.headline2': 'organisez sans effort.',
+        'hero.subline': "Bonap remplace l'interface de Mealie par une expérience fluide et enrichie — recettes intelligentes, planning visuel, liste de courses contextuelle et suggestions IA. Votre cuisine, enfin bien gérée.",
+        'hero.cta.github': 'Voir sur GitHub',
+        'hero.cta.install': 'Démarrer en 5 min',
+        'hero.builtWith': 'Construit avec',
+        'features.label': 'Fonctionnalités',
+        'features.title': 'Tout ce dont vous avez besoin',
+        'features.subtitle': 'Six modules pensés pour transformer votre relation avec la cuisine quotidienne.',
+        'features.recipes.title': 'Bibliothèque de recettes',
+        'features.recipes.desc': 'Recherche avancée, filtres par saison, durée et catégorie. Scroll infini. Édition complète avec ingrédients et instructions.',
+        'features.planning.title': 'Planning de repas',
+        'features.planning.desc': 'Calendrier glissant 3/5/7 jours. Ajoutez déjeuners et dîners d\'un clic. Navigation fluide avec prefetch intelligent.',
+        'features.shopping.title': 'Liste de courses intelligente',
+        'features.shopping.desc': 'Import automatique des ingrédients depuis vos recettes. Liste "Habituels" séparée. Groupement par rayon, mémorisation des labels.',
+        'features.ai.title': 'Suggestions IA',
+        'features.ai.badge': 'Nouveau',
+        'features.ai.desc': 'Assistant conversationnel embarqué. Suggestions personnalisées selon vos stocks, saison et historique. Compatible Anthropic, OpenAI, Google et Ollama.',
+        'features.stats.title': 'Statistiques & insights',
+        'features.stats.desc': 'Top recettes, top ingrédients, streak de planification, taux de restes, couverture du catalogue. Périodes 30j / 90j / 12m.',
+        'features.theme.title': 'Thème personnalisable',
+        'features.theme.desc': 'Dark / light / système. Couleur d\'accent au choix parmi 8 palettes oklch soigneusement sélectionnées. Interface qui vous ressemble.',
+        'howto.label': 'Installation',
+        'howto.title': 'En route en 5 minutes',
+        'howto.subtitle': 'Bonap se connecte à votre instance Mealie existante. Aucune migration, aucune perte de données.',
+        'howto.step1.title': 'Installer Mealie',
+        'howto.step1.desc': 'Déployez Mealie sur votre serveur avec Docker. Une instance existante fonctionne directement.',
+        'howto.step2.title': 'Lancer Bonap',
+        'howto.step2.desc': 'Clonez le repo ou utilisez l\'addon Home Assistant inclus dans le dépôt.',
+        'howto.step3.title': 'Configurer',
+        'howto.step3.desc': 'Renseignez l\'URL de votre Mealie et votre token API dans le fichier <code class="code-block">.env</code>.',
+        'howto.step4.title': 'Profitez',
+        'howto.step4.desc': 'Toutes vos recettes Mealie sont disponibles immédiatement dans la nouvelle interface.',
+        'howto.step4.enjoy': 'Vos recettes, planning et courses — au même endroit, plus agréable à utiliser.',
+        'howto.ha.title': 'Addon Home Assistant inclus',
+        'howto.ha.desc': 'Un addon HA est fourni dans le dépôt pour une intégration native dans votre instance Home Assistant.',
+        'screenshots.label': 'Aperçu',
+        'screenshots.title': 'Une interface qui change tout',
+        'screenshots.subtitle': 'Conçue pour être rapide, claire et agréable à utiliser au quotidien.',
+        'screenshots.main': 'Screenshot — Page Recettes',
+        'screenshots.badge1': 'Filtres multi-critères',
+        'screenshots.badge2': 'Scroll infini',
+        'screenshots.badge3': 'Mobile-first',
+        'screenshots.planning': 'Screenshot — Planning',
+        'screenshots.assistant': 'Screenshot — Assistant IA',
+        'screenshots.stats': 'Screenshot — Statistiques',
+        'cta.title': 'Prêt à transformer votre cuisine\u00a0?',
+        'cta.subtitle': 'Open-source, gratuit, sans trackers. Vos données restent chez vous.',
+        'cta.github': 'Voir sur GitHub',
+        'cta.docs': 'Documentation',
+        'cta.license': 'Distribué sous licence',
+        'cta.mealieNote': 'Nécessite une instance',
+        'footer.tagline': 'Interface Mealie open-source',
+        'footer.github': 'GitHub',
+        'footer.mealie': 'Mealie',
+        'footer.license': 'Licence MIT',
+      },
+      en: {
+        'nav.features': 'Features',
+        'nav.howItWorks': 'Setup',
+        'nav.screenshots': 'Preview',
+        'hero.badge': 'Open-source & Self-hosted',
+        'hero.headline1': 'Cook smarter,',
+        'hero.headline2': 'organize effortlessly.',
+        'hero.subline': "Bonap replaces Mealie's interface with a smooth, feature-rich experience — smart recipes, visual meal planning, context-aware shopping list and AI suggestions. Your kitchen, finally under control.",
+        'hero.cta.github': 'View on GitHub',
+        'hero.cta.install': 'Get started in 5 min',
+        'hero.builtWith': 'Built with',
+        'features.label': 'Features',
+        'features.title': 'Everything you need',
+        'features.subtitle': 'Six modules designed to transform your relationship with everyday cooking.',
+        'features.recipes.title': 'Recipe library',
+        'features.recipes.desc': 'Advanced search, filters by season, duration and category. Infinite scroll. Full editing with ingredients and instructions.',
+        'features.planning.title': 'Meal planning',
+        'features.planning.desc': 'Sliding 3/5/7-day calendar. Add lunches and dinners in one click. Smooth navigation with smart prefetch.',
+        'features.shopping.title': 'Smart shopping list',
+        'features.shopping.desc': 'Automatically import ingredients from your recipes. Separate "Regulars" list. Group by aisle, label memory.',
+        'features.ai.title': 'AI suggestions',
+        'features.ai.badge': 'New',
+        'features.ai.desc': 'Built-in conversational assistant. Personalized suggestions based on your pantry, season and history. Works with Anthropic, OpenAI, Google and Ollama.',
+        'features.stats.title': 'Statistics & insights',
+        'features.stats.desc': 'Top recipes, top ingredients, planning streak, leftover rate, catalog coverage. 30d / 90d / 12m periods.',
+        'features.theme.title': 'Customizable theme',
+        'features.theme.desc': 'Dark / light / system. Choose an accent color from 8 carefully curated oklch palettes. An interface that feels like you.',
+        'howto.label': 'Setup',
+        'howto.title': 'Up and running in 5 minutes',
+        'howto.subtitle': 'Bonap connects to your existing Mealie instance. No migration, no data loss.',
+        'howto.step1.title': 'Install Mealie',
+        'howto.step1.desc': 'Deploy Mealie on your server with Docker. An existing instance works out of the box.',
+        'howto.step2.title': 'Launch Bonap',
+        'howto.step2.desc': 'Clone the repo or use the Home Assistant addon included in the repository.',
+        'howto.step3.title': 'Configure',
+        'howto.step3.desc': 'Set your Mealie URL and API token in the <code class="code-block">.env</code> file.',
+        'howto.step4.title': 'Enjoy',
+        'howto.step4.desc': 'All your Mealie recipes are immediately available in the new interface.',
+        'howto.step4.enjoy': 'Your recipes, planning and shopping — in one place, better than ever.',
+        'howto.ha.title': 'Home Assistant addon included',
+        'howto.ha.desc': 'An HA addon is provided in the repo for native integration within your Home Assistant instance.',
+        'screenshots.label': 'Preview',
+        'screenshots.title': 'An interface that changes everything',
+        'screenshots.subtitle': 'Designed to be fast, clear and pleasant to use every day.',
+        'screenshots.main': 'Screenshot — Recipes page',
+        'screenshots.badge1': 'Multi-criteria filters',
+        'screenshots.badge2': 'Infinite scroll',
+        'screenshots.badge3': 'Mobile-first',
+        'screenshots.planning': 'Screenshot — Planning',
+        'screenshots.assistant': 'Screenshot — AI Assistant',
+        'screenshots.stats': 'Screenshot — Statistics',
+        'cta.title': 'Ready to transform your kitchen?',
+        'cta.subtitle': 'Open-source, free, no trackers. Your data stays yours.',
+        'cta.github': 'View on GitHub',
+        'cta.docs': 'Documentation',
+        'cta.license': 'Released under',
+        'cta.mealieNote': 'Requires a',
+        'footer.tagline': 'Open-source Mealie interface',
+        'footer.github': 'GitHub',
+        'footer.mealie': 'Mealie',
+        'footer.license': 'MIT License',
+      }
+    };
+
+    // ========================
+    // State
+    // ========================
+    let currentLang = localStorage.getItem('bonap_lang') || 'fr';
+    let currentTheme = localStorage.getItem('bonap_site_theme') || 'dark';
+
+    // ========================
+    // Apply theme
+    // ========================
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('bonap_site_theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    function toggleTheme() {
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    }
+
+    // ========================
+    // Apply lang
+    // ========================
+    function applyLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('bonap_lang', lang);
+
+      // Update html lang attribute
+      document.documentElement.lang = lang;
+
+      // Update meta tags
+      if (lang === 'en') {
+        document.title = 'Bonap — The Mealie interface you deserved';
+        document.querySelector('meta[name="description"]').setAttribute('content', "Bonap is a modern interface for Mealie: recipe management, meal planning, smart shopping list and AI suggestions. Self-hosted, open-source.");
+        document.querySelector('meta[property="og:title"]').setAttribute('content', 'Bonap — The Mealie interface you deserved');
+        document.querySelector('meta[property="og:locale"]').setAttribute('content', 'en_US');
+      } else {
+        document.title = "Bonap — L'interface Mealie que vous méritiez";
+        document.querySelector('meta[name="description"]').setAttribute('content', "Bonap est une interface moderne pour Mealie : gestion de recettes, planning de repas, liste de courses intelligente et suggestions IA. Self-hosted, open-source, élégant.");
+        document.querySelector('meta[property="og:title"]').setAttribute('content', "Bonap — L'interface Mealie que vous méritiez");
+        document.querySelector('meta[property="og:locale"]').setAttribute('content', 'fr_FR');
+      }
+
+      // Update all data-i18n elements
+      const dict = i18n[lang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key] !== undefined) {
+          el.innerHTML = dict[key];
+        }
+      });
+
+      // Update lang buttons
+      document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    }
+
+    function setLang(lang) {
+      applyLang(lang);
+    }
+
+    // ========================
+    // Init
+    // ========================
+    applyTheme(currentTheme);
+    applyLang(currentLang);
+
+    // ========================
+    // Scroll animations (Intersection Observer)
+    // ========================
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+      // Observe feature cards and steps
+      document.querySelectorAll('.feature-card, [class*="flex flex-col gap-3"]').forEach((el, i) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s`;
+        observer.observe(el);
+      });
+    }
+  </script>
+
+</body>
+</html>
