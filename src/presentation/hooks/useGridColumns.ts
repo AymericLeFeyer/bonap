@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react"
 
 const STORAGE_KEY = "bonap:grid_columns"
-const MIN_COLUMNS = 2
-const MAX_COLUMNS = 6
+const MIN_COLUMNS = 3
+const MAX_COLUMNS = 12
 const DEFAULT_COLUMNS = 4
 
 function readFromStorage(): number {

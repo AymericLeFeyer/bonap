@@ -13,7 +13,7 @@ import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import {
   Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw,
-  Plus, PenLine, ExternalLink, Clock, LayoutGrid,
+  Plus, PenLine, ExternalLink, Clock,
 } from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
@@ -40,7 +40,7 @@ export function RecipesPage() {
   const [noIngredientsLoading, setNoIngredientsLoading] = useState(false)
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [drawerClosing, setDrawerClosing] = useState(false)
-  const { columns, increment, decrement, canIncrement, canDecrement } = useGridColumns()
+  const { columns, setColumns, min: minColumns, max: maxColumns } = useGridColumns()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -204,53 +204,27 @@ export function RecipesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Contrôle colonnes */}
+            {/* Slider colonnes */}
             <div
               className={cn(
-                "flex items-center gap-1 rounded-[var(--radius-lg)]",
-                "border border-border bg-card px-1.5 py-1",
+                "flex items-center gap-2 rounded-[var(--radius-lg)]",
+                "border border-border bg-card px-2.5 py-1.5",
                 "shadow-subtle",
               )}
             >
-              <button
-                type="button"
-                onClick={decrement}
-                disabled={!canDecrement}
-                aria-label="Moins de colonnes"
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-[var(--radius-md)]",
-                  "text-muted-foreground transition-colors",
-                  canDecrement
-                    ? "hover:bg-secondary hover:text-foreground"
-                    : "opacity-30 cursor-not-allowed",
-                )}
-              >
-                <span className="text-sm font-bold leading-none">−</span>
-              </button>
-              <span
-                className={cn(
-                  "flex items-center gap-1 px-1",
-                  "text-xs font-semibold text-muted-foreground select-none",
-                )}
-              >
-                <LayoutGrid className="h-3 w-3" />
-                <span className="tabular-nums">{columns}</span>
+              <input
+                type="range"
+                min={minColumns}
+                max={maxColumns}
+                step={1}
+                value={columns}
+                onChange={(e) => setColumns(Number(e.target.value))}
+                aria-label="Nombre de colonnes"
+                className="w-20 accent-primary cursor-pointer"
+              />
+              <span className="text-xs font-semibold tabular-nums text-muted-foreground select-none w-3">
+                {columns}
               </span>
-              <button
-                type="button"
-                onClick={increment}
-                disabled={!canIncrement}
-                aria-label="Plus de colonnes"
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-[var(--radius-md)]",
-                  "text-muted-foreground transition-colors",
-                  canIncrement
-                    ? "hover:bg-secondary hover:text-foreground"
-                    : "opacity-30 cursor-not-allowed",
-                )}
-              >
-                <span className="text-sm font-bold leading-none">+</span>
-              </button>
             </div>
 
             {/* Importer depuis Mealie */}
