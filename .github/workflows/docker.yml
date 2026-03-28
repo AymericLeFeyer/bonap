@@ -80,9 +80,21 @@ jobs:
         with:
           ref: main
 
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
       - name: Get app version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git-cliff --tag "v${VERSION}" --unreleased --strip all > /tmp/release_notes.md
+          echo "notes_file=/tmp/release_notes.md" >> $GITHUB_OUTPUT
 
       - name: Create release if not exists
         env:
@@ -94,6 +106,6 @@ jobs:
           else
             gh release create "v${VERSION}" \
               --title "v${VERSION}" \
-              --generate-notes \
+              --notes-file "${{ steps.changelog.outputs.notes_file }}" \
               --target main
           fi

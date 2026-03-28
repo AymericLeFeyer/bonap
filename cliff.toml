@@ -1,0 +1,35 @@
+[changelog]
+header = ""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}\
+- {{ commit.message | split(pat="\n") | first | trim }}\
+{% endfor %}
+{% endfor %}\n
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+  { message = "^feat", group = "Nouveautés" },
+  { message = "^fix", group = "Corrections" },
+  { message = "^perf", group = "Performances" },
+  { message = "^refactor", group = "Refactoring" },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^chore", skip = true },
+  { message = "^ci", skip = true },
+  { message = "^docs", skip = true },
+  { message = "^style", skip = true },
+  { message = "^test", skip = true },
+]
+filter_commits = true
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"
