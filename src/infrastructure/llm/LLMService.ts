@@ -25,11 +25,12 @@ export async function llmChat(systemPrompt: string, userMessage: string): Promis
 }
 
 async function callAnthropic(config: LLMConfig, system: string, user: string): Promise<string> {
-  const res = await fetch("/anthropic/v1/messages", {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": config.apiKey,
       "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -48,7 +49,7 @@ async function callAnthropic(config: LLMConfig, system: string, user: string): P
 }
 
 async function callOpenAI(config: LLMConfig, system: string, user: string): Promise<string> {
-  const res = await fetch("/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -72,7 +73,7 @@ async function callOpenAI(config: LLMConfig, system: string, user: string): Prom
 
 async function callGoogle(config: LLMConfig, system: string, user: string): Promise<string> {
   const res = await fetch(
-    `/google-ai/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },

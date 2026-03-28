@@ -123,11 +123,12 @@ async function streamAnthropic(
   tools: Record<string, AssistantTool>,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  const res = await fetch("/anthropic/v1/messages", {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": config.apiKey,
       "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
       "content-type": "application/json",
     },
     body: JSON.stringify({
