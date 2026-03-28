@@ -1,61 +1,45 @@
 <div class="view view--full">
-{% liquid
-  assign day0 = days[0]
-  assign day1 = days[1]
-  assign day2 = days[2]
-%}
-  <div class="layout layout--col" style="padding: 20px 20px 0 20px; height: calc(100% - 40px);">
-    <div class="flex flex--row stretch" style="height: 100%; gap: 0;">
+  <div style="display: flex; flex-direction: column; padding: 16px 20px 0 20px; gap: 10px; height: calc(100% - 40px); overflow: hidden;">
 
-      {% for day in days %}
-      {% assign is_last = forloop.last %}
-      <div style="flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 0 20px 0 0; {% unless is_last %}border-right: 1px solid rgba(0,0,0,0.12); margin-right: 20px;{% endunless %}">
+    {% assign prev_date = "" %}
+    {% for item in items limit: 8 %}
 
-        <!-- En-tête du jour -->
-        <div>
-          <div class="description uppercase" style="font-size: 11px; font-weight: 700; opacity: 0.45; letter-spacing: 0.08em;">{{ day.label }}</div>
-          <div class="description" style="font-size: 13px; opacity: 0.55; margin-top: 2px;">{{ day.date }}</div>
-        </div>
+      {% if item.date != prev_date %}
+        {% unless forloop.first %}<hr style="opacity: 0.1; margin: 2px 0;">{% endunless %}
+        <div class="description uppercase" style="font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 0.08em; margin-top: 4px;">{{ item.date }}</div>
+        {% assign prev_date = item.date %}
+      {% endif %}
 
-        <!-- Déjeuner -->
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
-            </svg>
-            <span class="description uppercase" style="font-size: 10px; font-weight: 600; opacity: 0.45; letter-spacing: 0.06em;">Déjeuner</span>
-          </div>
-          {% if day.lunch != blank %}
-          <span class="title" style="font-size: 17px; font-weight: 700; line-height: 1.25;">{{ day.lunch }}</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; width: 80px;">
+          {% if item.entryType == "lunch" %}
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
+          </svg>
+          <span class="description" style="font-size: 11px; opacity: 0.5;">Déjeuner</span>
           {% else %}
-          <span class="description" style="font-size: 14px; opacity: 0.25; font-style: italic;">—</span>
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.65l4.19 4.19zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/>
+          </svg>
+          <span class="description" style="font-size: 11px; opacity: 0.5;">Dîner</span>
           {% endif %}
         </div>
-
-        <!-- Dîner -->
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.65l4.19 4.19zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/>
-            </svg>
-            <span class="description uppercase" style="font-size: 10px; font-weight: 600; opacity: 0.45; letter-spacing: 0.06em;">Dîner</span>
-          </div>
-          {% if day.dinner != blank %}
-          <span class="title" style="font-size: 17px; font-weight: 700; line-height: 1.25;">{{ day.dinner }}</span>
-          {% else %}
-          <span class="description" style="font-size: 14px; opacity: 0.25; font-style: italic;">—</span>
-          {% endif %}
-        </div>
-
+        <span class="title" style="font-size: 17px; font-weight: 700; line-height: 1.2; flex: 1;">
+          {% if item.recipe.name != blank %}{{ item.recipe.name }}{% else %}{{ item.title }}{% endif %}
+        </span>
       </div>
-      {% endfor %}
 
-    </div>
+    {% else %}
+      <div style="display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.35;">
+        <span class="title" style="font-size: 16px;">Aucun repas planifié</span>
+      </div>
+    {% endfor %}
+
   </div>
 
   <div class="title_bar">
     <img class="image" src="https://raw.githubusercontent.com/AymericLeFeyer/bonap/main/public/bonap.png" />
     <div class="title">Planning repas</div>
-    <div class="instance">Mis à jour {{ last_update }}</div>
+    <div class="instance">à partir du {{ items[0].date }}</div>
   </div>
 </div>

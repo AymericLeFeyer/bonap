@@ -1,67 +1,64 @@
 <div class="view view--full">
 {% liquid
+  assign meal = items[0]
   assign has_meal = false
-  if name != blank
+  if meal != blank
     assign has_meal = true
   endif
-
-  assign ingredient_limit = 7
-  assign instruction_limit = 4
 %}
 
 {% if has_meal %}
-
   <div style="display: flex; flex-direction: row; height: calc(100% - 40px);">
 
-    <!-- Photo -->
-    {% if image_url != blank %}
-    <div style="width: 38%; flex-shrink: 0; background-image: url('{{ image_url }}'); background-size: cover; background-position: center;">
+    <!-- Photo (remplacer YOUR_MEALIE_URL par l'URL de ton instance Mealie) -->
+    <div style="width: 38%; flex-shrink: 0; background-image: url('http://YOUR_MEALIE_URL/api/media/recipes/{{ meal.recipe.id }}/images/min-original.webp'); background-size: cover; background-position: center; background-color: #f0f0f0;">
     </div>
-    {% endif %}
 
     <!-- Contenu -->
     <div style="flex: 1; display: flex; flex-direction: column; padding: 18px 18px 10px 18px; gap: 10px; overflow: hidden; min-width: 0;">
 
-      <!-- Type de repas + heure -->
+      <!-- Type de repas + date -->
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span class="description uppercase" style="font-size: 11px; font-weight: 700; opacity: 0.45; letter-spacing: 0.08em;">{{ type }}</span>
-        <span class="description" style="font-size: 11px; opacity: 0.35;">{{ at }}</span>
+        {% if meal.entryType == "lunch" %}
+        <span class="description uppercase" style="font-size: 11px; font-weight: 700; opacity: 0.45;">Déjeuner</span>
+        {% else %}
+        <span class="description uppercase" style="font-size: 11px; font-weight: 700; opacity: 0.45;">Dîner</span>
+        {% endif %}
+        <span class="description" style="font-size: 11px; opacity: 0.35;">{{ meal.date }}</span>
       </div>
 
       <!-- Nom de la recette -->
-      <div>
-        <span class="title title--large" style="font-size: 26px; font-weight: 800; line-height: 1.1;">{{ name }}</span>
-      </div>
+      <span class="title title--large" style="font-size: 26px; font-weight: 800; line-height: 1.1;">{{ meal.recipe.name }}</span>
 
       <hr style="opacity: 0.15; margin: 2px 0;">
 
       <!-- Ingrédients -->
-      {% if ingredients != blank %}
-      <div style="display: flex; flex-direction: column; gap: 3px;">
-        <span class="description uppercase" style="font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 0.06em; margin-bottom: 4px;">Ingrédients</span>
-        {% for ingredient in ingredients limit: ingredient_limit %}
-        <span class="description" style="font-size: 12px; line-height: 1.3;">· {{ ingredient }}</span>
+      {% if meal.recipe.recipeIngredient != blank %}
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span class="description uppercase" style="font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 0.06em; margin-bottom: 3px;">Ingrédients</span>
+        {% for ing in meal.recipe.recipeIngredient limit: 7 %}
+        <span class="description" style="font-size: 12px; line-height: 1.3;">· {{ ing.note }}</span>
         {% endfor %}
-        {% assign remaining = ingredients.size | minus: ingredient_limit %}
+        {% assign remaining = meal.recipe.recipeIngredient.size | minus: 7 %}
         {% if remaining > 0 %}
-        <span class="description" style="font-size: 11px; opacity: 0.4; font-style: italic; margin-top: 2px;">+{{ remaining }} autres</span>
+        <span class="description" style="font-size: 11px; opacity: 0.4; font-style: italic;">+{{ remaining }} autres</span>
         {% endif %}
       </div>
       {% endif %}
 
       <!-- Instructions -->
-      {% if instructions != blank %}
-      <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 4px;">
-        <span class="description uppercase" style="font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 0.06em; margin-bottom: 4px;">Étapes</span>
-        {% for step in instructions limit: instruction_limit %}
+      {% if meal.recipe.recipeInstructions != blank %}
+      <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 2px;">
+        <span class="description uppercase" style="font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 0.06em; margin-bottom: 3px;">Étapes</span>
+        {% for step in meal.recipe.recipeInstructions limit: 3 %}
         <div style="display: flex; gap: 6px; align-items: flex-start;">
-          <span class="description" style="font-size: 11px; font-weight: 700; opacity: 0.4; flex-shrink: 0; margin-top: 1px;">{{ forloop.index }}.</span>
-          <span class="description" style="font-size: 12px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step }}</span>
+          <span class="description" style="font-size: 11px; font-weight: 700; opacity: 0.4; flex-shrink: 0;">{{ forloop.index }}.</span>
+          <span class="description" style="font-size: 12px; line-height: 1.3;">{{ step.text }}</span>
         </div>
         {% endfor %}
-        {% assign remaining_steps = instructions.size | minus: instruction_limit %}
+        {% assign remaining_steps = meal.recipe.recipeInstructions.size | minus: 3 %}
         {% if remaining_steps > 0 %}
-        <span class="description" style="font-size: 11px; opacity: 0.4; font-style: italic; margin-top: 2px;">+{{ remaining_steps }} étapes</span>
+        <span class="description" style="font-size: 11px; opacity: 0.4; font-style: italic;">+{{ remaining_steps }} étapes</span>
         {% endif %}
       </div>
       {% endif %}
@@ -71,7 +68,6 @@
 
 {% else %}
 
-  <!-- Aucun repas prévu -->
   <div style="display: flex; align-items: center; justify-content: center; height: calc(100% - 40px); flex-direction: column; gap: 12px; opacity: 0.35;">
     <svg xmlns="http://www.w3.org/2000/svg" style="width: 48px;" viewBox="0 0 24 24" fill="currentColor">
       <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
@@ -84,6 +80,6 @@
   <div class="title_bar">
     <img class="image" src="https://raw.githubusercontent.com/AymericLeFeyer/bonap/main/public/bonap.png" />
     <div class="title">Prochain repas</div>
-    <div class="instance">Mis à jour {{ last_update }}</div>
+    <div class="instance">{{ meal.date }}</div>
   </div>
 </div>
