@@ -1,48 +1,51 @@
 <div class="view view--full">
-  <div style="display: flex; gap: 12px; padding: 14px 18px 0 18px; height: calc(100% - 40px); overflow: hidden;">
 
-    {% for day in days %}
+  <div class="layout layout--col layout--center" style="height: calc(100% - 40px); padding: 14px 18px 0 18px;">
+    <div class="flex flex--row flex--center-y stretch gap--large" style="height: 100%;">
 
-    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; {% unless forloop.last %}border-right: 1px solid rgba(0,0,0,0.08); padding-right: 12px;{% endunless %}">
+      {% for day in days %}
 
-      <!-- En-tête du jour -->
-      <div style="margin-bottom: 2px;">
-        <div class="title" style="font-size: 14px; font-weight: 700; line-height: 1.2;">{{ day.label }}</div>
-        <div class="description" style="font-size: 10px; opacity: 0.4;">{{ day.display }}</div>
-      </div>
+      <div class="item stretch">
+        <div class="meta" style="margin-right: 8px;"></div>
+        <div class="content" style="display: flex; flex-direction: column; height: 100%; gap: 8px; min-width: 0; overflow: hidden;">
 
-      {% if day.meals.size == 0 %}
-        <div class="description" style="font-size: 12px; opacity: 0.25; font-style: italic; margin-top: 8px;">Rien de planifié</div>
-      {% else %}
-        {% for meal in day.meals %}
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; min-height: 0; {% unless forloop.last %}padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.06);{% endunless %}">
+          <!-- En-tête du jour -->
+          <div style="margin-bottom: 4px;">
+            <div class="title" style="font-size: 20px; font-weight: 800; line-height: 1.1;">{{ day.label }}</div>
+            <div class="description" style="font-size: 10px; opacity: 0.4; margin-top: 1px;">{{ day.display }}</div>
+          </div>
 
-          <!-- Image -->
-          {% if meal.image_url != "" %}
-            <img src="{{ meal.image_url }}"
-                 style="width: 100%; flex: 1; min-height: 0; object-fit: cover; border-radius: 5px; display: block;" />
+          {% if day.meals.size == 0 %}
+            <div class="description" style="font-size: 12px; opacity: 0.25; font-style: italic;">Rien de planifié</div>
           {% else %}
-            <div style="flex: 1; min-height: 0; border-radius: 5px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;">
-              <svg xmlns="http://www.w3.org/2000/svg" style="width: 28px; opacity: 0.15;" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
-              </svg>
+            {% for meal in day.meals %}
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; min-height: 0; {% unless forloop.last %}padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.06);{% endunless %}">
+
+              <!-- Image -->
+              {% if meal.image_url != "" %}
+                <img src="{{ meal.image_url }}"
+                     style="width: 100%; flex: 1; min-height: 0; object-fit: cover; border-radius: 5px; display: block;" />
+              {% else %}
+                <div style="flex: 1; min-height: 0; border-radius: 5px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" style="width: 28px; opacity: 0.15;" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
+                  </svg>
+                </div>
+              {% endif %}
+
+              <!-- Nom -->
+              <div class="title" style="font-size: 13px; font-weight: 700; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ meal.name }}</div>
+
             </div>
+            {% endfor %}
           {% endif %}
 
-          <!-- Label du créneau -->
-          <div class="description" style="font-size: 9px; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1;">{{ meal.label }}</div>
-
-          <!-- Nom de la recette -->
-          <div class="title" style="font-size: 13px; font-weight: 700; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ meal.name }}</div>
-
         </div>
-        {% endfor %}
-      {% endif %}
+      </div>
+
+      {% endfor %}
 
     </div>
-
-    {% endfor %}
-
   </div>
 
   <div class="title_bar">
