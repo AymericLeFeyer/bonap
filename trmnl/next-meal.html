@@ -6,7 +6,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" style="width: 48px;" viewBox="0 0 24 24" fill="currentColor">
       <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
     </svg>
-    <span class="title" style="font-size: 16px; font-weight: 600;">Aucun repas prévu</span>
+    <span class="title" style="font-size: 20px; font-weight: 600;">Aucun repas prévu</span>
   </div>
 
 {% else %}
@@ -21,35 +21,35 @@
     {% endif %}
 
     <!-- Contenu -->
-    <div style="flex: 1; display: flex; flex-direction: column; padding: 16px 18px 12px 18px; gap: 8px; overflow: hidden; min-width: 0;">
+    <div style="flex: 1; display: flex; flex-direction: column; padding: 18px 20px 14px 20px; gap: 10px; overflow: hidden; min-width: 0;">
 
       <!-- Label + date -->
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span class="description" style="font-size: 10px; font-weight: 700; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.07em;">{{ label }}</span>
-        <span class="description" style="font-size: 10px; opacity: 0.3;">{{ date }}</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="description" style="font-size: 13px; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.07em;">{{ label }}</span>
+        <span class="description" style="font-size: 12px; opacity: 0.3;">{{ date }}</span>
       </div>
 
       <!-- Nom -->
-      <div class="title" style="font-size: 24px; font-weight: 800; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ name }}</div>
+      <div class="title" style="font-size: 30px; font-weight: 800; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ name }}</div>
 
       <hr style="opacity: 0.12; margin: 0;">
 
       <!-- Ingrédients + Étapes côte à côte -->
-      <div style="flex: 1; display: flex; gap: 14px; overflow: hidden; min-height: 0;">
+      <div style="flex: 1; display: flex; gap: 16px; overflow: hidden; min-height: 0;">
 
         <!-- Ingrédients -->
         {% if ingredients.size > 0 %}
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 3px; overflow: hidden; min-width: 0;">
-          <span class="description" style="font-size: 9.5px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;">Ingrédients</span>
-          {% for ing in ingredients limit: 10 %}
-          <div style="display: flex; gap: 5px; align-items: baseline; min-width: 0;">
-            <span class="description" style="font-size: 11px; opacity: 0.3; flex-shrink: 0;">·</span>
-            <span class="description" style="font-size: 11.5px; line-height: 1.3; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ ing }}</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0;">
+          <span class="description" style="font-size: 11px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px;">Ingrédients</span>
+          {% for ing in ingredients limit: 7 %}
+          <div style="display: flex; gap: 6px; align-items: baseline; min-width: 0;">
+            <span class="description" style="font-size: 13px; opacity: 0.3; flex-shrink: 0;">·</span>
+            <span class="description" style="font-size: 13px; line-height: 1.35; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ ing }}</span>
           </div>
           {% endfor %}
-          {% assign remaining = ingredients.size | minus: 10 %}
+          {% assign remaining = ingredients.size | minus: 7 %}
           {% if remaining > 0 %}
-          <span class="description" style="font-size: 10px; opacity: 0.35; font-style: italic; margin-top: 1px;">+{{ remaining }} autres</span>
+          <span class="description" style="font-size: 12px; opacity: 0.35; font-style: italic; margin-top: 2px;">+{{ remaining }} autres</span>
           {% endif %}
         </div>
         {% endif %}
@@ -61,17 +61,17 @@
 
         <!-- Étapes -->
         {% if instructions.size > 0 %}
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0;">
-          <span class="description" style="font-size: 9.5px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;">Étapes</span>
-          {% for step in instructions limit: 5 %}
-          <div style="display: flex; gap: 6px; align-items: flex-start; min-width: 0;">
-            <span class="description" style="font-size: 10px; font-weight: 700; opacity: 0.35; flex-shrink: 0; margin-top: 1px;">{{ forloop.index }}.</span>
-            <span class="description" style="font-size: 11.5px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step }}</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; overflow: hidden; min-width: 0;">
+          <span class="description" style="font-size: 11px; font-weight: 700; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px;">Étapes</span>
+          {% for step in instructions limit: 4 %}
+          <div style="display: flex; gap: 7px; align-items: flex-start; min-width: 0;">
+            <span class="description" style="font-size: 12px; font-weight: 700; opacity: 0.35; flex-shrink: 0; margin-top: 1px;">{{ forloop.index }}.</span>
+            <span class="description" style="font-size: 13px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step }}</span>
           </div>
           {% endfor %}
-          {% assign remaining_steps = instructions.size | minus: 5 %}
+          {% assign remaining_steps = instructions.size | minus: 4 %}
           {% if remaining_steps > 0 %}
-          <span class="description" style="font-size: 10px; opacity: 0.35; font-style: italic; margin-top: 1px;">+{{ remaining_steps }} étapes</span>
+          <span class="description" style="font-size: 12px; opacity: 0.35; font-style: italic; margin-top: 2px;">+{{ remaining_steps }} étapes</span>
           {% endif %}
         </div>
         {% endif %}
