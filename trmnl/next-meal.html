@@ -37,7 +37,7 @@
           {% for ing in ingredients %}
           <div style="display: flex; gap: 6px; align-items: baseline; min-width: 0;">
             <span class="description" style="font-size: 13px; opacity: 0.3; flex-shrink: 0;">·</span>
-            <span class="description" style="font-size: 13px; line-height: 1.35; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ ing }}</span>
+            <span class="description" style="font-size: 16px; line-height: 1.35; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ ing }}</span>
           </div>
           {% endfor %}
         </div>
@@ -55,7 +55,7 @@
           {% for step in instructions %}
           <div style="display: flex; gap: 7px; align-items: flex-start; min-width: 0;">
             <span class="description" style="font-size: 12px; font-weight: 700; opacity: 0.35; flex-shrink: 0; margin-top: 1px;">{{ forloop.index }}.</span>
-            <span class="description" style="font-size: 13px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step }}</span>
+            <span class="description" style="font-size: 16px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step }}</span>
           </div>
           {% endfor %}
         </div>
