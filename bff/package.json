@@ -1,6 +1,6 @@
 {
   "name": "bonap-bff",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "BFF Bonap — expose les données Mealie pour TRMNL",
   "main": "server.js",
   "dependencies": {
