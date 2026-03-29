@@ -1,41 +1,45 @@
 <div class="view view--full">
-  <div style="display: flex; flex-direction: column; padding: 16px 20px 0 20px; gap: 10px; height: calc(100% - 40px); overflow: hidden;">
+  <div style="display: flex; gap: 12px; padding: 14px 18px 0 18px; height: calc(100% - 40px); overflow: hidden;">
 
     {% for day in days %}
 
-      {% unless forloop.first %}<hr style="opacity: 0.1; margin: 2px 0;">{% endunless %}
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; {% unless forloop.last %}border-right: 1px solid rgba(0,0,0,0.08); padding-right: 12px;{% endunless %}">
 
       <!-- En-tête du jour -->
-      <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 4px;">
-        <span class="title" style="font-size: 15px; font-weight: 700;">{{ day.label }}</span>
-        <span class="description" style="font-size: 11px; opacity: 0.45;">{{ day.display }}</span>
+      <div style="margin-bottom: 2px;">
+        <div class="title" style="font-size: 14px; font-weight: 700; line-height: 1.2;">{{ day.label }}</div>
+        <div class="description" style="font-size: 10px; opacity: 0.4;">{{ day.display }}</div>
       </div>
 
       {% if day.meals.size == 0 %}
-        <span class="description" style="font-size: 13px; opacity: 0.3; font-style: italic; padding-left: 4px;">Aucun repas planifié</span>
+        <div class="description" style="font-size: 12px; opacity: 0.25; font-style: italic; margin-top: 8px;">Rien de planifié</div>
       {% else %}
         {% for meal in day.meals %}
-        <div style="display: flex; align-items: center; gap: 12px; padding-left: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; width: 90px;">
-            {% if meal.type == "lunch" %}
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
-            </svg>
-            {% elsif meal.type == "dinner" %}
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.65l4.19 4.19zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/>
-            </svg>
-            {% else %}
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px; opacity:0.4; flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 3a1 1 0 0 0-1 1v6.268a2 2 0 0 0 1 3.464V21a1 1 0 0 0 2 0v-7.268a2 2 0 0 0 1-3.464V4a1 1 0 0 0-1-1h-2zm-7 0a1 1 0 0 0-1 1v5H9V4a1 1 0 0 0-2 0v6a3 3 0 0 0 2 2.83V21a1 1 0 0 0 2 0v-8.17A3 3 0 0 0 13 10V4a1 1 0 0 0-1-1h-1z"/>
-            </svg>
-            {% endif %}
-            <span class="description" style="font-size: 11px; opacity: 0.5;">{{ meal.label }}</span>
-          </div>
-          <span class="title" style="font-size: 17px; font-weight: 700; line-height: 1.2; flex: 1;">{{ meal.name }}</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; min-height: 0; {% unless forloop.last %}padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.06);{% endunless %}">
+
+          <!-- Image -->
+          {% if meal.image_url != "" %}
+            <img src="{{ meal.image_url }}"
+                 style="width: 100%; flex: 1; min-height: 0; object-fit: cover; border-radius: 5px; display: block;" />
+          {% else %}
+            <div style="flex: 1; min-height: 0; border-radius: 5px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" style="width: 28px; opacity: 0.15;" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11 9H9V2H7V9H5V2H3V9C3 11.12 4.66 12.84 6.75 12.97V22H9.25V12.97C11.34 12.84 13 11.12 13 9V2H11V9ZM16 6V14H18.5V22H21V2C18.24 2 16 4.24 16 6Z"/>
+              </svg>
+            </div>
+          {% endif %}
+
+          <!-- Label du créneau -->
+          <div class="description" style="font-size: 9px; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1;">{{ meal.label }}</div>
+
+          <!-- Nom de la recette -->
+          <div class="title" style="font-size: 13px; font-weight: 700; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ meal.name }}</div>
+
         </div>
         {% endfor %}
       {% endif %}
+
+    </div>
 
     {% endfor %}
 
