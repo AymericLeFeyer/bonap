@@ -64,6 +64,7 @@ interface InstallCard {
   badgeColor?: string
   description: string
   command?: string
+  commandHref?: string
   to: string
   linkLabel: string
 }
@@ -75,6 +76,8 @@ const installCards: InstallCard[] = [
     badge: 'Recommandé',
     badgeColor: 'var(--primary)',
     description: 'Si tu utilises déjà Home Assistant, installe Bonap comme addon — ingress inclus, aucun port à exposer.',
+    command: 'github.com/AyLabsCode/aylabs-ha-addons',
+    commandHref: 'https://github.com/AyLabsCode/aylabs-ha-addons',
     to: '/docs/installation/homeassistant',
     linkLabel: 'Guide HA →',
   },
@@ -433,7 +436,11 @@ export default function LandingPage() {
                   {card.description}
                 </p>
 
-                {card.command && <CodeBlock code={card.command} />}
+                {card.command && (
+                  card.commandHref
+                    ? <a href={card.commandHref} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}><CodeBlock code={card.command} /></a>
+                    : <CodeBlock code={card.command} />
+                )}
 
                 <Link
                   to={card.to}
