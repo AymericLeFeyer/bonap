@@ -293,10 +293,10 @@ export default function LandingPage() {
             color: 'var(--text)',
             marginBottom: '0.5rem',
           }}>
-            Voir Bonap en action
+            Les origines de Bonap
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>
-            Présentation complète de l'interface et des fonctionnalités.
+            Découvrez les origines du projet, et comment il a été réalisé.
           </p>
         </div>
         <div style={{
