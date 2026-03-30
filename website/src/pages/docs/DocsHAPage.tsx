@@ -27,6 +27,25 @@ export default function DocsHAPage() {
         Container ne supportent pas les addons.
       </Alert>
 
+      <div style={{
+        position: 'relative',
+        paddingBottom: '56.25%',
+        height: 0,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        border: '1px solid var(--border)',
+        marginBottom: '2rem',
+        boxShadow: '0 4px 24px oklch(0 0 0 / 0.25)',
+      }}>
+        <iframe
+          src="https://www.youtube.com/embed/8LAQWVm24nI"
+          title="Bonap — installation Home Assistant"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+        />
+      </div>
+
       <DocH2>Étape 1 — Ajouter le dépôt AyLabs</DocH2>
 
       <Step number={1} title="Ouvrir la boutique d'addons">
@@ -116,26 +135,6 @@ export default function DocsHAPage() {
         <li>Profil (avatar en bas à gauche) → <strong style={{ color: 'var(--text)' }}>API Tokens</strong></li>
         <li>Créer un token → copiez-le</li>
       </ol>
-
-      <DocH2>Vidéo de présentation</DocH2>
-      <div style={{
-        position: 'relative',
-        paddingBottom: '56.25%',
-        height: 0,
-        borderRadius: '12px',
-        overflow: 'hidden',
-        border: '1px solid var(--border)',
-        marginBottom: '2rem',
-        boxShadow: '0 4px 24px oklch(0 0 0 / 0.25)',
-      }}>
-        <iframe
-          src="https://www.youtube.com/embed/8LAQWVm24nI"
-          title="Bonap — installation Home Assistant"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-        />
-      </div>
 
       <DocH2>Mise à jour</DocH2>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.7 }}>
