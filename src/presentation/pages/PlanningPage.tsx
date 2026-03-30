@@ -77,7 +77,8 @@ function MobileMealSection({ meals, previousMeal, onAdd, onMealTouchStart }: Mob
               <img
                 src={recipeImageUrl(meal.recipe, "min-original")}
                 alt={meal.recipe.name ?? "Repas"}
-                className="w-full aspect-square object-cover"
+                draggable={false}
+                className="w-full aspect-square object-cover pointer-events-none"
               />
             ) : (
               <div className="w-full aspect-square bg-secondary flex items-center justify-center">
@@ -286,8 +287,8 @@ export function PlanningPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
-  const [mobileMenuMeal, setMobileMenuMeal] = useState<MealieMealPlan | null>(null)
-  const mobileMenuMealRef = useRef<((meal: MealieMealPlan | null) => void) | null>(null)
+  const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
+  const mobileMenuMealRef = useRef<((data: { meal: MealieMealPlan; y: number } | null) => void) | null>(null)
 
   // ── Mobile touch drag state ──
   const touchDragRef = useRef<{
@@ -301,7 +302,7 @@ export function PlanningPage() {
   const [ghostState, setGhostState] = useState<{ meal: MealieMealPlan; x: number; y: number } | null>(null)
   const [mobileDragOver, setMobileDragOver] = useState<{ date: string; type: string } | null>(null)
 
-  useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [setMobileMenuMeal])
+  useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
 
   const handlePreviewOpenChange = (open: boolean) => {
     if (!open) setPreviewSlug(null)
@@ -419,8 +420,9 @@ export function PlanningPage() {
           void handleDropRef.current(touchDragRef.current.meal, slot.dataset.date!, slot.dataset.type!)
         }
       } else if (!touchDragRef.current.longPressReady) {
-        // Tap simple : ouvrir le menu
-        mobileMenuMealRef.current?.(touchDragRef.current.meal)
+        // Tap simple : ouvrir le menu près du tap
+        const touch = e.changedTouches[0]
+        mobileMenuMealRef.current?.({ meal: touchDragRef.current.meal, y: touch.clientY })
       }
       touchDragRef.current = null
       setGhostState(null)
@@ -707,53 +709,64 @@ export function PlanningPage() {
         document.body,
       )}
 
-      {mobileMenuMeal && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center p-4"
-          onClick={() => setMobileMenuMeal(null)}
-        >
+      {mobileMenuMeal && (() => {
+        const MENU_HEIGHT = 160
+        const MARGIN = 8
+        const viewportH = window.innerHeight
+        const showAbove = mobileMenuMeal.y + MENU_HEIGHT + MARGIN > viewportH
+        const posStyle: React.CSSProperties = showAbove
+          ? { bottom: viewportH - mobileMenuMeal.y + MARGIN }
+          : { top: mobileMenuMeal.y + MARGIN }
+        return (
           <div
-            className={cn(
-              "w-full max-w-sm rounded-[var(--radius-xl)]",
-              "bg-card border border-border/50 shadow-xl overflow-hidden",
-            )}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-40"
+            onClick={() => setMobileMenuMeal(null)}
           >
-            <div className="px-4 py-3 border-b border-border/40">
-              <p className="text-sm font-semibold line-clamp-1">
-                {mobileMenuMeal.recipe?.name ?? mobileMenuMeal.title ?? "Repas"}
-              </p>
-            </div>
-            <div className="flex flex-col">
-              {mobileMenuMeal.recipe?.slug && (
+            <div
+              className={cn(
+                "absolute left-4 right-4 mx-auto max-w-xs",
+                "rounded-[var(--radius-xl)]",
+                "bg-card border border-border/50 shadow-xl overflow-hidden",
+              )}
+              style={posStyle}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-4 py-3 border-b border-border/40">
+                <p className="text-sm font-semibold line-clamp-1">
+                  {mobileMenuMeal.meal.recipe?.name ?? mobileMenuMeal.meal.title ?? "Repas"}
+                </p>
+              </div>
+              <div className="flex flex-col">
+                {mobileMenuMeal.meal.recipe?.slug && (
+                  <button
+                    type="button"
+                    onClick={() => { setPreviewSlug(mobileMenuMeal.meal.recipe!.slug); setMobileMenuMeal(null) }}
+                    className="flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    Voir la recette
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => { setPreviewSlug(mobileMenuMeal.recipe!.slug); setMobileMenuMeal(null) }}
-                  className="flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-secondary transition-colors"
+                  onClick={() => { void deleteMeal(mobileMenuMeal.meal.id); setMobileMenuMeal(null) }}
+                  className="flex items-center gap-3 px-4 py-3.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                  Voir la recette
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer du planning
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => { void deleteMeal(mobileMenuMeal.id); setMobileMenuMeal(null) }}
-                className="flex items-center gap-3 px-4 py-3.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer du planning
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileMenuMeal(null)}
-                className="flex items-center justify-center px-4 py-3 text-sm text-muted-foreground border-t border-border/40 hover:bg-secondary transition-colors"
-              >
-                Annuler
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuMeal(null)}
+                  className="flex items-center justify-center px-4 py-3 text-sm text-muted-foreground border-t border-border/40 hover:bg-secondary transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <RecipePickerDialog
         open={pickerOpen}
