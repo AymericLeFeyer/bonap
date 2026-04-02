@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { getEnv } from "../../shared/utils/env.ts"
+import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
@@ -327,7 +327,7 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground mt-0.5">Informations sur l'application.</p>
           </div>
           <div className="flex items-center gap-2">
-            <img src="/bonap.png" alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
+            <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
             <span className="text-sm font-semibold">Bonap</span>
             <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-mono font-semibold text-muted-foreground">
               v{__APP_VERSION__}

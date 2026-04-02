@@ -6,7 +6,7 @@ const envVarsRows = [
     cells: [
       'VITE_MEALIE_URL',
       'Oui',
-      "URL de Mealie accessible depuis le navigateur (ex: http://192.168.1.10:9000)",
+      "URL de Mealie. En Docker full-stack, utiliser le nom du service (ex: http://mealie:9000). En Docker simple, l'URL externe suffit.",
     ],
   },
   {
@@ -14,13 +14,6 @@ const envVarsRows = [
       'VITE_MEALIE_TOKEN',
       'Oui',
       'Token Bearer Mealie (Profil → API Tokens)',
-    ],
-  },
-  {
-    cells: [
-      'MEALIE_INTERNAL_URL',
-      'Non',
-      'URL interne pour le proxy nginx (Docker uniquement). Permet d\'utiliser le réseau Docker interne.',
     ],
   },
 ]

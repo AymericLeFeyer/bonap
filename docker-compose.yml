@@ -6,14 +6,10 @@ services:
     ports:
       - "3000:80"
     environment:
-      # URL de Mealie accessible depuis le navigateur de l'utilisateur
+      # URL de Mealie accessible depuis le navigateur (ou nom de service Docker)
       - VITE_MEALIE_URL=http://mon-mealie:9000
       # Token API Mealie (Mealie → Profil → API Tokens)
       - VITE_MEALIE_TOKEN=mon_token_api
-      # Optionnel : URL interne pour le proxy nginx /api → Mealie
-      # Par défaut, nginx utilisera VITE_MEALIE_URL
-      # Utile si Mealie est sur un réseau Docker interne avec un nom différent
-      # - MEALIE_INTERNAL_URL=http://mealie:9000
     restart: unless-stopped
 
   bonap-trmnl:

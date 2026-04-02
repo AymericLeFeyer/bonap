@@ -24,9 +24,9 @@ window.__ENV__ = {
 };
 EOF
 
-export MEALIE_INTERNAL_URL="${MEALIE_URL%/}"
+export VITE_MEALIE_URL="${MEALIE_URL%/}"
 
-envsubst '${MEALIE_INTERNAL_URL}' \
+envsubst '${VITE_MEALIE_URL}' \
   < /etc/nginx/templates/default.conf.template \
   > /etc/nginx/http.d/default.conf
 

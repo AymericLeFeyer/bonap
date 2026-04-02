@@ -8,7 +8,7 @@ import {
 import { getEnv, getIngressBasename, isDockerRuntime } from "../../../shared/utils/env.ts"
 
 // En dev : /api est proxié par Vite → VITE_MEALIE_URL (pas de CORS).
-// En prod Docker standard : /api est proxié par nginx → MEALIE_INTERNAL_URL.
+// En prod Docker standard : /api est proxié par nginx → VITE_MEALIE_URL.
 // En prod HA addon : nginx est accessible via l'ingress path, les appels doivent
 //   être préfixés par /api/hassio_ingress/<token> pour passer par HA.
 // En prod sans Docker : requête directe vers VITE_MEALIE_URL depuis le navigateur.

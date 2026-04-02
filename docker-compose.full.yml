@@ -18,14 +18,12 @@ services:
     ports:
       - "3000:80"
     environment:
-      # URL de Mealie visible depuis le navigateur de l'utilisateur
-      # (doit être accessible en dehors de Docker)
-      - VITE_MEALIE_URL=http://localhost:9000
+      # URL de Mealie — nom du service Docker (accessible par nginx en interne)
+      # En mode full stack, le navigateur passe toujours par le proxy nginx de Bonap
+      - VITE_MEALIE_URL=http://mealie:9000
       # Token API Mealie — à renseigner après la première connexion à Mealie
       # (Mealie → Profil utilisateur → API Tokens)
       - VITE_MEALIE_TOKEN=
-      # URL interne pour le proxy nginx : Mealie est joignable via son nom de service Docker
-      - MEALIE_INTERNAL_URL=http://mealie:9000
     depends_on:
       - mealie
     restart: unless-stopped

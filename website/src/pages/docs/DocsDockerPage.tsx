@@ -27,8 +27,7 @@ services:
     ports:
       - "3000:80"
     environment:
-      - VITE_MEALIE_URL=http://localhost:9000
-      - MEALIE_INTERNAL_URL=http://mealie:9000
+      - VITE_MEALIE_URL=http://mealie:9000
       - VITE_MEALIE_TOKEN=your_api_token
     depends_on:
       - mealie
