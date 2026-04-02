@@ -11,16 +11,3 @@ services:
       # Token API Mealie (Mealie → Profil → API Tokens)
       - VITE_MEALIE_TOKEN=mon_token_api
     restart: unless-stopped
-
-  bonap-trmnl:
-    image: ghcr.io/aymericlefeyer/bonap-trmnl-amd64:latest
-    # Pour builder localement : remplacer la ligne image par :
-    # build: ./bff
-    ports:
-      - "3001:3001"
-    environment:
-      # URL de Mealie accessible depuis ce conteneur
-      - MEALIE_URL=http://mon-mealie:9000
-      # Token API Mealie (le même que pour Bonap)
-      - MEALIE_TOKEN=mon_token_api
-    restart: unless-stopped
