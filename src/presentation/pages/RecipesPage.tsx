@@ -14,13 +14,14 @@ import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import {
   Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw,
-  Plus, PenLine, ExternalLink, Clock,
+  Plus, PenLine, ExternalLink, Clock, CalendarPlus,
 } from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getCurrentSeason, getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
 import { getEnv } from "../../shared/utils/env.ts"
-import { getRecipesUseCase, getRecipeUseCase } from "../../infrastructure/container.ts"
+import { getRecipesUseCase, getRecipeUseCase, addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
+import { PlanningSlotPicker } from "../components/PlanningSlotPicker.tsx"
 import { RecipeIngredientsList } from "../components/RecipeIngredientsList.tsx"
 import { RecipeInstructionsList } from "../components/RecipeInstructionsList.tsx"
 import { cn } from "../../lib/utils.ts"
@@ -498,6 +499,16 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
   const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
   const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
   const [cookingMode, setCookingMode] = useState(false)
+  const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
+
+  const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
+    if (!recipe) return
+    if (existingMealId !== undefined) {
+      await deleteMealUseCase.execute(existingMealId)
+    }
+    await addMealUseCase.execute(date, entryType, recipe.id)
+    setPlanningPickerOpen(false)
+  }
 
   const handleToggleSeason = async (season: Season) => {
     if (!recipe) return
@@ -528,6 +539,12 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
           onClose={() => setCookingMode(false)}
         />
       )}
+      <PlanningSlotPicker
+        open={planningPickerOpen}
+        onOpenChange={setPlanningPickerOpen}
+        recipeName={recipe?.name ?? ""}
+        onSelect={handleSlotSelect}
+      />
     <div
       className={cn(
         "fixed inset-y-0 right-0 z-50",
@@ -543,6 +560,20 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
         <div className="flex items-center gap-1.5">
           {recipe && (
             <>
+              <button
+                type="button"
+                onClick={() => setPlanningPickerOpen(true)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                  "border border-border px-2.5 py-1.5",
+                  "text-xs font-semibold text-muted-foreground",
+                  "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                  "transition-all duration-150",
+                )}
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+                Planifier
+              </button>
               <button
                 type="button"
                 onClick={() => setCookingMode(true)}
