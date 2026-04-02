@@ -50,7 +50,7 @@ const features: FeatureCard[] = [
     icon: <Sparkles size={22} />,
     title: 'Suggestions IA',
     description: '5 suggestions selon la saison, l\'historique et vos critères en texte libre.',
-    gif: '/demo/ia.gif',
+    gif: '/demo/suggestions.gif',
   },
   {
     icon: <MessageSquare size={22} />,

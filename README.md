@@ -29,9 +29,13 @@
 
   ![Courses](public/demo/courses.gif)
 
-- **AI suggestions & assistant** — 5 recipe suggestions + floating chat drawer (search, add to plan, create recipes)
+- **AI suggestions** — 5 recipe suggestions based on season, recent history, and free-text criteria
 
-  ![IA](public/demo/ia.gif)
+  ![Suggestions IA](public/demo/suggestions.gif)
+
+- **AI assistant** — floating chat drawer that can search recipes, add meals to the plan, and create new recipes
+
+  ![Assistant IA](public/demo/ia.gif)
 
 - **Stats** — top recipes, top ingredients, streak, leftovers %, catalogue coverage
 
