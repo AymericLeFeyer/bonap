@@ -644,7 +644,7 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
         )}
 
         {recipe && (
-          <article className="space-y-5 pb-8">
+          <article className="space-y-5 pb-24">
             {/* Image */}
             <div className="relative">
               <img
