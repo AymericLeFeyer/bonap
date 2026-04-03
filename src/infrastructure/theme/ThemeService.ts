@@ -81,7 +81,6 @@ export class ThemeService {
         if (found) return found
       }
     } catch (_) {}
-    console.log(DEFAULT_ACCENT)
     return DEFAULT_ACCENT
   }
 
