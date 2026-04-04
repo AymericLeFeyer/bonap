@@ -59,12 +59,13 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
         note: ing.note ?? "",
         referenceId: ing.referenceId,
       })) ?? []
-
+      
   return {
     name: recipe.name,
     description: recipe.description ?? "",
     prepTime: parsePrepTimeToMinutes(recipe.prepTime),
     performTime: parsePrepTimeToMinutes(recipe.performTime),
+    totalTime: parsePrepTimeToMinutes(recipe.totalTime),
     recipeIngredient: [
       ...structured,
       { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" },
@@ -489,6 +490,13 @@ export function RecipeDetailPage() {
                 value={formData.performTime}
                 displayRaw={recipe.performTime}
                 onChange={(v) => patch({ performTime: v })}
+                disabled={saving}
+              />
+              <InlineEditDuration
+                label="Total"
+                value={formData.totalTime}
+                displayRaw={recipe.totalTime}
+                onChange={(v) => patch({ totalTime: v })}
                 disabled={saving}
               />
             </div>

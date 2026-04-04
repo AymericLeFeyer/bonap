@@ -70,12 +70,20 @@ export class RecipeRepository implements IRecipeRepository {
     return typeof response === "string" ? response : response.slug
   }
 
-  private minutesToIso(minutes: string): string | undefined {
-    const m = parseInt(minutes)
-    if (!m || m <= 0) return undefined
-    const h = Math.floor(m / 60)
-    const rem = m % 60
-    return h > 0 ? `PT${h}H${rem > 0 ? `${rem}M` : ""}` : `PT${rem}M`
+  /**
+   * Convertit un nombre de minutes en texte lisible.
+   *
+   * Exemples :
+   * 40  → "40 minutes"
+   * 1   → "1 minute"
+   * 0   → undefined
+   */
+  private minutesToString(minutes: number | string): string | undefined {
+    const m = typeof minutes === "string" ? parseInt(minutes, 10) : minutes
+
+    if (Number.isNaN(m) || m <= 0) return undefined
+
+    return m === 1 ? "1 minute" : `${m} minutes`
   }
 
   async update(slug: string, data: RecipeFormData): Promise<MealieRecipe> {
@@ -108,8 +116,9 @@ export class RecipeRepository implements IRecipeRepository {
       ...current,
       name: data.name,
       description: data.description || current.description,
-      prepTime: this.minutesToIso(data.prepTime) ?? current.prepTime,
-      performTime: this.minutesToIso(data.performTime) ?? current.performTime,
+      prepTime: this.minutesToString(data.prepTime) ?? current.prepTime,
+      performTime: this.minutesToString(data.performTime) ?? current.performTime,
+      totalTime: this.minutesToString(data.totalTime) ?? current.totalTime,
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c

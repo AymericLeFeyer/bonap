@@ -88,6 +88,7 @@ export interface RecipeFormData {
   description: string
   prepTime: string
   performTime: string
+  totalTime: string
   imageFile?: File
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
