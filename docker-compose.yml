@@ -10,4 +10,6 @@ services:
       - VITE_MEALIE_URL=http://mon-mealie:9000
       # Token API Mealie (Mealie → Profil → API Tokens)
       - VITE_MEALIE_TOKEN=mon_token_api
+      # - VITE_THEME =  light | dark | system ( optional )
+      # - VITE_ACCENT_COLORS = orange | blue | violet | green | rose | teal | amber | indigo ( optional )
     restart: unless-stopped

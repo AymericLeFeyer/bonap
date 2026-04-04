@@ -87,7 +87,8 @@ export interface RecipeFormData {
   name: string
   description: string
   prepTime: string
-  cookTime: string
+  performTime: string
+  totalTime: string
   imageFile?: File
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
@@ -106,10 +107,12 @@ export interface MealieRecipe {
   recipeCategory?: MealieCategory[]
   tags?: MealieTag[]
   prepTime?: string
-  cookTime?: string
+  performTime?: string
+  totalTime?: string
   recipeIngredient?: MealieIngredient[]
   recipeInstructions?: MealieInstruction[]
   extras?: Record<string, string>
+  orgURL?: string
 }
 
 export interface MealieRawPaginatedRecipes {

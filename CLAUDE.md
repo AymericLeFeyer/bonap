@@ -118,7 +118,7 @@ src/
 
 **Entité principale** : `MealieRecipe` (dans `shared/types/mealie.ts`)
 ```typescript
-{ id, slug, name, description?, image?, recipeCategory?, tags?, prepTime?, cookTime?,
+{ id, slug, name, description?, image?, recipeCategory?, tags?, prepTime?, performTime?,
   recipeIngredient?, recipeInstructions?, extras? }
 ```
 
@@ -239,7 +239,7 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 | GET | `/api/recipes?page=&perPage=&search=&categories=&tags=&maxTotalTime=` | Liste recettes paginée |
 | GET | `/api/recipes/:slug` | Détail recette |
 | POST | `/api/recipes` `{ name }` | Création recette (retourne slug ou `{ slug }`) |
-| PATCH | `/api/recipes/:slug` | Mise à jour recette (name, description, prepTime, cookTime, recipeCategory, recipeIngredient, recipeInstructions, tags) |
+| PATCH | `/api/recipes/:slug` | Mise à jour recette (name, description, prepTime, performTime, recipeCategory, recipeIngredient, recipeInstructions, tags) |
 | PUT | `/api/recipes/:slug/image` (multipart) | Upload image recette |
 | GET | `/api/households/mealplans?page=1&perPage=-1&start_date=&end_date=` | Planning sur une plage |
 | POST | `/api/households/mealplans` `{ date, entryType, recipeId }` | Ajout repas |
@@ -292,7 +292,7 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 
 ### Composants partagés
 
-- **`RecipeFormDialog`** : formulaire complet (nom, description, prepTime/cookTime en minutes, ingrédients avec autocomplete food+unit, instructions, saisons, catégories/tags). Utilisé dans RecipeFormPage.
+- **`RecipeFormDialog`** : formulaire complet (nom, description, prepTime/performTime en minutes, ingrédients avec autocomplete food+unit, instructions, saisons, catégories/tags). Utilisé dans RecipeFormPage.
 - **`RecipePickerDialog`** : recherche + sélection de recette. Utilisé dans PlanningPage pour choisir une recette à ajouter au planning.
 - **`AssistantDrawer`** : drawer flottant avec chat IA. Outils disponibles : `search_recipe`, `add_to_planning`, `create_recipe`. Streaming Anthropic uniquement (les autres providers ont un fallback non-streaming sans tools).
 - **`Autocomplete`** (`ui/autocomplete.tsx`) : input avec suggestions dropdown, rendu via portail pour éviter les problèmes de z-index dans les modals.

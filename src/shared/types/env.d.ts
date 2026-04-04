@@ -10,6 +10,8 @@ interface Window {
   __ENV__?: {
     VITE_MEALIE_URL?: string
     VITE_MEALIE_TOKEN?: string
+    VITE_THEME?: "light" | "dark" | "system"
+    VITE_ACCENT_COLORS?: string
     LLM_PROVIDER?: string
     LLM_API_KEY?: string
     LLM_MODEL?: string

@@ -14,7 +14,7 @@ import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import {
   Loader2, AlertCircle, UtensilsCrossed, Search, X, RotateCcw,
-  Plus, PenLine, ExternalLink, Clock, CalendarPlus,
+  Plus, PenLine, ExternalLink, Clock, CalendarPlus, CookingPot,
 } from "lucide-react"
 import type { MealieRecipe, MealieCategory, Season } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
@@ -171,14 +171,14 @@ export function RecipesPage() {
   const filteredRecipes = noIngredients
     ? (noIngredientRecipes ?? [])
     : recipes.filter((recipe) => {
-        if (selectedSeasons.length > 0) {
-          const recipeSeasons = getRecipeSeasonsFromTags(recipe.tags)
-          if (recipeSeasons.length > 0 && !selectedSeasons.some((s) => recipeSeasons.includes(s))) {
-            return false
-          }
+      if (selectedSeasons.length > 0) {
+        const recipeSeasons = getRecipeSeasonsFromTags(recipe.tags)
+        if (recipeSeasons.length > 0 && !selectedSeasons.some((s) => recipeSeasons.includes(s))) {
+          return false
         }
-        return true
-      })
+      }
+      return true
+    })
 
   return (
     <div className="space-y-5">
@@ -472,17 +472,39 @@ export function RecipesPage() {
 
 function formatDuration(value?: string): string {
   if (!value) return ""
+
+  const v = value.trim().toLowerCase()
   let totalMinutes: number
-  if (/^\d+$/.test(value.trim())) {
-    totalMinutes = parseInt(value.trim(), 10)
-  } else {
-    const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+
+  // ✔️ cas: "2", "15"
+  if (/^\d+$/.test(v)) {
+    totalMinutes = parseInt(v, 10)
+
+    // ✔️ cas: "2 min", "2 minutes"
+  } else if (/^\d+\s*(min|minute|minutes)$/.test(v)) {
+    totalMinutes = parseInt(v, 10)
+
+    // ✔️ cas: "1h30", "2h"
+  } else if (/^\d+\s*h/.test(v)) {
+    const match = v.match(/(\d+)\s*h(?:\s*(\d+))?/)
     if (!match) return ""
-    totalMinutes = parseInt(match[1] ?? "0") * 60 + parseInt(match[2] ?? "0")
+    totalMinutes =
+      parseInt(match[1]) * 60 + parseInt(match[2] ?? "0")
+
+    // ✔️ cas: ISO "PT2H30M"
+  } else {
+    const match = v.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+    if (!match) return ""
+    totalMinutes =
+      parseInt(match[1] ?? "0") * 60 +
+      parseInt(match[2] ?? "0")
   }
+
   if (totalMinutes <= 0) return ""
+
   const h = Math.floor(totalMinutes / 60)
   const m = totalMinutes % 60
+
   if (h > 0 && m > 0) return `${h}h${m}`
   if (h > 0) return `${h}h`
   return `${m} min`
@@ -546,215 +568,248 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
         recipeName={recipe?.name ?? ""}
         onSelect={handleSlotSelect}
       />
-    <div
-      className={cn(
-        "fixed inset-y-0 right-0 z-50",
-        "flex w-full max-w-md flex-col",
-        "bg-card border-l border-border/40",
-        "shadow-warm-lg",
-        closing ? "animate-slide-out-right" : "animate-slide-in-right",
-      )}
-    >
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3.5">
-        <span className="font-heading text-base font-bold tracking-tight">Recette</span>
-        <div className="flex items-center gap-1.5">
-          {recipe && (
-            <>
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setPlanningPickerOpen(true)}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-[var(--radius-md)]",
-                        "border border-border px-2.5 py-1.5",
-                        "text-xs font-semibold text-muted-foreground",
-                        "hover:text-foreground hover:border-border/80 hover:bg-secondary",
-                        "transition-all duration-150",
-                      )}
-                    >
-                      <CalendarPlus className="h-3.5 w-3.5" />
-                      <span className="sm:hidden">Planifier</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="hidden sm:block">Planifier</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setCookingMode(true)}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-[var(--radius-md)]",
-                        "border border-border px-2.5 py-1.5",
-                        "text-xs font-semibold text-muted-foreground",
-                        "hover:text-foreground hover:border-border/80 hover:bg-secondary",
-                        "transition-all duration-150",
-                      )}
-                    >
-                      <UtensilsCrossed className="h-3.5 w-3.5" />
-                      <span className="sm:hidden">Mode cuisine</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="hidden sm:block">Mode cuisine</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={`/recipes/${recipe.slug}`}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-[var(--radius-md)]",
-                        "border border-border px-2.5 py-1.5",
-                        "text-xs font-semibold text-muted-foreground",
-                        "hover:text-foreground hover:border-border/80 hover:bg-secondary",
-                        "transition-all duration-150",
-                      )}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      <span className="sm:hidden">Page complète</span>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent className="hidden sm:block">Page complète</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)]",
-              "text-muted-foreground hover:text-foreground hover:bg-secondary",
-              "transition-colors",
-            )}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Contenu scrollable */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
-          </div>
+      <div
+        className={cn(
+          "fixed inset-y-0 right-0 z-50",
+          "flex w-full max-w-md flex-col",
+          "bg-card border-l border-border/40",
+          "shadow-warm-lg",
+          closing ? "animate-slide-out-right" : "animate-slide-in-right",
         )}
+      >
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3.5">
+          <span className="font-heading text-base font-bold tracking-tight">Recette</span>
+          <div className="flex items-center gap-1.5">
+            {recipe && (
+              <>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setPlanningPickerOpen(true)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                          "border border-border px-2.5 py-1.5",
+                          "text-xs font-semibold text-muted-foreground",
+                          "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                          "transition-all duration-150",
+                        )}
+                      >
+                        <CalendarPlus className="h-3.5 w-3.5" />
+                        <span className="sm:hidden">Planifier</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="hidden sm:block">Planifier</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setCookingMode(true)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                          "border border-border px-2.5 py-1.5",
+                          "text-xs font-semibold text-muted-foreground",
+                          "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                          "transition-all duration-150",
+                        )}
+                      >
+                        <UtensilsCrossed className="h-3.5 w-3.5" />
+                        <span className="sm:hidden">Mode cuisine</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="hidden sm:block">Mode cuisine</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={`/recipes/${recipe.slug}`}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                          "border border-border px-2.5 py-1.5",
+                          "text-xs font-semibold text-muted-foreground",
+                          "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                          "transition-all duration-150",
+                        )}
+                      >
+                        <CookingPot className="h-3.5 w-3.5" />
+                        <span className="sm:hidden">Page complète</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent className="hidden sm:block">Page complète</TooltipContent>
+                  </Tooltip>
 
-        {recipe && (
-          <article className="space-y-5 pb-8">
-            {/* Image */}
-            <div className="relative">
-              <img
-                src={recipeImageUrl(recipe, "original")}
-                alt={recipe.name}
-                className="aspect-video w-full object-cover"
-              />
-              {/* Dégradé bas pour transition vers le contenu */}
-              <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-card to-transparent" />
-            </div>
+                  {recipe.orgURL && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={recipe.orgURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                            "border border-border px-2.5 py-1.5",
+                            "text-xs font-semibold text-muted-foreground",
+                            "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                            "transition-all duration-150",
+                          )}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span className="sm:hidden">Recette originale</span>
+                        </a>
+                      </TooltipTrigger>
 
-            <div className="space-y-4 px-5">
-              {/* Nom */}
-              <h1 className="font-heading text-xl font-bold leading-snug tracking-tight">{recipe.name}</h1>
-
-              {/* Temps */}
-              {(recipe.prepTime || recipe.cookTime) && (
-                <div className="flex flex-wrap gap-3">
-                  {recipe.prepTime && (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5 text-primary/60" />
-                      <span className="font-medium">Prép.</span> {formatDuration(recipe.prepTime)}
-                    </span>
+                      <TooltipContent className="hidden sm:block">
+                        Recette originale
+                      </TooltipContent>
+                    </Tooltip>
                   )}
-                  {recipe.cookTime && (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5 text-primary/60" />
-                      <span className="font-medium">Cuisson</span> {formatDuration(recipe.cookTime)}
-                    </span>
-                  )}
-                </div>
+
+                </TooltipProvider>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)]",
+                "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                "transition-colors",
               )}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
 
-              {/* Toggle catégories */}
-              {allCategories.length > 0 && (
+        {/* Contenu scrollable */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
+            </div>
+          )}
+
+          {recipe && (
+            <article className="space-y-5 pb-24">
+              {/* Image */}
+              <div className="relative">
+                <img
+                  src={recipeImageUrl(recipe, "original")}
+                  alt={recipe.name}
+                  className="aspect-video w-full object-cover"
+                />
+                {/* Dégradé bas pour transition vers le contenu */}
+                <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-card to-transparent" />
+              </div>
+
+              <div className="space-y-4 px-5">
+                {/* Nom */}
+                <h1 className="font-heading text-xl font-bold leading-snug tracking-tight">{recipe.name}</h1>
+
+                {/* Temps */}
+                {(recipe.prepTime || recipe.performTime || recipe.totalTime) && (
+                  <div className="flex flex-wrap gap-3">
+                    {recipe.prepTime && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 text-primary/60" />
+                        <span className="font-medium">Prép.</span> {formatDuration(recipe.prepTime)}
+                      </span>
+                    )}
+                    {recipe.performTime && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 text-primary/60" />
+                        <span className="font-medium">Cuisson</span> {formatDuration(recipe.performTime)}
+                      </span>
+                    )}
+                    {recipe.totalTime && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 text-primary/60" />
+                        <span className="font-medium">Total</span> {formatDuration(recipe.totalTime)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Toggle catégories */}
+                {allCategories.length > 0 && (
+                  <div className={cn(
+                    "space-y-2.5 rounded-[var(--radius-xl)]",
+                    "border border-border/50 bg-secondary/30 p-3.5",
+                  )}>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                      Catégories
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {allCategories.map((cat) => {
+                        const active = (recipe.recipeCategory ?? []).some((c) => c.id === cat.id)
+                        return (
+                          <Badge
+                            key={cat.id}
+                            variant={active ? "default" : "outline"}
+                            className="cursor-pointer select-none"
+                            onClick={() => void handleToggleCategory(cat)}
+                          >
+                            {categoriesLoading ? "…" : cat.name}
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Toggle saisons */}
                 <div className={cn(
                   "space-y-2.5 rounded-[var(--radius-xl)]",
                   "border border-border/50 bg-secondary/30 p-3.5",
                 )}>
                   <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
-                    Catégories
+                    Saisons
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {allCategories.map((cat) => {
-                      const active = (recipe.recipeCategory ?? []).some((c) => c.id === cat.id)
+                    {SEASONS.map((season: Season) => {
+                      const active = getRecipeSeasonsFromTags(recipe.tags).includes(season)
                       return (
                         <Badge
-                          key={cat.id}
+                          key={season}
                           variant={active ? "default" : "outline"}
                           className="cursor-pointer select-none"
-                          onClick={() => void handleToggleCategory(cat)}
+                          onClick={() => void handleToggleSeason(season)}
                         >
-                          {categoriesLoading ? "…" : cat.name}
+                          {seasonsLoading ? "…" : SEASON_LABELS[season]}
                         </Badge>
                       )
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Séparateur éditorial */}
+              {((recipe.recipeIngredient ?? []).length > 0 || (recipe.recipeInstructions ?? []).length > 0) && (
+                <div className="px-5">
+                  <div className="divider-editorial" />
+                </div>
               )}
 
-              {/* Toggle saisons */}
-              <div className={cn(
-                "space-y-2.5 rounded-[var(--radius-xl)]",
-                "border border-border/50 bg-secondary/30 p-3.5",
-              )}>
-                <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
-                  Saisons
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {SEASONS.map((season: Season) => {
-                    const active = getRecipeSeasonsFromTags(recipe.tags).includes(season)
-                    return (
-                      <Badge
-                        key={season}
-                        variant={active ? "default" : "outline"}
-                        className="cursor-pointer select-none"
-                        onClick={() => void handleToggleSeason(season)}
-                      >
-                        {seasonsLoading ? "…" : SEASON_LABELS[season]}
-                      </Badge>
-                    )
-                  })}
+              {/* Ingrédients */}
+              {(recipe.recipeIngredient ?? []).length > 0 && (
+                <div className="px-5">
+                  <RecipeIngredientsList ingredients={recipe.recipeIngredient ?? []} headingSize="text-base" />
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Séparateur éditorial */}
-            {((recipe.recipeIngredient ?? []).length > 0 || (recipe.recipeInstructions ?? []).length > 0) && (
-              <div className="px-5">
-                <div className="divider-editorial" />
-              </div>
-            )}
-
-            {/* Ingrédients */}
-            {(recipe.recipeIngredient ?? []).length > 0 && (
-              <div className="px-5">
-                <RecipeIngredientsList ingredients={recipe.recipeIngredient ?? []} headingSize="text-base" />
-              </div>
-            )}
-
-            {/* Instructions */}
-            {(recipe.recipeInstructions ?? []).length > 0 && (
-              <div className="px-5">
-                <RecipeInstructionsList instructions={recipe.recipeInstructions ?? []} headingSize="text-base" />
-              </div>
-            )}
-          </article>
-        )}
+              {/* Instructions */}
+              {(recipe.recipeInstructions ?? []).length > 0 && (
+                <div className="px-5">
+                  <RecipeInstructionsList instructions={recipe.recipeInstructions ?? []} headingSize="text-base" />
+                </div>
+              )}
+            </article>
+          )}
+        </div>
       </div>
-    </div>
     </>
   )
 }

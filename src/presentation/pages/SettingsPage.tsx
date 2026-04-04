@@ -328,9 +328,17 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center gap-2">
             <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
-            <span className="text-sm font-semibold">Bonap</span>
+            <span className="text-sm font-semibold">
+              <a href="https://bonap.aylabs.fr" target="_blank" rel="noopener noreferrer" title="Bonap">Bonap</a></span>
             <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-mono font-semibold text-muted-foreground">
-              v{__APP_VERSION__}
+              <a
+                href={`https://github.com/AymericLeFeyer/bonap/releases/tag/v${__APP_VERSION__}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Bonap v${__APP_VERSION__}`}
+              >
+                v{__APP_VERSION__}
+              </a>
             </span>
           </div>
         </div>

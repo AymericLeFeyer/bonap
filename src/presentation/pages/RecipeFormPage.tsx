@@ -37,7 +37,8 @@ function buildEmptyFormData(): RecipeFormData {
     name: "",
     description: "",
     prepTime: "",
-    cookTime: "",
+    performTime: "",
+    totalTime: "",
     recipeIngredient: [
       { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" },
     ],
@@ -316,8 +317,14 @@ export function RecipeFormPage() {
             />
             <InlineEditDuration
               label="Cuisson"
-              value={formData.cookTime}
-              onChange={(v) => patch({ cookTime: v })}
+              value={formData.performTime}
+              onChange={(v) => patch({ performTime: v })}
+              disabled={saving}
+            />
+             <InlineEditDuration
+              label="Total"
+              value={formData.totalTime}
+              onChange={(v) => patch({ totalTime: v })}
               disabled={saving}
             />
           </div>
