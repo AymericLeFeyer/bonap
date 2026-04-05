@@ -115,6 +115,21 @@ export interface MealieRecipe {
   recipeInstructions?: MealieInstruction[]
   extras?: Record<string, string>
   orgURL?: string
+  nutrition?: MealieNutrition
+}
+
+export interface MealieNutrition {
+  calories?: string
+  carbohydrateContent?: string
+  cholesterolContent?: string
+  fatContent?: string
+  fiberContent?: string
+  proteinContent?: string
+  saturatedFatContent?: string
+  sodiumContent?: string
+  sugarContent?: string
+  transFatContent?: string
+  unsaturatedFatContent?: string
 }
 
 export interface MealieRawPaginatedRecipes {

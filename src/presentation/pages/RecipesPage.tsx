@@ -6,6 +6,8 @@ import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
+import { useUpdateCalorieTag } from "../../presentation/hooks/useUpdateCalorieTag.ts"
+import { getCaloriesFromTags, isCalorieTag } from "../../shared/utils/calorie.ts"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
 import { useGridColumns } from "../hooks/useGridColumns.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
@@ -37,11 +39,19 @@ const TIME_OPTIONS = [
   { label: "1h+", value: undefined },
 ] as const
 
+const CALORIES_OPTIONS = [
+  { label: "< 200 kcal", value: 200 },
+  { label: "< 400 kcal", value: 400 },
+  { label: "< 600 kcal", value: 600 },
+  { label: "< 800 kcal", value: 800 },
+] as const
+
 export function RecipesPage() {
   const [search, setSearch] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
+  const [maxCalories, setMaxCalories] = useState<number | undefined>(undefined)
   const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([])
   const [noIngredients, setNoIngredients] = useState(false)
   const [noIngredientRecipes, setNoIngredientRecipes] = useState<MealieRecipe[] | null>(null)
@@ -129,11 +139,16 @@ export function RecipesPage() {
     setMaxTotalTime((prev) => (prev === value ? undefined : value))
   }
 
+  const handleCaloriesFilter = (value: number | undefined) => {
+    setMaxCalories((prev) => (prev === value ? undefined : value))
+  }
+
   const hasActiveFilters =
     search.trim() !== "" ||
     selectedCategories.length > 0 ||
     selectedTags.length > 0 ||
     maxTotalTime !== undefined ||
+    maxCalories !== undefined ||
     selectedSeasons.length > 0 ||
     noIngredients
 
@@ -142,6 +157,7 @@ export function RecipesPage() {
     setSelectedCategories([])
     setSelectedTags([])
     setMaxTotalTime(undefined)
+    setMaxCalories(undefined)
     setSelectedSeasons([])
     setNoIngredients(false)
     setNoIngredientRecipes(null)
@@ -220,6 +236,17 @@ export function RecipesPage() {
         }
       }
 
+      // =====================
+      // CALORIES
+      // =====================
+      if (maxCalories !== undefined) {
+        const calories = getCaloriesFromTags(recipe.tags)
+
+        if (!calories || calories > maxCalories) {
+          return false
+        }
+      }
+
       return true
     })
   }, [
@@ -229,6 +256,7 @@ export function RecipesPage() {
     selectedSeasons,
     selectedTags,
     maxTotalTime,
+    maxCalories,
   ])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [tagSearch, setTagSearch] = useState("")
@@ -423,7 +451,7 @@ export function RecipesPage() {
               {/* ===================== */}
               {/* 1. CONTEXTE */}
               {/* ===================== */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
                 {/* ================= */}
                 {/* SAISON */}
@@ -480,6 +508,30 @@ export function RecipesPage() {
                         )
                       })}
 
+                  </div>
+                </div>
+
+                {/* CALORIES */}
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Calories
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 min-w-0">
+                    {CALORIES_OPTIONS.map((opt) => {
+                      const active = maxCalories === opt.value
+
+                      return (
+                        <Badge
+                          key={opt.value}
+                          variant={active ? "default" : "outline"}
+                          className="cursor-pointer whitespace-nowrap shrink-0"
+                          onClick={() => handleCaloriesFilter(opt.value)}
+                        >
+                          {opt.label}
+                        </Badge>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -573,6 +625,7 @@ export function RecipesPage() {
 
                     {tags
                       .filter(t => !isSeasonTag(t))
+                      .filter(t => !isCalorieTag(t))
                       .filter(t =>
                         t.name.toLowerCase().includes(tagSearch.toLowerCase())
                       )
@@ -592,6 +645,7 @@ export function RecipesPage() {
 
                     {tags
                       .filter(t => !isSeasonTag(t))
+                      .filter(t => !isCalorieTag(t))
                       .filter(t =>
                         t.name.toLowerCase().includes(tagSearch.toLowerCase())
                       ).length === 0 && (
@@ -703,8 +757,52 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
   const { recipe, setRecipe, loading } = useRecipe(slug)
   const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
   const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
+  const { updateCalorieTag } = useUpdateCalorieTag()
   const [cookingMode, setCookingMode] = useState(false)
   const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
+  const syncLock = useRef(false)
+
+  useEffect(() => {
+    if (!recipe) return
+    if (syncLock.current) return
+
+    const caloriesString = recipe.nutrition?.calories
+    if (!caloriesString) return
+
+    const match = caloriesString.match(/[\d.]+/)
+    if (!match) return
+
+    const calories = Number(match[0])
+    if (isNaN(calories)) return
+
+    const existingTag = recipe.tags?.find(t =>
+      t.slug.startsWith("calorie-")
+    )
+
+    const existingCalories = existingTag
+      ? Number(existingTag.slug.replace("calorie-", ""))
+      : null
+
+    // déjà OK → stop
+    if (existingCalories === calories) return
+
+    const run = async () => {
+      try {
+        syncLock.current = true   // 🔥 LOCK IMMÉDIAT
+
+        const updated = await updateCalorieTag(recipe.slug, calories)
+
+        if (updated) {
+          setRecipe(updated)
+        }
+
+      } finally {
+        syncLock.current = false  // 🔓 UNLOCK
+      }
+    }
+
+    run()
+  }, [recipe?.slug]) // 🔥 IMPORTANT: PAS recipe complet
 
   const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
     if (!recipe) return
@@ -729,7 +827,9 @@ function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerPro
     if (!recipe) return
     const current = recipe.recipeCategory ?? []
     const isActive = current.some((c) => c.id === cat.id)
-    const newCats = isActive ? current.filter((c) => c.id !== cat.id) : [...current, cat]
+    const newCats = isActive
+      ? current.filter((c) => c.id !== cat.id)
+      : [...current, cat]
     const updated = await updateCategories(recipe.slug, newCats)
     if (updated) setRecipe(updated)
   }

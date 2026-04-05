@@ -22,6 +22,7 @@ import { GetRecipesByIdsUseCase } from "../application/recipe/usecases/GetRecipe
 import { CreateRecipeUseCase } from "../application/recipe/usecases/CreateRecipeUseCase.ts"
 import { UpdateRecipeUseCase } from "../application/recipe/usecases/UpdateRecipeUseCase.ts"
 import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeasonsUseCase.ts"
+import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
 import { UpdateCategoriesUseCase } from "../application/recipe/usecases/UpdateCategoriesUseCase.ts"
 import { FetchAiImageUseCase } from "../application/recipe/usecases/FetchAiImageUseCase.ts"
 
@@ -64,6 +65,7 @@ export const getRecipesByIdsUseCase = new GetRecipesByIdsUseCase(recipeRepositor
 export const createRecipeUseCase = new CreateRecipeUseCase(recipeRepository, foodRepository, unitRepository)
 export const updateRecipeUseCase = new UpdateRecipeUseCase(recipeRepository, foodRepository, unitRepository)
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
+export const updateCalorieTagUseCase = new UpdateCalorieTagUseCase(recipeRepository)
 export const updateCategoriesUseCase = new UpdateCategoriesUseCase(recipeRepository)
 export const fetchAiImageUseCase = new FetchAiImageUseCase()
 

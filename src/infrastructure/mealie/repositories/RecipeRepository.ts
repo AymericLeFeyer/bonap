@@ -10,6 +10,7 @@ import type {
   Season,
 } from "../../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../../shared/utils/season.ts"
+import { isCalorieTag, buildCalorieTag } from "../../../shared/utils/calorie.ts"
 import { generateId } from "../../../shared/utils/id.ts"
 import { mealieApiClient } from "../api/index.ts"
 
@@ -169,4 +170,26 @@ export class RecipeRepository implements IRecipeRepository {
       tags: [...nonSeasonTags, ...seasonTags],
     })
   }
+
+  async updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe> {
+  const current = await this.getBySlug(slug)
+
+  const calorieTag = {
+    name: buildCalorieTag(calories),
+    slug: buildCalorieTag(calories),
+  }
+
+  const nonCalorieTags = (current.tags ?? [])
+    .filter(t => !isCalorieTag(t))
+    .map(t => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+    }))
+
+  return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
+    name: current.name,
+    tags: [...nonCalorieTags, calorieTag],
+  })
+}
 }

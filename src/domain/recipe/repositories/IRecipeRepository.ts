@@ -17,6 +17,7 @@ export interface IRecipeRepository {
   create(name: string): Promise<string>
   update(slug: string, data: RecipeFormData): Promise<MealieRecipe>
   updateSeasons(slug: string, seasons: Season[]): Promise<MealieRecipe>
+  updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe>
   updateCategories(slug: string, categories: MealieCategory[]): Promise<MealieRecipe>
   uploadImage(slug: string, file: File): Promise<void>
 }
