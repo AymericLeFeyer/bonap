@@ -11,6 +11,12 @@ import {
 } from '../components/ui/card.tsx'
 import { Loader2, AlertCircle, UtensilsCrossed } from 'lucide-react'
 import { cn } from '../../lib/utils.ts'
+import { loginUseCase } from '../../infrastructure/container.ts'
+import {
+  getEnv,
+  getIngressBasename,
+  isDockerRuntime,
+} from '../../shared/utils/env.ts'
 
 const STORAGE_KEYS = {
   MEALIE_URL: 'bonap-mealie-url',
@@ -18,12 +24,8 @@ const STORAGE_KEYS = {
 }
 
 export function AuthPage() {
-  const [mealieUrl, setMealieUrl] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.MEALIE_URL) ?? '',
-  )
-  const [token, setToken] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.MEALIE_TOKEN) ?? '',
-  )
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -33,30 +35,22 @@ export function AuthPage() {
     setError(null)
     setLoading(true)
 
-    const normalizedUrl = mealieUrl.replace(/\/+$/, '')
-
     try {
-      const response = await fetch(`${normalizedUrl}/api/health`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const tokens = await loginUseCase.execute(username, password)
 
-      if (!response.ok) {
-        throw new Error(
-          response.status === 401
-            ? 'Token invalide'
-            : `Erreur serveur (${response.status})`,
-        )
-      }
+      const mealieUrl = isDockerRuntime()
+        ? getIngressBasename()
+        : getEnv('VITE_MEALIE_URL').replace(/\/+$/, '')
 
-      localStorage.setItem(STORAGE_KEYS.MEALIE_URL, normalizedUrl)
-      localStorage.setItem(STORAGE_KEYS.MEALIE_TOKEN, token)
+      localStorage.setItem(STORAGE_KEYS.MEALIE_URL, mealieUrl)
+      localStorage.setItem(STORAGE_KEYS.MEALIE_TOKEN, tokens.accessToken)
 
       window.__ENV__ = {
-        VITE_MEALIE_URL: normalizedUrl,
-        VITE_MEALIE_TOKEN: token,
+        VITE_MEALIE_URL: mealieUrl,
+        VITE_MEALIE_TOKEN: tokens.accessToken,
       }
 
-      navigate('/recipes')
+      navigate('/recipes', { replace: true })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Impossible de se connecter',
@@ -74,39 +68,41 @@ export function AuthPage() {
             <UtensilsCrossed className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1.5">
-            <CardTitle className="text-2xl">Connexion Ã Mealie</CardTitle>
+            <CardTitle className="text-2xl">Connexion à Mealie</CardTitle>
             <CardDescription>
-              Entrez l'URL de votre instance Mealie et votre jeton d'accÃ¨s
+              Entrez vos identifiants pour accéder à votre espace
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="mealie-url" className="text-sm font-medium">
-                URL Mealie
+              <label htmlFor="username" className="text-sm font-medium">
+                Nom d'utilisateur
               </label>
               <Input
-                id="mealie-url"
-                type="url"
-                placeholder="https://mealie.example.com"
-                value={mealieUrl}
-                onChange={(e) => setMealieUrl(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="votre@email.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
+                autoComplete="username"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="token" className="text-sm font-medium">
-                Jeton d'accÃ¨s
+              <label htmlFor="password" className="text-sm font-medium">
+                Mot de passe
               </label>
               <Input
-                id="token"
+                id="password"
                 type="password"
-                placeholder="Votre jeton API Mealie"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
+                placeholder="Votre mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
             </div>
 
@@ -130,7 +126,8 @@ export function AuthPage() {
           </form>
 
           <p className={cn('mt-4 text-center text-xs text-muted-foreground')}>
-            Le jeton est stockÃ© localement dans votre navigateur
+            Vos identifiants sont échangés directement avec votre instance
+            Mealie
           </p>
         </CardContent>
       </Card>
