@@ -49,4 +49,16 @@ export class AuthRepository implements IAuthRepository {
       tokenType: data.token_type,
     }
   }
+
+  async logout(): Promise<void> {
+    const url = `${getBaseUrl()}/api/auth/logout`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    })
+    if (!response.ok) {
+      const message = await response.text().catch(() => response.statusText)
+      throw new MealieApiError(message, response.status)
+    }
+  }
 }

@@ -18,6 +18,7 @@ import { AuthRepository } from './mealie/repositories/AuthRepository.ts'
 
 // Use cases — auth
 import { LoginUseCase } from '../application/auth/usecases/LoginUseCase.ts'
+import { LogoutUseCase } from '../application/auth/usecases/LogoutUseCase.ts'
 
 // Use cases — recipe
 import { GetRecipesUseCase } from '../application/recipe/usecases/GetRecipesUseCase.ts'
@@ -119,3 +120,4 @@ export const getUnitsUseCase = new GetUnitsUseCase(unitRepository)
 // --- Singleton use case instances — auth ---
 
 export const loginUseCase = new LoginUseCase(authRepository)
+export const logoutUseCase = new LogoutUseCase(authRepository)
