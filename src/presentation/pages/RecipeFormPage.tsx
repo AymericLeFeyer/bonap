@@ -291,7 +291,7 @@ export function RecipeFormPage() {
               </div>
             )}
             <div className="flex flex-wrap gap-1.5">
-              {SEASONS.map((season: Season) => {
+              {SEASONS.filter((s) => s !== "sans").map((season: Season) => {
                 const active = formData.seasons.includes(season)
                 return (
                   <Badge

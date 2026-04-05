@@ -41,13 +41,22 @@ export class RecipeRepository implements IRecipeRepository {
       params.set("search", filters.search.trim())
     }
     if (filters.categories?.length) {
-      params.set("categories", filters.categories.join(","))
+      filters.categories.forEach((categorie) => {
+        params.append("categories", categorie)
+      })
+      params.set("requireAllCategories", "true")
     }
     if (filters.tags?.length) {
-      params.set("tags", filters.tags.join(","))
+      filters.tags.forEach((tag) => {
+        params.append("tags", tag)
+      })
+      params.set("requireAllTags", "true")
     }
-    if (filters.maxTotalTime !== undefined) {
-      params.set("maxTotalTime", String(filters.maxTotalTime))
+    if (filters.orderBy !== undefined) {
+      params.set("orderBy", String(filters.orderBy))
+    }
+    if (filters.orderDirection !== undefined) {
+      params.set("orderDirection", String(filters.orderDirection))
     }
     const raw = await mealieApiClient.get<MealieRawPaginatedRecipes>(
       `/api/recipes?${params.toString()}`,

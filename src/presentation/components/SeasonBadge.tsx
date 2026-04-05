@@ -20,6 +20,10 @@ const SEASON_STYLES: Record<Season, { pill: string; dot: string }> = {
     pill: "bg-[oklch(0.93_0.04_240)] text-[oklch(0.35_0.08_240)] dark:bg-[oklch(0.24_0.04_240)] dark:text-[oklch(0.72_0.08_240)]",
     dot: "bg-[oklch(0.52_0.14_240)]",
   },
+  sans: {
+    pill: "",
+    dot: "",
+  },
 }
 
 const SEASON_ICONS: Record<Season, string> = {
@@ -27,6 +31,7 @@ const SEASON_ICONS: Record<Season, string> = {
   ete: "☀️",
   automne: "🍂",
   hiver: "❄️",
+  sans: ""
 }
 
 interface SeasonBadgeProps {

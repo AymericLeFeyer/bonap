@@ -89,3 +89,40 @@ export function formatDuration(value: string | number | null | undefined): strin
   if (minutes === 0) return `${hours} h`
   return `${hours} h ${minutes} min`
 }
+
+
+export function formatDurationToNumber(value?: string): number {
+  if (!value) return 0
+
+  const v = value.trim().toLowerCase()
+
+  let totalMinutes = 0
+
+  // "10", "15"
+  if (/^\d+$/.test(v)) {
+    return parseInt(v, 10)
+  }
+
+  // "10 min", "10 minutes"
+  if (/^\d+\s*(min|minute|minutes)$/.test(v)) {
+    return parseInt(v, 10)
+  }
+
+  // "1h", "1h30"
+  const hourMatch = v.match(/(\d+)\s*h(?:\s*(\d+))?/)
+  if (hourMatch) {
+    const h = parseInt(hourMatch[1] ?? "0", 10)
+    const m = parseInt(hourMatch[2] ?? "0", 10)
+    return h * 60 + m
+  }
+
+  // "PT1H30M" (ISO)
+  const isoMatch = v.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+  if (isoMatch) {
+    const h = parseInt(isoMatch[1] ?? "0", 10)
+    const m = parseInt(isoMatch[2] ?? "0", 10)
+    return h * 60 + m
+  }
+
+  return 0
+}

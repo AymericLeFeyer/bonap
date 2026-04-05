@@ -17,7 +17,8 @@ export function useRecipesInfinite(filters: RecipeFilters = {}) {
     search: filters.search ?? "",
     categories: [...(filters.categories ?? [])].sort(),
     tags: [...(filters.tags ?? [])].sort(),
-    maxTotalTime: filters.maxTotalTime ?? null,
+    orderBy: filters.orderBy ?? null,
+    orderDirection: filters.orderDirection ?? null,
   })
 
   const reset = useCallback(() => {
