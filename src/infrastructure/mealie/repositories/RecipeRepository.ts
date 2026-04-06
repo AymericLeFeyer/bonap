@@ -5,17 +5,26 @@ import type {
   MealieRecipe,
   MealieCategory,
   MealieTag,
+  MealieFavoritesResponse,
   RecipeFilters,
   RecipeFormData,
   Season,
 } from "../../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../../shared/utils/season.ts"
+import { isCalorieTag, buildCalorieTag } from "../../../shared/utils/calorie.ts"
 import { generateId } from "../../../shared/utils/id.ts"
 import { mealieApiClient } from "../api/index.ts"
+import { AuthService } from "../auth/AuthService.ts"
 
 interface MealieTagObject { id?: string; name: string; slug: string }
 
 export class RecipeRepository implements IRecipeRepository {
+
+  private authService: AuthService
+
+  constructor(authService: AuthService) {
+    this.authService = authService
+  }
   /** Resolves season tags by including their id if they already exist in Mealie. */
   private async resolveSeasonTags(seasons: Season[]): Promise<MealieTagObject[]> {
     const response = await mealieApiClient.get<{ items: MealieTag[] }>("/api/organizers/tags")
@@ -41,13 +50,22 @@ export class RecipeRepository implements IRecipeRepository {
       params.set("search", filters.search.trim())
     }
     if (filters.categories?.length) {
-      params.set("categories", filters.categories.join(","))
+      filters.categories.forEach((categorie) => {
+        params.append("categories", categorie)
+      })
+      params.set("requireAllCategories", "true")
     }
     if (filters.tags?.length) {
-      params.set("tags", filters.tags.join(","))
+      filters.tags.forEach((tag) => {
+        params.append("tags", tag)
+      })
+      params.set("requireAllTags", "true")
     }
-    if (filters.maxTotalTime !== undefined) {
-      params.set("maxTotalTime", String(filters.maxTotalTime))
+    if (filters.orderBy !== undefined) {
+      params.set("orderBy", String(filters.orderBy))
+    }
+    if (filters.orderDirection !== undefined) {
+      params.set("orderDirection", String(filters.orderDirection))
     }
     const raw = await mealieApiClient.get<MealieRawPaginatedRecipes>(
       `/api/recipes?${params.toString()}`,
@@ -70,12 +88,20 @@ export class RecipeRepository implements IRecipeRepository {
     return typeof response === "string" ? response : response.slug
   }
 
-  private minutesToIso(minutes: string): string | undefined {
-    const m = parseInt(minutes)
-    if (!m || m <= 0) return undefined
-    const h = Math.floor(m / 60)
-    const rem = m % 60
-    return h > 0 ? `PT${h}H${rem > 0 ? `${rem}M` : ""}` : `PT${rem}M`
+  /**
+   * Convertit un nombre de minutes en texte lisible.
+   *
+   * Exemples :
+   * 40  → "40 minutes"
+   * 1   → "1 minute"
+   * 0   → undefined
+   */
+  private minutesToString(minutes: number | string): string | undefined {
+    const m = typeof minutes === "string" ? parseInt(minutes, 10) : minutes
+
+    if (Number.isNaN(m) || m <= 0) return undefined
+
+    return m === 1 ? "1 minute" : `${m} minutes`
   }
 
   async update(slug: string, data: RecipeFormData): Promise<MealieRecipe> {
@@ -98,7 +124,7 @@ export class RecipeRepository implements IRecipeRepository {
         return {
           ...(original ?? {}),
           quantity,
-          unit: hasUnit ? { id: ing.unitId, name: ing.unit } : (original?.unit ?? null),
+          unit: hasUnit ? { id: ing.unitId, name: ing.unit } : undefined,
           food: hasFood ? { id: ing.foodId, name: ing.food } : (original?.food ?? null),
           note: ing.note || (!hasFood && !hasUnit ? ing.food : "") || "",
         }
@@ -108,8 +134,9 @@ export class RecipeRepository implements IRecipeRepository {
       ...current,
       name: data.name,
       description: data.description || current.description,
-      prepTime: this.minutesToIso(data.prepTime) ?? current.prepTime,
-      cookTime: this.minutesToIso(data.cookTime) ?? current.cookTime,
+      prepTime: this.minutesToString(data.prepTime) ?? current.prepTime,
+      performTime: this.minutesToString(data.performTime) ?? current.performTime,
+      totalTime: this.minutesToString(data.totalTime) ?? current.totalTime,
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c
@@ -150,5 +177,60 @@ export class RecipeRepository implements IRecipeRepository {
       name: current.name,
       tags: [...nonSeasonTags, ...seasonTags],
     })
+  }
+
+  async updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe> {
+    const current = await this.getBySlug(slug)
+
+    const calorieTag = {
+      name: buildCalorieTag(calories),
+      slug: buildCalorieTag(calories),
+    }
+
+    const nonCalorieTags = (current.tags ?? [])
+      .filter(t => !isCalorieTag(t))
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+      }))
+
+    return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
+      name: current.name,
+      tags: [...nonCalorieTags, calorieTag],
+    })
+  }
+
+  async updateRating(slug: string, rating: number): Promise<void> {
+    const userId = await this.authService.getUserId()
+    await mealieApiClient.post(
+      `/api/users/${userId}/ratings/${slug}`,
+      {
+        rating,
+        isFavorite: false,
+      }
+    )
+  }
+
+  async getFavorites(): Promise<MealieFavoritesResponse> {
+    const userId = await this.authService.getUserId()
+    const res = await mealieApiClient.get<MealieFavoritesResponse>(
+      `/api/users/${userId}/favorites`,
+    )
+    return res
+  }
+
+  async toggleFavorite(slug: string, isFavorite: boolean): Promise<void> {
+    const userId = await this.authService.getUserId()
+    if (isFavorite) {
+      await mealieApiClient.delete(
+        `/api/users/${userId}/favorites/${slug}`,
+      )
+    } else {
+      await mealieApiClient.post(
+        `/api/users/${userId}/favorites/${slug}`,
+        {},
+      )
+    }
   }
 }

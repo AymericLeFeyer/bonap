@@ -37,7 +37,8 @@ function buildEmptyFormData(): RecipeFormData {
     name: "",
     description: "",
     prepTime: "",
-    cookTime: "",
+    performTime: "",
+    totalTime: "",
     recipeIngredient: [
       { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" },
     ],
@@ -290,7 +291,7 @@ export function RecipeFormPage() {
               </div>
             )}
             <div className="flex flex-wrap gap-1.5">
-              {SEASONS.map((season: Season) => {
+              {SEASONS.filter((s) => s !== "sans").map((season: Season) => {
                 const active = formData.seasons.includes(season)
                 return (
                   <Badge
@@ -316,8 +317,14 @@ export function RecipeFormPage() {
             />
             <InlineEditDuration
               label="Cuisson"
-              value={formData.cookTime}
-              onChange={(v) => patch({ cookTime: v })}
+              value={formData.performTime}
+              onChange={(v) => patch({ performTime: v })}
+              disabled={saving}
+            />
+             <InlineEditDuration
+              label="Total"
+              value={formData.totalTime}
+              onChange={(v) => patch({ totalTime: v })}
               disabled={saving}
             />
           </div>

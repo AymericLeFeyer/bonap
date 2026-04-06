@@ -1,13 +1,18 @@
 import { NavLink } from "react-router-dom"
-import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, ChevronLeft, ChevronRight, ExternalLink, Settings, Sparkles } from "lucide-react"
+import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, ExternalLink, Settings, Sparkles } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
+import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
+
+const isAIEnabled = llmConfigService.isConfigured()
 
 const navItems = [
   { to: "/planning", label: "Planning", icon: CalendarDays },
   { to: "/shopping", label: "Courses", icon: ShoppingCart },
   { to: "/recipes", label: "Recettes", icon: UtensilsCrossed },
-  { to: "/suggestions", label: "Suggestions IA", icon: Sparkles },
+  ...(isAIEnabled
+    ? [{ to: "/suggestions", label: "Suggestions IA", icon: Sparkles }]
+    : []),
   { to: "/stats", label: "Statistiques", icon: BarChart2 },
 ]
 
@@ -36,23 +41,9 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
         )}
       >
         {!collapsed ? (
-          <>
-            <img src={`${getIngressBasename()}/logo_bonap.png`} alt="bonap" className="h-9 object-contain" />
-            <button
-              type="button"
-              onClick={onToggleCollapsed}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)]",
-                "text-muted-foreground",
-                "transition-colors hover:bg-secondary hover:text-foreground",
-              )}
-              aria-label="Replier la sidebar"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-          </>
+            <img src={`${getIngressBasename()}/logo_bonap.png`} onClick={onToggleCollapsed} alt="bonap" className="h-9 object-contain" />
         ) : (
-          <img src={`${getIngressBasename()}/bonap.png`} alt="bonap" className="h-8 w-8 object-contain" />
+          <img src={`${getIngressBasename()}/bonap.png`} onClick={onToggleCollapsed} alt="bonap" className="h-8 w-8 object-contain" />
         )}
       </div>
 
@@ -107,20 +98,6 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
 
       {/* ── Footer ── */}
       <div className="px-2 py-3 space-y-0.5">
-        {collapsed && (
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            className={cn(
-              "flex w-full items-center justify-center rounded-[var(--radius-lg)] p-2.5",
-              "text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-            )}
-            aria-label="Déplier la sidebar"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        )}
-
         <NavLink
           to="/settings"
           className={({ isActive }) =>

@@ -145,6 +145,8 @@ Open [http://localhost:5173](http://localhost:5173).
 |---|---|---|
 | `VITE_MEALIE_URL` | Yes | URL of your Mealie instance. In Docker, this is also used by the nginx proxy — use the internal service name if running full-stack (e.g. `http://mealie:9000`). |
 | `VITE_MEALIE_TOKEN` | Yes | Mealie API Bearer token (Profile → API Tokens) |
+| `VITE_THEME` | No | Bonapp theme |
+| `VITE_ACCENT_COLORS` | No | Bonapp Accent Color |
 | `LLM_PROVIDER` | No | AI provider: `anthropic`, `openai`, `google`, or `ollama`. If set, overrides the in-app setting on all devices. |
 | `LLM_API_KEY` | No | API key for the AI provider. If set, the key is shared across all devices automatically. |
 | `LLM_MODEL` | No | AI model to use (e.g. `claude-sonnet-4-6`). If set, overrides the in-app model selector. |

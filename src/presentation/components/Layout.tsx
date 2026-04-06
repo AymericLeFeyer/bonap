@@ -1,16 +1,22 @@
 import { Outlet, NavLink } from "react-router-dom"
-import { CalendarDays, ShoppingCart, UtensilsCrossed, Sparkles, BarChart2 } from "lucide-react"
+import { CalendarDays, ShoppingCart, UtensilsCrossed, Sparkles, BarChart2, Settings } from "lucide-react"
 import { Sidebar } from "./Sidebar.tsx"
 import { AssistantDrawer } from "./AssistantDrawer.tsx"
 import { useSidebar } from "../hooks/useSidebar.ts"
 import { cn } from "../../lib/utils.ts"
+import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
+
+const isAIEnabled = llmConfigService.isConfigured()
 
 const mobileNavItems = [
   { to: "/planning", label: "Planning", icon: CalendarDays },
   { to: "/shopping", label: "Courses", icon: ShoppingCart },
   { to: "/recipes", label: "Recettes", icon: UtensilsCrossed },
-  { to: "/suggestions", label: "IA", icon: Sparkles },
+  ...(isAIEnabled
+    ? [{ to: "/suggestions", label: "Suggestions IA", icon: Sparkles }]
+    : []),
   { to: "/stats", label: "Stats", icon: BarChart2 },
+  { to: "/settings", label: "Settings", icon: Settings },
 ]
 
 export function Layout() {

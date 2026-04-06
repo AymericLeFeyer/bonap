@@ -6,6 +6,10 @@
  * from this file instead of instantiating their own dependencies.
  */
 
+
+//Auth Services
+import { AuthService } from "./mealie/auth/AuthService.ts"
+
 // Repositories
 import { RecipeRepository } from './mealie/repositories/RecipeRepository.ts'
 import { PlanningRepository } from './mealie/repositories/PlanningRepository.ts'
@@ -21,14 +25,20 @@ import { LoginUseCase } from '../application/auth/usecases/LoginUseCase.ts'
 import { LogoutUseCase } from '../application/auth/usecases/LogoutUseCase.ts'
 
 // Use cases — recipe
-import { GetRecipesUseCase } from '../application/recipe/usecases/GetRecipesUseCase.ts'
-import { GetRecipeUseCase } from '../application/recipe/usecases/GetRecipeUseCase.ts'
-import { GetRecipesByIdsUseCase } from '../application/recipe/usecases/GetRecipesByIdsUseCase.ts'
-import { CreateRecipeUseCase } from '../application/recipe/usecases/CreateRecipeUseCase.ts'
-import { UpdateRecipeUseCase } from '../application/recipe/usecases/UpdateRecipeUseCase.ts'
-import { UpdateSeasonsUseCase } from '../application/recipe/usecases/UpdateSeasonsUseCase.ts'
-import { UpdateCategoriesUseCase } from '../application/recipe/usecases/UpdateCategoriesUseCase.ts'
-import { FetchAiImageUseCase } from '../application/recipe/usecases/FetchAiImageUseCase.ts'
+import { GetRecipesUseCase } from "../application/recipe/usecases/GetRecipesUseCase.ts"
+import { GetRecipeUseCase } from "../application/recipe/usecases/GetRecipeUseCase.ts"
+import { GetRecipesByIdsUseCase } from "../application/recipe/usecases/GetRecipesByIdsUseCase.ts"
+import { CreateRecipeUseCase } from "../application/recipe/usecases/CreateRecipeUseCase.ts"
+import { UpdateRecipeUseCase } from "../application/recipe/usecases/UpdateRecipeUseCase.ts"
+import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeasonsUseCase.ts"
+import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
+import { UpdateCategoriesUseCase } from "../application/recipe/usecases/UpdateCategoriesUseCase.ts"
+import { FetchAiImageUseCase } from "../application/recipe/usecases/FetchAiImageUseCase.ts"
+
+// Use caese - User
+import { UpdateRatingUseCase } from "../application/user/usecases/UpdateRatingUseCase.ts"
+import { GetFavoritesUseCase } from "../application/user/usecases/GetFavoritesUseCase.ts"
+import { ToggleFavoriteUseCase } from "../application/user/usecases/ToggleFavoriteUseCase.ts"
 
 // Use cases — planning
 import { GetWeekPlanningUseCase } from '../application/planning/usecases/GetWeekPlanningUseCase.ts'
@@ -51,9 +61,13 @@ import { GetFoodsUseCase } from '../application/organizer/usecases/GetFoodsUseCa
 import { CreateFoodUseCase } from '../application/organizer/usecases/CreateFoodUseCase.ts'
 import { GetUnitsUseCase } from '../application/organizer/usecases/GetUnitsUseCase.ts'
 
+//Auth Services
+export const authService = new AuthService()
+
+
 // --- Singleton repository instances ---
 
-export const recipeRepository = new RecipeRepository()
+export const recipeRepository = new RecipeRepository(authService)
 export const planningRepository = new PlanningRepository()
 export const shoppingRepository = new ShoppingRepository()
 export const categoryRepository = new CategoryRepository()
@@ -80,10 +94,14 @@ export const updateRecipeUseCase = new UpdateRecipeUseCase(
   unitRepository,
 )
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
-export const updateCategoriesUseCase = new UpdateCategoriesUseCase(
-  recipeRepository,
-)
+export const updateCalorieTagUseCase = new UpdateCalorieTagUseCase(recipeRepository)
+export const updateCategoriesUseCase = new UpdateCategoriesUseCase(recipeRepository)
 export const fetchAiImageUseCase = new FetchAiImageUseCase()
+
+// --- Singleton use case instances — User ---
+export const updateRatingUseCase = new UpdateRatingUseCase(recipeRepository)
+export const getFavoritesUseCase = new GetFavoritesUseCase(recipeRepository)
+export const toggleFavoriteUseCase = new ToggleFavoriteUseCase(recipeRepository)
 
 // --- Singleton use case instances — planning ---
 

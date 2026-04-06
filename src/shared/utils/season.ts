@@ -20,7 +20,7 @@ export function getCurrentSeason(): Season {
 
 /**
  * Extracts seasons from a recipe's Mealie tags.
- * Season tags use the prefix "saison:" (e.g. "saison:printemps").
+ * Season tags use the prefix "saison-" (e.g. "saison-printemps").
  */
 export function getRecipeSeasonsFromTags(tags: MealieTag[] | undefined): Season[] {
   if (!tags?.length) return []

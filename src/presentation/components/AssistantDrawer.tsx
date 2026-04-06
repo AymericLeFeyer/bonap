@@ -5,8 +5,13 @@ import { Button } from "./ui/button.tsx"
 import { Input } from "./ui/input.tsx"
 import { useAssistant } from "../hooks/useAssistant.ts"
 import { cn } from "../../lib/utils.ts"
+import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
+
 
 export function AssistantDrawer() {
+
+  if (!llmConfigService.isConfigured()) return null
+
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -142,8 +147,8 @@ export function AssistantDrawer() {
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : msg.role === "tool"
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-secondary text-foreground",
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-secondary text-foreground",
               )}>
                 {msg.role === "user" ? <User className="h-3 w-3" /> : msg.role === "tool" ? <Wrench className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
               </div>
@@ -154,8 +159,8 @@ export function AssistantDrawer() {
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground rounded-tr-[var(--radius-xs)]"
                   : msg.role === "tool"
-                  ? "bg-muted/50 text-muted-foreground italic text-xs"
-                  : "bg-secondary text-foreground rounded-tl-[var(--radius-xs)]",
+                    ? "bg-muted/50 text-muted-foreground italic text-xs"
+                    : "bg-secondary text-foreground rounded-tl-[var(--radius-xs)]",
               )}>
                 {msg.role === "assistant" && msg.content ? (
                   <>

@@ -1,12 +1,13 @@
-export type Season = "printemps" | "ete" | "automne" | "hiver"
+export type Season = "printemps" | "ete" | "automne" | "hiver" | "sans"
 
-export const SEASONS: Season[] = ["printemps", "ete", "automne", "hiver"]
+export const SEASONS: Season[] = ["printemps", "ete", "automne", "hiver", "sans"]
 
 export const SEASON_LABELS: Record<Season, string> = {
   printemps: "Printemps",
   ete: "Été",
   automne: "Automne",
   hiver: "Hiver",
+  sans: "Sans Saison",
 }
 
 export interface MealieFood {
@@ -60,8 +61,9 @@ export interface RecipeFilters {
   search?: string
   categories?: string[]
   tags?: string[]
-  maxTotalTime?: number
   seasons?: Season[]
+  orderBy?: string
+  orderDirection?: string
 }
 
 export interface RecipeFormIngredient {
@@ -87,7 +89,8 @@ export interface RecipeFormData {
   name: string
   description: string
   prepTime: string
-  cookTime: string
+  performTime: string
+  totalTime: string
   imageFile?: File
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
@@ -106,10 +109,28 @@ export interface MealieRecipe {
   recipeCategory?: MealieCategory[]
   tags?: MealieTag[]
   prepTime?: string
-  cookTime?: string
+  performTime?: string
+  totalTime?: string
   recipeIngredient?: MealieIngredient[]
   recipeInstructions?: MealieInstruction[]
   extras?: Record<string, string>
+  orgURL?: string
+  nutrition?: MealieNutrition
+  rating?: number
+}
+
+export interface MealieNutrition {
+  calories?: string
+  carbohydrateContent?: string
+  cholesterolContent?: string
+  fatContent?: string
+  fiberContent?: string
+  proteinContent?: string
+  saturatedFatContent?: string
+  sodiumContent?: string
+  sugarContent?: string
+  transFatContent?: string
+  unsaturatedFatContent?: string
 }
 
 export interface MealieRawPaginatedRecipes {
@@ -222,4 +243,15 @@ export interface MealieRawPaginatedShoppingItems {
   page: number
   per_page: number
   total_pages: number
+}
+
+export interface MealieFavorite {
+  recipeId: string
+  isFavorite: boolean
+  userId: string
+  id: string
+}
+
+export interface MealieFavoritesResponse {
+  ratings: MealieFavorite[]
 }

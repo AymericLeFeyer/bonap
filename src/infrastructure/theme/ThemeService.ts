@@ -1,3 +1,5 @@
+import { getEnv } from "../../shared/utils/env.ts"
+
 export type Theme = "light" | "dark" | "system"
 
 export interface AccentColor {
@@ -19,8 +21,9 @@ export const ACCENT_COLORS: AccentColor[] = [
 
 const THEME_KEY = "bonap_theme"
 const ACCENT_KEY = "bonap_accent"
+const ENV_ACCENT_COLORS = getEnv("VITE_ACCENT_COLORS")
+const DEFAULT_ACCENT = ACCENT_COLORS.find(c => c.id === ENV_ACCENT_COLORS) ?? ACCENT_COLORS[0]
 
-const DEFAULT_ACCENT = ACCENT_COLORS[0]
 
 function getSystemPreference(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
@@ -43,10 +46,23 @@ export class ThemeService {
   private _systemHandler: (() => void) | null = null
 
   getTheme(): Theme {
+    const envTheme = getEnv("VITE_THEME")
+
+    const isTheme = (v: any): v is Theme =>
+      v === "light" || v === "dark" || v === "system"
+    
+    // 1. ENV
+    if (isTheme(envTheme)) {
+      return envTheme
+    }
+
+    // 2. localStorage
     try {
       const stored = localStorage.getItem(THEME_KEY)
-      if (stored === "light" || stored === "dark" || stored === "system") return stored
-    } catch (_) {}
+      if (isTheme(stored)) return stored
+    } catch (_) { }
+
+    // 3. fallback
     return "system"
   }
 
