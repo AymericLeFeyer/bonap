@@ -23,40 +23,46 @@ export function formatDuration(value: string | number | null | undefined): strin
 
   let totalMinutes: number
 
-  /**
-   * CASE 1 — number direct (minutes)
-   */
   if (typeof value === "number") {
     totalMinutes = value
-  }
-
-  /**
-   * CASE 2 — string
-   */
-  else if (typeof value === "string") {
-    const v = value.trim().toLowerCase()
+  } else if (typeof value === "string") {
+    const v = value
+      .trim()
+      .toLowerCase()
+      .replace(/\./g, "")        // enlève les points (ex: "min.")
+      .replace(/\u00a0/g, " ")   // espaces insécables
+      .replace(/\s+/g, " ")      // normalise espaces
 
     /**
-     * NEW — format humain : "8 min", "8 minutes"
-     * Permet de supporter des valeurs non ISO venant de l’UI ou API
+     * CASE 1 — "1h10", "1h 10", "1h10m", "2h"
      */
-    const humanMatch = v.match(/^(\d+)\s*(min|mins|minute|minutes)?$/)
-    if (humanMatch) {
-      totalMinutes = parseInt(humanMatch[1], 10)
+    const compactMatch = v.match(/^(\d+)\s*h(?:\s*(\d+)\s*m?)?$/)
+    if (compactMatch) {
+      const hours = parseInt(compactMatch[1], 10)
+      const minutes = parseInt(compactMatch[2] ?? "0", 10)
+      totalMinutes = hours * 60 + minutes
     }
 
     /**
-     * CASE 2.1 — string numérique pur : "90"
+     * CASE 2 — "90", "5 min", "5 minutes"
+     */
+    else if (/^(\d+)\s*(min|mins|minute|minutes)?$/.test(v)) {
+      const match = v.match(/^(\d+)/)
+      totalMinutes = parseInt(match![1], 10)
+    }
+
+    /**
+     * CASE 3 — string numérique "90"
      */
     else if (/^\d+$/.test(v)) {
       totalMinutes = parseInt(v, 10)
     }
 
     /**
-     * CASE 2.2 — ISO 8601 Mealie : "PT1H30M"
+     * CASE 4 — ISO 8601 "PT1H30M"
      */
     else {
-      const match = v.match(/^PT(?:(\d+)H)?(?:(\d+)M)?$/)
+      const match = v.match(/^pt(?:(\d+)h)?(?:(\d+)m)?$/)
 
       if (!match) return "—"
 
@@ -65,23 +71,12 @@ export function formatDuration(value: string | number | null | undefined): strin
 
       totalMinutes = hours * 60 + minutes
     }
-  }
-
-  /**
-   * CASE 3 — type inconnu
-   */
-  else {
+  } else {
     return "—"
   }
 
-  /**
-   * Sécurité : on ignore les valeurs invalides ou nulles
-   */
   if (totalMinutes <= 0) return "—"
 
-  /**
-   * Conversion finale en format lisible
-   */
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
 
