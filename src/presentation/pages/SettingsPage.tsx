@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -11,6 +12,7 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
+import { logoutUseCase } from "../../infrastructure/container.ts"
 
 type TestStatus =
   | { state: 'idle' }
