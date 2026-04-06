@@ -4,20 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.ts
 import { getPlanningRangeUseCase } from "../../infrastructure/container.ts"
 import type { MealieMealPlan } from "../../shared/types/mealie.ts"
 import { cn } from "../../lib/utils.ts"
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function toDateStr(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
-}
-
-function formatDayFr(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00")
-  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
-}
+import { toDateStr, formatDayFr } from "../../shared/utils/date.ts"
 
 // ─── PlanningSlotPicker ───────────────────────────────────────────────────────
 

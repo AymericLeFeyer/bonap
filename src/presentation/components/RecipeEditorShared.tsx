@@ -8,32 +8,6 @@ import { Input } from "./ui/input.tsx"
 import { formatDuration } from "../../shared/utils/duration.ts"
 import { cn } from "../../lib/utils.ts"
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function parsePrepTimeToMinutes(value?: string): string {
-  if (!value) return ""
-  if (/^\d+$/.test(value.trim())) {
-    const n = parseInt(value.trim(), 10)
-    return n > 0 ? String(n) : ""
-  }
-  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
-  if (!match) return ""
-  const hours = parseInt(match[1] ?? "0")
-  const minutes = parseInt(match[2] ?? "0")
-  const total = hours * 60 + minutes
-  return total > 0 ? String(total) : ""
-}
-
-export function formatMinutes(value: string): string {
-  const n = Number(value)
-  if (!n || n <= 0) return ""
-  const h = Math.floor(n / 60)
-  const m = n % 60
-  if (h > 0 && m > 0) return `${h} h ${m} min`
-  if (h > 0) return `${h} h`
-  return `${m} min`
-}
-
 // ─── InlineEditText ───────────────────────────────────────────────────────────
 
 export interface InlineEditTextProps {
@@ -68,16 +42,18 @@ export function InlineEditText({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (editing) {
-      if (multiline && textareaRef.current) {
-        textareaRef.current.focus()
-        const len = textareaRef.current.value.length
-        textareaRef.current.setSelectionRange(len, len)
-      } else if (!multiline && inputRef.current) {
-        inputRef.current.focus()
-        const len = inputRef.current.value.length
-        inputRef.current.setSelectionRange(len, len)
-      }
+    if (!editing) return
+
+    if (multiline && textareaRef.current) {
+      textareaRef.current.focus()
+      const len = textareaRef.current.value.length
+      textareaRef.current.setSelectionRange(len, len)
+    }
+
+    if (!multiline && inputRef.current) {
+      inputRef.current.focus()
+      const len = inputRef.current.value.length
+      inputRef.current.setSelectionRange(len, len)
     }
   }, [editing, multiline])
 
@@ -143,7 +119,13 @@ export interface InlineEditDurationProps {
   disabled?: boolean
 }
 
-export function InlineEditDuration({ label, value, displayRaw, onChange, disabled }: InlineEditDurationProps) {
+export function InlineEditDuration({
+  label,
+  value,
+  displayRaw,
+  onChange,
+  disabled,
+}: InlineEditDurationProps) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -180,7 +162,7 @@ export function InlineEditDuration({ label, value, displayRaw, onChange, disable
       )}
       title={disabled ? undefined : "Cliquer pour modifier"}
     >
-      {label} : {displayRaw ? formatDuration(displayRaw) : (value ? formatMinutes(value) : "—")}
+      {label} : {formatDuration(displayRaw ?? value)}
     </span>
   )
 }

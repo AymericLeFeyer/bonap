@@ -255,3 +255,8 @@ export interface MealieFavorite {
 export interface MealieFavoritesResponse {
   ratings: MealieFavorite[]
 }
+
+export interface MealieRatings {
+  recipeId: string
+  isFavorite: boolean
+}

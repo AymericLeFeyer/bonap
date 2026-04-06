@@ -19,3 +19,15 @@ export function getWeeksBetween(startDate: string, endDate: string): number {
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) + 1
   return Math.max(1, diffDays / 7)
 }
+
+export function toDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+export function formatDayFr(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00")
+  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
+}

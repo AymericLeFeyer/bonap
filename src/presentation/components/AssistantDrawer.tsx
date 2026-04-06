@@ -9,8 +9,7 @@ import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
 
 
 export function AssistantDrawer() {
-
-  if (!llmConfigService.isConfigured()) return null
+  const isConfigured = llmConfigService.isConfigured()
 
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
@@ -31,6 +30,8 @@ export function AssistantDrawer() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  if (!isConfigured) return null
 
   const handleSend = async () => {
     const text = input.trim()

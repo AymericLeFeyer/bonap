@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useRef } from "react"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
@@ -35,19 +35,24 @@ export function SettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [testStatus, setTestStatus] = useState<TestStatus>({ state: "idle" })
   const [saved, setSaved] = useState(false)
-
-  useEffect(() => {
-    llmConfigService.save(config)
-    setSaved(true)
-    const t = setTimeout(() => setSaved(false), 1500)
-    return () => clearTimeout(t)
-  }, [config])
+  const timeoutRef = useRef<number | null>(null)
 
   const providerInfo = LLM_PROVIDERS[config.provider]
 
+  const updateConfig = (updater: (prev: LLMConfig) => LLMConfig) => {
+    setConfig((prev) => {
+      const next = updater(prev)
+      llmConfigService.save(next)
+      setSaved(true)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => setSaved(false), 1500)
+      return next
+    })
+  }
+
   const handleProviderChange = (provider: LLMProvider) => {
     const info = LLM_PROVIDERS[provider]
-    setConfig((prev) => ({
+    updateConfig((prev) => ({
       ...prev,
       provider,
       model: info.models[0] ?? "",
@@ -221,7 +226,9 @@ export function SettingsPage() {
                 type={showKey ? "text" : "password"}
                 placeholder={envFields.has("apiKey") ? "Définie via variable d'environnement" : `Clé ${providerInfo.label}`}
                 value={config.apiKey}
-                onChange={(e) => setConfig((prev) => ({ ...prev, apiKey: e.target.value }))}
+                onChange={(e) =>
+                  updateConfig((prev) => ({ ...prev, apiKey: e.target.value }))
+                }
                 readOnly={envFields.has("apiKey")}
                 className={cn("pr-10", envFields.has("apiKey") && "bg-secondary/40")}
                 autoComplete="off"
@@ -251,7 +258,9 @@ export function SettingsPage() {
                 type="text"
                 placeholder="http://localhost:11434"
                 value={config.ollamaBaseUrl}
-                onChange={(e) => setConfig((prev) => ({ ...prev, ollamaBaseUrl: e.target.value }))}
+                onChange={(e) =>
+                  updateConfig((prev) => ({ ...prev, ollamaBaseUrl: e.target.value }))
+                }
                 readOnly={envFields.has("ollamaBaseUrl")}
                 className={cn(envFields.has("ollamaBaseUrl") && "bg-secondary/40")}
               />
@@ -263,7 +272,9 @@ export function SettingsPage() {
                 type="text"
                 placeholder="llama3.2, mistral, …"
                 value={config.model}
-                onChange={(e) => setConfig((prev) => ({ ...prev, model: e.target.value }))}
+                onChange={(e) =>
+                  updateConfig((prev) => ({ ...prev, model: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -281,7 +292,9 @@ export function SettingsPage() {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => !envFields.has("model") && setConfig((prev) => ({ ...prev, model: m }))}
+                  onClick={() =>
+                    updateConfig((prev) => ({ ...prev, model: m }))
+                  }
                   disabled={envFields.has("model")}
                   className={cn(
                     "rounded-[var(--radius-lg)] border px-3 py-1.5",

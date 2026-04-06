@@ -48,7 +48,7 @@ export class ThemeService {
   getTheme(): Theme {
     const envTheme = getEnv("VITE_THEME")
 
-    const isTheme = (v: any): v is Theme =>
+    const isTheme = (v: unknown): v is Theme =>
       v === "light" || v === "dark" || v === "system"
     
     // 1. ENV
@@ -60,7 +60,9 @@ export class ThemeService {
     try {
       const stored = localStorage.getItem(THEME_KEY)
       if (isTheme(stored)) return stored
-    } catch (_) { }
+    } catch {
+      // nothing
+    }
 
     // 3. fallback
     return "system"
@@ -69,7 +71,9 @@ export class ThemeService {
   setTheme(theme: Theme): void {
     try {
       localStorage.setItem(THEME_KEY, theme)
-    } catch (_) {}
+    } catch {
+      // nothing
+    }
     this.apply()
   }
 
@@ -80,14 +84,18 @@ export class ThemeService {
         const found = ACCENT_COLORS.find((c) => c.id === stored)
         if (found) return found
       }
-    } catch (_) {}
+    } catch {
+      // nothing
+    }
     return DEFAULT_ACCENT
   }
 
   setAccentColor(color: AccentColor): void {
     try {
       localStorage.setItem(ACCENT_KEY, color.id)
-    } catch (_) {}
+    } catch {
+      // nothing
+    }
     this.apply()
   }
 
