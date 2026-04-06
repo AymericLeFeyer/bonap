@@ -18,6 +18,11 @@ import { CategoryRepository } from "./mealie/repositories/CategoryRepository.ts"
 import { TagRepository } from "./mealie/repositories/TagRepository.ts"
 import { FoodRepository } from "./mealie/repositories/FoodRepository.ts"
 import { UnitRepository } from "./mealie/repositories/UnitRepository.ts"
+import { AuthRepository } from "./mealie/repositories/AuthRepository.ts"
+
+// Use cases — auth
+import { LoginUseCase } from "../application/auth/usecases/LoginUseCase.ts"
+import { LogoutUseCase } from "../application/auth/usecases/LogoutUseCase.ts"
 
 // Use cases — recipe
 import { GetRecipesUseCase } from "../application/recipe/usecases/GetRecipesUseCase.ts"
@@ -69,6 +74,12 @@ export const categoryRepository = new CategoryRepository()
 export const tagRepository = new TagRepository()
 export const foodRepository = new FoodRepository()
 export const unitRepository = new UnitRepository()
+export const authRepository = new AuthRepository()
+
+// --- Singleton use case instances — auth ---
+
+export const loginUseCase = new LoginUseCase(authRepository)
+export const logoutUseCase = new LogoutUseCase(authRepository)
 
 // --- Singleton use case instances — recipe ---
 

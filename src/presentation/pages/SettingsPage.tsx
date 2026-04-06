@@ -1,6 +1,7 @@
 import { useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -11,6 +12,7 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
+import { logoutUseCase } from "../../infrastructure/container.ts"
 
 type TestStatus = { state: "idle" } | { state: "loading" } | { state: "ok"; message: string } | { state: "error"; message: string }
 
@@ -30,6 +32,7 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
+  const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
   const [showKey, setShowKey] = useState(false)
@@ -65,6 +68,19 @@ export function SettingsPage() {
     setTestStatus({ state: "loading" })
     const result = await llmConfigService.testConnection(config)
     setTestStatus(result.ok ? { state: "ok", message: result.message } : { state: "error", message: result.message })
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logoutUseCase.execute()
+    } catch {
+      // ignore — always clear local state
+    } finally {
+      localStorage.removeItem('bonap-mealie-url')
+      localStorage.removeItem('bonap-mealie-token')
+      window.__ENV__ = undefined
+      navigate('/login', { replace: true })
+    }
   }
 
   return (
@@ -401,6 +417,26 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Section Déconnexion ── */}
+      {import.meta.env.VITE_PROTECTED_ROUTE === 'true' && (
+        <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-5 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-destructive/8">
+              <LogOut className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold leading-none">Déconnexion</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Déconnecter le compte actuellement connecté.
+              </p>
+            </div>
+          </div>
+          <Button variant="destructive" onClick={handleLogout}>
+            Se déconnecter
+          </Button>
+        </section>
+      )}
     </div>
   )
 }
