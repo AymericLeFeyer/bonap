@@ -96,8 +96,6 @@ export function formatDurationToNumber(value?: string): number {
 
   const v = value.trim().toLowerCase()
 
-  let totalMinutes = 0
-
   // "10", "15"
   if (/^\d+$/.test(v)) {
     return parseInt(v, 10)
