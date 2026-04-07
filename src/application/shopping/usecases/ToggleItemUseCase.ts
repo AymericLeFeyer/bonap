@@ -17,6 +17,11 @@ export class ToggleItemUseCase {
       isFood: item.isFood,
       note: item.note,
       quantity: item.quantity,
+      foodId: item.foodId,
+      unitId: item.unitId,
+      recipeReferences: item.recipeReferences
+        ?.filter((r): r is { recipeId: string } => !!r.recipeId)
+        .map((r) => ({ recipeId: r.recipeId })),
       labelId: item.label?.id,
       display: item.display,
     })
