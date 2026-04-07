@@ -91,6 +91,30 @@ export function formatDuration(value: string | number | null | undefined): strin
 }
 
 
+export function parsePrepTimeToMinutes(value?: string): string {
+  if (!value) return ""
+  if (/^\d+$/.test(value.trim())) {
+    const n = parseInt(value.trim(), 10)
+    return n > 0 ? String(n) : ""
+  }
+  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+  if (!match) return ""
+  const hours = parseInt(match[1] ?? "0")
+  const minutes = parseInt(match[2] ?? "0")
+  const total = hours * 60 + minutes
+  return total > 0 ? String(total) : ""
+}
+
+export function formatMinutes(value: string): string {
+  const n = Number(value)
+  if (!n || n <= 0) return ""
+  const h = Math.floor(n / 60)
+  const m = n % 60
+  if (h > 0 && m > 0) return `${h} h ${m} min`
+  if (h > 0) return `${h} h`
+  return `${m} min`
+}
+
 export function formatDurationToNumber(value?: string): number {
   if (!value) return 0
 

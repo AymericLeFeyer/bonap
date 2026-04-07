@@ -21,7 +21,7 @@ import { cn } from "../../lib/utils"
 import { RecipeIngredientsList } from "./RecipeIngredientsList"
 import { RecipeInstructionsList } from "./RecipeInstructionsList"
 
-import type { MealieCategory, Season } from "../../shared/types/mealie"
+import type { MealieCategory, MealieFavorite, Season } from "../../shared/types/mealie"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
 
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container"
@@ -52,7 +52,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
     const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
     const syncLock = useRef(false)
     const { getFavorites } = useGetFavorites()
-    const [ratings, setRatings] = useState<any[]>([])
+    const [ratings, setRatings] = useState<MealieFavorite[]>([])
 
     useEffect(() => {
         if (!recipe) return

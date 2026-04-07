@@ -4,7 +4,7 @@ import { Input } from "../components/ui/input"
 import { Search, X, RotateCcw } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
-import type { Season } from "../../shared/types/mealie"
+import type { MealieCategory, MealieTag, Season } from "../../shared/types/mealie"
 import { isSeasonTag } from "../../shared/utils/season"
 import { isCalorieTag } from "../../shared/utils/calorie"
 
@@ -40,8 +40,8 @@ type Props = {
     resetFilters: () => void
 
     // catégories / tags / saisons
-    categories: any[]
-    tags: any[]
+    categories: MealieCategory[]
+    tags: MealieTag[]
 
     selectedCategories: string[]
     toggleCategory: (slug: string) => void

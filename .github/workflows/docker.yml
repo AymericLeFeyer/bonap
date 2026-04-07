@@ -14,19 +14,6 @@ on:
       - 'nginx.conf'
       - 'docker-entrypoint.sh'
       - '.github/workflows/docker.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'vite.config.*'
-      - 'package.json'
-      - 'Dockerfile'
-      - 'nginx.conf'
-      - 'docker-entrypoint.sh'
-      - '.github/workflows/docker.yml'
 
 env:
   REGISTRY: ghcr.io

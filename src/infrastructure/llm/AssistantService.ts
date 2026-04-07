@@ -11,7 +11,6 @@ import type { LLMConfig } from '../../shared/types/llm.ts'
 
 export interface AssistantTool {
   name: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   execute: (input: Record<string, unknown>) => Promise<string>
 }
 
@@ -32,7 +31,6 @@ export interface AnthropicContentBlock {
   text?: string
   id?: string
   name?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   input?: Record<string, unknown>
   tool_use_id?: string
   content?: string

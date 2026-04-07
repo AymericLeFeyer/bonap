@@ -5,7 +5,7 @@ const STORAGE_KEY = "bonap-sidebar-collapsed"
 function getStoredCollapsed(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEY) === "true"
-  } catch (_) {
+  } catch {
     return false
   }
 }
@@ -21,7 +21,7 @@ export function useSidebar() {
       const next = !prev
       try {
         localStorage.setItem(STORAGE_KEY, String(next))
-      } catch (_) {}
+      } catch { /* localStorage unavailable */ }
       return next
     })
   }, [])

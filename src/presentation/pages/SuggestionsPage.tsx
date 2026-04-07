@@ -3,7 +3,8 @@ import { Sparkles, Loader2, AlertCircle, CalendarPlus, Settings, ChevronRight } 
 import { Link } from "react-router-dom"
 import { Button } from "../components/ui/button.tsx"
 import { Badge } from "../components/ui/badge.tsx"
-import { PlanningSlotPicker, toDateStr } from "../components/PlanningSlotPicker.tsx"
+import { PlanningSlotPicker } from "../components/PlanningSlotPicker.tsx"
+import { formatDate as toDateStr } from "../../shared/utils/date.ts"
 import { llmChat } from "../../infrastructure/llm/LLMService.ts"
 import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
 import {

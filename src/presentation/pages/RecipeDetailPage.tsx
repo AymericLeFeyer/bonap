@@ -17,8 +17,8 @@ import { Autocomplete } from "../components/ui/autocomplete.tsx"
 import {
   InlineEditText,
   InlineEditDuration,
-  parsePrepTimeToMinutes,
 } from "../components/RecipeEditorShared.tsx"
+import { parsePrepTimeToMinutes } from "../../shared/utils/duration.ts"
 import {
   Loader2,
   Plus,
@@ -48,6 +48,7 @@ import { cn } from "../../lib/utils.ts"
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
 import { useGetFavorites } from "../../presentation/hooks/useGetFavorites"
 import { useToggleFavorite } from "../../presentation/hooks/useToggleFavorite"
+import type { MealieFavorite } from "../../shared/types/mealie.ts"
 
 function buildFormData(recipe: MealieRecipe): RecipeFormData {
   const structured =
@@ -140,21 +141,22 @@ export function RecipeDetailPage() {
   const [cookingMode, setCookingMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { getFavorites } = useGetFavorites()
-  const [ratings, setRatings] = useState<any[]>([])
+  const [ratings, setRatings] = useState<MealieFavorite[]>([])
 
   // Initialise formData once recipe is loaded
-  useEffect(() => {
-    if (recipe && !formData) {
-      setFormData(buildFormData(recipe))
-      setImagePreview(recipeImageUrl(recipe, "original"))
-    }
+  if (recipe && !formData) {
+    setFormData(buildFormData(recipe))
+    setImagePreview(recipeImageUrl(recipe, "original"))
+  }
 
-    // Get favorites
+  // Get favorites
+  useEffect(() => {
     void (async () => {
       const data = await getFavorites()
       setRatings(data.ratings)
     })()
-  }, [recipe, formData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const patch = useCallback((partial: Partial<RecipeFormData>) => {
     setFormData((prev) => (prev ? { ...prev, ...partial } : prev))
