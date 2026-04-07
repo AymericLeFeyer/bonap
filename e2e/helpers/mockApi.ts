@@ -95,7 +95,8 @@ export async function mockAllApiRoutes(page: Page) {
   })
 
   // --- Shopping lists ---
-  await page.route("**/api/households/shopping/lists", async (route) => {
+  // Utiliser un regex pour matcher /lists et /lists?... mais PAS /lists/:id
+  await page.route(/\/api\/households\/shopping\/lists(\?[^/]*)?$/, async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({ json: SHOPPING_LISTS_RESPONSE })
     } else if (route.request().method() === "POST") {
@@ -132,7 +133,7 @@ export async function mockAllApiRoutes(page: Page) {
 
   await page.route("**/api/households/shopping/items", async (route) => {
     if (route.request().method() === "PUT") {
-      const body = await route.request().json().catch(() => [])
+      const body = route.request().postDataJSON() ?? []
       await route.fulfill({ json: body })
     } else {
       await route.continue()

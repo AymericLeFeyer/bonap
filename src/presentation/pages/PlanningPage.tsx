@@ -91,6 +91,7 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
       <button
         type="button"
         onClick={onAdd}
+        aria-label="Ajouter un repas"
         className={cn(
           "flex w-full items-center justify-center rounded-[var(--radius-lg)]",
           "border border-dashed border-border/60 py-3",
@@ -248,6 +249,7 @@ function MealCell({
           <button
             type="button"
             onClick={onAdd}
+            aria-label="Ajouter un repas"
             className={cn(
               "flex flex-1 items-center justify-center rounded-[var(--radius-md)]",
               "border border-dashed border-border/50 py-2",

@@ -32,7 +32,7 @@ test.describe("Navigation — accès aux pages", () => {
 
   test("page Courses est accessible", async ({ page }) => {
     await page.goto("/shopping")
-    await expect(page.getByRole("heading", { name: /courses/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Liste de courses" })).toBeVisible()
   })
 
   test("page Paramètres est accessible", async ({ page }) => {

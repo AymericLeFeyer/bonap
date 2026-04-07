@@ -181,9 +181,10 @@ export const SHOPPING_LIST_BONAP_RESPONSE = {
       display: "200 g mozzarella",
     },
   ],
+  // Format attendu par ShoppingRepository.getItems() : { label: { id, name, color } }
   labelSettings: [
-    { id: "label1", name: "Féculents", color: "#ff0000" },
-    { id: "label2", name: "Produits laitiers", color: "#00ff00" },
+    { label: { id: "label1", name: "Féculents", color: "#ff0000" } },
+    { label: { id: "label2", name: "Produits laitiers", color: "#00ff00" } },
   ],
 }
 
