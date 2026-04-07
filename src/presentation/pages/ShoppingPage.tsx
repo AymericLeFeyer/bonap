@@ -106,9 +106,9 @@ function LabelDropdown({ labels, value, onChange, className }: LabelDropdownProp
             className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-secondary transition-colors"
           >
             <span className="h-2 w-2 rounded-full bg-border" />
-            Sans catégorie
+            Sans étiquette
           </button>
-          {[...labels].sort((a, b) => a.name.localeCompare(b.name, "fr")).map((l) => (
+          {labels.map((l) => (
             <button
               key={l.id}
               type="button"
@@ -170,7 +170,7 @@ function FormLabelSelect({ labels, value, onChange, disabled }: FormLabelSelectP
             <span className="max-w-[80px] truncate">{selected.name}</span>
           </>
         ) : (
-          <span>Catégorie</span>
+          <span>Étiquette</span>
         )}
         <ChevronDown className="h-3 w-3" />
       </button>
@@ -186,9 +186,9 @@ function FormLabelSelect({ labels, value, onChange, disabled }: FormLabelSelectP
             className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-secondary transition-colors"
           >
             <span className="h-2 w-2 rounded-full bg-border" />
-            Catégorie
+            Étiquette
           </button>
-          {[...labels].sort((a, b) => a.name.localeCompare(b.name, "fr")).map((l) => (
+          {labels.map((l) => (
             <button
               key={l.id}
               type="button"
@@ -491,7 +491,7 @@ interface GroupHeaderProps {
 }
 
 function GroupHeader({ label, isFirst, onAiCategorize, aiCategorizeLoading }: GroupHeaderProps) {
-  const isNone = label === "Sans catégorie"
+  const isNone = label === "Sans étiquette"
   return (
     <div className={cn(
       "flex items-center gap-2 px-4 py-1.5 bg-secondary/50",
@@ -551,7 +551,7 @@ function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onU
     const groups = new Map<string, { label: string; color?: string; items: ShoppingItem[] }>()
     for (const item of list) {
       const key = item.label?.id ?? "__none__"
-      const labelName = item.label?.name ?? "Sans catégorie"
+      const labelName = item.label?.name ?? "Sans étiquette"
       if (!groups.has(key)) {
         groups.set(key, { label: labelName, color: item.label?.color, items: [] })
       }
@@ -561,10 +561,13 @@ function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onU
     for (const group of groups.values()) {
       group.items.sort((a, b) => itemSortKey(a).localeCompare(itemSortKey(b), "fr"))
     }
-    return [...groups.entries()].sort(([a, ga], [b, gb]) => {
+    const labelOrder = new Map(labels.map((l, i) => [l.id, i]))
+    return [...groups.entries()].sort(([a], [b]) => {
       if (a === "__none__") return 1
       if (b === "__none__") return -1
-      return ga.label.localeCompare(gb.label, "fr")
+      const ia = labelOrder.get(a) ?? Infinity
+      const ib = labelOrder.get(b) ?? Infinity
+      return ia - ib
     })
   }
 
@@ -660,17 +663,20 @@ function GroupedHabituels({ items, cartItems, labels, onAddToCart, onDelete, onU
 
   for (const item of items) {
     const key = item.label?.id ?? "__none__"
-    const labelName = item.label?.name ?? "Sans catégorie"
+    const labelName = item.label?.name ?? "Sans étiquette"
     if (!groups.has(key)) {
       groups.set(key, { label: labelName, color: item.label?.color, items: [] })
     }
     groups.get(key)!.items.push(item)
   }
 
-  const sorted = [...groups.entries()].sort(([a, ga], [b, gb]) => {
+  const labelOrder = new Map(labels.map((l, i) => [l.id, i]))
+  const sorted = [...groups.entries()].sort(([a], [b]) => {
     if (a === "__none__") return 1
     if (b === "__none__") return -1
-    return ga.label.localeCompare(gb.label, "fr")
+    const ia = labelOrder.get(a) ?? Infinity
+    const ib = labelOrder.get(b) ?? Infinity
+    return ia - ib
   })
 
   if (sorted.length === 0) {
@@ -841,10 +847,10 @@ export function ShoppingPage() {
                 "shadow-subtle hover:bg-secondary hover:text-foreground",
                 "transition-all duration-150",
               )}
-              title="Gérer les catégories"
+              title="Gérer les étiquettes"
             >
               <Tag className="h-3.5 w-3.5" />
-              Catégories
+              Étiquettes
             </a>
           </div>
         </div>
