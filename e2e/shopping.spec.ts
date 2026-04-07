@@ -162,6 +162,66 @@ test.describe("Liste de courses", () => {
     })
   })
 
+  test.describe("Étiquettes (fixes #20 et #21)", () => {
+    test("affiche 'Étiquettes' et non 'Catégories' dans l'interface", async ({ page }) => {
+      await page.goto("/shopping")
+      await expect(page.getByText("farine")).toBeVisible({ timeout: 8000 })
+
+      // Le bouton de gestion doit afficher Étiquettes
+      await expect(page.getByTitle("Gérer les étiquettes")).toBeVisible()
+      // Aucune occurrence de "Catégories" visible dans la page
+      await expect(page.getByText("Catégories", { exact: true })).not.toBeVisible()
+    })
+
+    test("affiche 'Sans étiquette' pour les articles sans label", async ({ page }) => {
+      // On a besoin de ≥2 groupes pour que les headers soient affichés
+      const itemWithoutLabel = { ...SHOPPING_LIST_BONAP_RESPONSE.listItems[0] }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (itemWithoutLabel as any).label
+
+      await page.route("**/api/households/shopping/lists/list-bonap", async (route) => {
+        await route.fulfill({
+          json: {
+            ...SHOPPING_LIST_BONAP_RESPONSE,
+            listItems: [
+              itemWithoutLabel,
+              SHOPPING_LIST_BONAP_RESPONSE.listItems[1], // mozzarella avec étiquette
+            ],
+          },
+        })
+      })
+
+      await page.goto("/shopping")
+      await expect(page.getByText("farine")).toBeVisible({ timeout: 8000 })
+      await expect(page.getByText("Sans étiquette")).toBeVisible({ timeout: 8000 })
+    })
+
+    test("respecte l'ordre des étiquettes défini dans Mealie", async ({ page }) => {
+      // labelSettings définit l'ordre : Produits laitiers d'abord, Féculents ensuite
+      await page.route("**/api/households/shopping/lists/list-bonap", async (route) => {
+        await route.fulfill({
+          json: {
+            ...SHOPPING_LIST_BONAP_RESPONSE,
+            labelSettings: [
+              { label: { id: "label2", name: "Produits laitiers", color: "#00ff00" } },
+              { label: { id: "label1", name: "Féculents", color: "#ff0000" } },
+            ],
+          },
+        })
+      })
+
+      await page.goto("/shopping")
+      await expect(page.getByText("farine")).toBeVisible({ timeout: 8000 })
+
+      const headers = page.locator(".bg-secondary\\/50 span.uppercase")
+      const texts = await headers.allTextContents()
+      const labelIdx = (name: string) => texts.findIndex((t) => t.toLowerCase().includes(name.toLowerCase()))
+
+      // "Produits laitiers" doit apparaître avant "Féculents"
+      expect(labelIdx("Produits laitiers")).toBeLessThan(labelIdx("Féculents"))
+    })
+  })
+
   test.describe("Vider la liste", () => {
     test("un bouton pour vider les articles cochés est présent", async ({ page }) => {
       await page.route("**/api/households/shopping/lists/list-bonap", async (route) => {
