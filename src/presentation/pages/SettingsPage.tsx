@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 import { useState, useRef } from "react"
+=======
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -11,8 +16,13 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
+import { logoutUseCase } from "../../infrastructure/container.ts"
 
-type TestStatus = { state: "idle" } | { state: "loading" } | { state: "ok"; message: string } | { state: "error"; message: string }
+type TestStatus =
+  | { state: 'idle' }
+  | { state: 'loading' }
+  | { state: 'ok'; message: string }
+  | { state: 'error'; message: string }
 
 function EnvBadge() {
   return (
@@ -23,17 +33,18 @@ function EnvBadge() {
 }
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Clair", icon: Sun },
-  { value: "dark", label: "Sombre", icon: Moon },
-  { value: "system", label: "Système", icon: Monitor },
+  { value: 'light', label: 'Clair', icon: Sun },
+  { value: 'dark', label: 'Sombre', icon: Moon },
+  { value: 'system', label: 'Système', icon: Monitor },
 ]
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
+  const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
   const [showKey, setShowKey] = useState(false)
-  const [testStatus, setTestStatus] = useState<TestStatus>({ state: "idle" })
+  const [testStatus, setTestStatus] = useState<TestStatus>({ state: 'idle' })
   const [saved, setSaved] = useState(false)
   const timeoutRef = useRef<number | null>(null)
 
@@ -55,23 +66,42 @@ export function SettingsPage() {
     updateConfig((prev) => ({
       ...prev,
       provider,
-      model: info.models[0] ?? "",
+      model: info.models[0] ?? '',
     }))
-    setTestStatus({ state: "idle" })
+    setTestStatus({ state: 'idle' })
     setShowKey(false)
   }
 
   const handleTest = async () => {
-    setTestStatus({ state: "loading" })
+    setTestStatus({ state: 'loading' })
     const result = await llmConfigService.testConnection(config)
-    setTestStatus(result.ok ? { state: "ok", message: result.message } : { state: "error", message: result.message })
+    setTestStatus(
+      result.ok
+        ? { state: 'ok', message: result.message }
+        : { state: 'error', message: result.message },
+    )
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logoutUseCase.execute()
+    } catch {
+      // ignore — always clear local state
+    } finally {
+      localStorage.removeItem('bonap-mealie-url')
+      localStorage.removeItem('bonap-mealie-token')
+      window.__ENV__ = undefined
+      navigate('/login', { replace: true })
+    }
   }
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="mb-8">
         <h1 className="font-heading text-2xl font-bold">Paramètres</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Configuration de l'apparence et des connexions.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Configuration de l'apparence et des connexions.
+        </p>
       </div>
 
       {/* ── Section Apparence ── */}
@@ -82,7 +112,9 @@ export function SettingsPage() {
           </div>
           <div>
             <h2 className="text-base font-bold leading-none">Apparence</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Personnalisez l'aspect visuel de l'application.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Personnalisez l'aspect visuel de l'application.
+            </p>
           </div>
         </div>
 
@@ -96,11 +128,11 @@ export function SettingsPage() {
                 type="button"
                 onClick={() => setTheme(value)}
                 className={cn(
-                  "flex items-center gap-2 rounded-[var(--radius-lg)] border px-4 py-2.5",
-                  "text-sm font-semibold transition-all duration-150",
+                  'flex items-center gap-2 rounded-[var(--radius-lg)] border px-4 py-2.5',
+                  'text-sm font-semibold transition-all duration-150',
                   theme === value
-                    ? "border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_oklch(0.58_0.175_38/0.25)]"
-                    : "border-border bg-card text-foreground hover:bg-secondary",
+                    ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_oklch(0.58_0.175_38/0.25)]'
+                    : 'border-border bg-card text-foreground hover:bg-secondary',
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -115,7 +147,10 @@ export function SettingsPage() {
           <div>
             <Label>Couleur principale</Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Sélectionnée : <span className="font-semibold text-foreground">{accentColor.name}</span>
+              Sélectionnée :{' '}
+              <span className="font-semibold text-foreground">
+                {accentColor.name}
+              </span>
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -127,10 +162,11 @@ export function SettingsPage() {
                 title={color.name}
                 aria-label={color.name}
                 className={cn(
-                  "relative h-9 w-9 rounded-full",
-                  "transition-all duration-150 hover:scale-110",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  accentColor.id === color.id && "ring-2 ring-offset-2 ring-foreground/25 scale-110",
+                  'relative h-9 w-9 rounded-full',
+                  'transition-all duration-150 hover:scale-110',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  accentColor.id === color.id &&
+                    'ring-2 ring-offset-2 ring-foreground/25 scale-110',
                 )}
                 style={{ backgroundColor: `oklch(${color.oklch})` }}
               >
@@ -177,10 +213,18 @@ export function SettingsPage() {
           <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-secondary/50 px-4 py-3">
             <Lock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Les champs marqués <span className="font-semibold text-foreground">ENV</span> sont verrouillés.
-              Pour les modifier, mettez à jour les variables d'environnement dans la{" "}
-              <span className="font-semibold text-foreground">configuration de l'addon Home Assistant</span>{" "}
-              ou votre <span className="font-semibold text-foreground">docker-compose.yml</span>, puis redémarrez.
+              Les champs marqués{' '}
+              <span className="font-semibold text-foreground">ENV</span> sont
+              verrouillés. Pour les modifier, mettez à jour les variables
+              d'environnement dans la{' '}
+              <span className="font-semibold text-foreground">
+                configuration de l'addon Home Assistant
+              </span>{' '}
+              ou votre{' '}
+              <span className="font-semibold text-foreground">
+                docker-compose.yml
+              </span>
+              , puis redémarrez.
             </p>
           </div>
         )}
@@ -189,22 +233,24 @@ export function SettingsPage() {
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
             <Label>Fournisseur</Label>
-            {envFields.has("provider") && <EnvBadge />}
+            {envFields.has('provider') && <EnvBadge />}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(Object.keys(LLM_PROVIDERS) as LLMProvider[]).map((p) => (
               <button
                 key={p}
                 type="button"
-                onClick={() => !envFields.has("provider") && handleProviderChange(p)}
-                disabled={envFields.has("provider")}
+                onClick={() =>
+                  !envFields.has('provider') && handleProviderChange(p)
+                }
+                disabled={envFields.has('provider')}
                 className={cn(
-                  "rounded-[var(--radius-lg)] border px-3 py-2",
-                  "text-sm font-semibold transition-all duration-150",
+                  'rounded-[var(--radius-lg)] border px-3 py-2',
+                  'text-sm font-semibold transition-all duration-150',
                   config.provider === p
-                    ? "border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_oklch(0.58_0.175_38/0.25)]"
-                    : "border-border bg-card text-foreground hover:bg-secondary",
-                  envFields.has("provider") && "cursor-not-allowed opacity-70",
+                    ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_oklch(0.58_0.175_38/0.25)]'
+                    : 'border-border bg-card text-foreground hover:bg-secondary',
+                  envFields.has('provider') && 'cursor-not-allowed opacity-70',
                 )}
               >
                 {LLM_PROVIDERS[p].label}
@@ -218,40 +264,58 @@ export function SettingsPage() {
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <Label htmlFor="api-key">Clé API</Label>
-              {envFields.has("apiKey") && <EnvBadge />}
+              {envFields.has('apiKey') && <EnvBadge />}
             </div>
             <div className="relative">
               <Input
                 id="api-key"
-                type={showKey ? "text" : "password"}
-                placeholder={envFields.has("apiKey") ? "Définie via variable d'environnement" : `Clé ${providerInfo.label}`}
+                type={showKey ? 'text' : 'password'}
+                placeholder={
+                  envFields.has('apiKey')
+                    ? "Définie via variable d'environnement"
+                    : `Clé ${providerInfo.label}`
+                }
                 value={config.apiKey}
                 onChange={(e) =>
+<<<<<<< HEAD
                   updateConfig((prev) => ({ ...prev, apiKey: e.target.value }))
                 }
                 readOnly={envFields.has("apiKey")}
                 className={cn("pr-10", envFields.has("apiKey") && "bg-secondary/40")}
+=======
+                  setConfig((prev) => ({ ...prev, apiKey: e.target.value }))
+                }
+                readOnly={envFields.has('apiKey')}
+                className={cn(
+                  'pr-10',
+                  envFields.has('apiKey') && 'bg-secondary/40',
+                )}
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
                 autoComplete="off"
               />
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={showKey ? "Masquer la clé" : "Afficher la clé"}
+                aria-label={showKey ? 'Masquer la clé' : 'Afficher la clé'}
               >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showKey ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
         )}
 
         {/* Champs Ollama */}
-        {config.provider === "ollama" && (
+        {config.provider === 'ollama' && (
           <div className="space-y-4">
             <div className="space-y-2.5">
               <div className="flex items-center gap-2">
                 <Label htmlFor="ollama-url">URL de l'instance Ollama</Label>
-                {envFields.has("ollamaBaseUrl") && <EnvBadge />}
+                {envFields.has('ollamaBaseUrl') && <EnvBadge />}
               </div>
               <Input
                 id="ollama-url"
@@ -259,10 +323,22 @@ export function SettingsPage() {
                 placeholder="http://localhost:11434"
                 value={config.ollamaBaseUrl}
                 onChange={(e) =>
+<<<<<<< HEAD
                   updateConfig((prev) => ({ ...prev, ollamaBaseUrl: e.target.value }))
                 }
                 readOnly={envFields.has("ollamaBaseUrl")}
                 className={cn(envFields.has("ollamaBaseUrl") && "bg-secondary/40")}
+=======
+                  setConfig((prev) => ({
+                    ...prev,
+                    ollamaBaseUrl: e.target.value,
+                  }))
+                }
+                readOnly={envFields.has('ollamaBaseUrl')}
+                className={cn(
+                  envFields.has('ollamaBaseUrl') && 'bg-secondary/40',
+                )}
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
               />
             </div>
             <div className="space-y-2.5">
@@ -273,7 +349,11 @@ export function SettingsPage() {
                 placeholder="llama3.2, mistral, …"
                 value={config.model}
                 onChange={(e) =>
+<<<<<<< HEAD
                   updateConfig((prev) => ({ ...prev, model: e.target.value }))
+=======
+                  setConfig((prev) => ({ ...prev, model: e.target.value }))
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
                 }
               />
             </div>
@@ -281,11 +361,11 @@ export function SettingsPage() {
         )}
 
         {/* Sélecteur de modèle */}
-        {config.provider !== "ollama" && providerInfo.models.length > 0 && (
+        {config.provider !== 'ollama' && providerInfo.models.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <Label>Modèle</Label>
-              {envFields.has("model") && <EnvBadge />}
+              {envFields.has('model') && <EnvBadge />}
             </div>
             <div className="flex flex-wrap gap-2">
               {providerInfo.models.map((m) => (
@@ -293,15 +373,22 @@ export function SettingsPage() {
                   key={m}
                   type="button"
                   onClick={() =>
+<<<<<<< HEAD
                     updateConfig((prev) => ({ ...prev, model: m }))
                   }
                   disabled={envFields.has("model")}
+=======
+                    !envFields.has('model') &&
+                    setConfig((prev) => ({ ...prev, model: m }))
+                  }
+                  disabled={envFields.has('model')}
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
                   className={cn(
-                    "rounded-[var(--radius-lg)] border px-3 py-1.5",
-                    "text-xs font-mono font-semibold transition-all duration-150",
+                    'rounded-[var(--radius-lg)] border px-3 py-1.5',
+                    'text-xs font-mono font-semibold transition-all duration-150',
                     config.model === m
-                      ? "border-primary/40 bg-primary/8 text-primary"
-                      : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      ? 'border-primary/40 bg-primary/8 text-primary'
+                      : 'border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground',
                   )}
                 >
                   {m}
@@ -318,26 +405,34 @@ export function SettingsPage() {
             variant="outline"
             size="sm"
             onClick={handleTest}
-            disabled={testStatus.state === "loading" || (!config.apiKey && providerInfo.needsKey) || (config.provider === "ollama" && !config.ollamaBaseUrl)}
+            disabled={
+              testStatus.state === 'loading' ||
+              (!config.apiKey && providerInfo.needsKey) ||
+              (config.provider === 'ollama' && !config.ollamaBaseUrl)
+            }
             className="gap-1.5"
           >
-            {testStatus.state === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {testStatus.state === 'loading' && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            )}
             Tester la connexion
           </Button>
-          {testStatus.state === "ok" && (
+          {testStatus.state === 'ok' && (
             <span className="flex items-center gap-1.5 text-sm font-medium text-[oklch(0.50_0.14_145)] dark:text-[oklch(0.70_0.14_145)]">
               <CheckCircle2 className="h-4 w-4" />
               {testStatus.message}
             </span>
           )}
-          {testStatus.state === "error" && (
+          {testStatus.state === 'error' && (
             <span className="flex items-center gap-1.5 text-sm font-medium text-destructive">
               <XCircle className="h-4 w-4" />
               {testStatus.message}
             </span>
           )}
-          {saved && testStatus.state === "idle" && (
-            <span className="text-xs text-muted-foreground animate-fade-in">Sauvegardé</span>
+          {saved && testStatus.state === 'idle' && (
+            <span className="text-xs text-muted-foreground animate-fade-in">
+              Sauvegardé
+            </span>
           )}
         </div>
       </section>
@@ -350,7 +445,9 @@ export function SettingsPage() {
           </div>
           <div className="flex-1">
             <h2 className="text-base font-bold leading-none">À propos</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Informations sur l'application.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Informations sur l'application.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
@@ -377,30 +474,57 @@ export function SettingsPage() {
             <Server className="h-4 w-4 text-[oklch(0.48_0.14_160)] dark:text-[oklch(0.70_0.14_160)]" />
           </div>
           <div>
-            <h2 className="text-base font-bold leading-none">Connexion Mealie</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Variables d'environnement (lecture seule).</p>
+            <h2 className="text-base font-bold leading-none">
+              Connexion Mealie
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Variables d'environnement (lecture seule).
+            </p>
           </div>
         </div>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.10em]">VITE_MEALIE_URL</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.10em]">
+              VITE_MEALIE_URL
+            </Label>
             <Input
               readOnly
-              value={getEnv("VITE_MEALIE_URL") || "Non défini"}
+              value={getEnv('VITE_MEALIE_URL') || 'Non défini'}
               className="bg-secondary/40 font-mono text-xs"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.10em]">VITE_MEALIE_TOKEN</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.10em]">
+              VITE_MEALIE_TOKEN
+            </Label>
             <Input
               readOnly
               type="password"
-              value={getEnv("VITE_MEALIE_TOKEN") || "Non défini"}
+              value={getEnv('VITE_MEALIE_TOKEN') || 'Non défini'}
               className="bg-secondary/40 font-mono text-xs"
             />
           </div>
         </div>
       </section>
+
+      {import.meta.env.VITE_PROTECTED_ROUTE === 'true' && (
+        <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-5 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-destructive/8">
+              <LogOut className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold leading-none">Déconnexion</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Déconnecter le compte actuellement connecté.
+              </p>
+            </div>
+          </div>
+          <Button variant="destructive" onClick={handleLogout}>
+            Se déconnecter
+          </Button>
+        </section>
+      )}
     </div>
   )
 }

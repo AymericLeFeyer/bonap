@@ -10,8 +10,6 @@ import { Input } from "./ui/input.tsx"
 import { formatDuration } from "../../shared/utils/duration.ts"
 import { cn } from "../../lib/utils.ts"
 
-// ─────────────────────────────────────────────────────────────
-// InlineEditText
 // ─── InlineEditText ───────────────────────────────────────────────────────────
 
 export interface InlineEditTextProps {

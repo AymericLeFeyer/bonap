@@ -60,9 +60,13 @@ export class ThemeService {
     try {
       const stored = localStorage.getItem(THEME_KEY)
       if (isTheme(stored)) return stored
+<<<<<<< HEAD
     } catch{
       // nothing
     }
+=======
+    } catch { /* localStorage unavailable */ }
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
 
     // 3. fallback
     return "system"
@@ -71,9 +75,13 @@ export class ThemeService {
   setTheme(theme: Theme): void {
     try {
       localStorage.setItem(THEME_KEY, theme)
+<<<<<<< HEAD
     } catch{
       // nothing
     }
+=======
+    } catch { /* localStorage unavailable */ }
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
     this.apply()
   }
 
@@ -84,18 +92,26 @@ export class ThemeService {
         const found = ACCENT_COLORS.find((c) => c.id === stored)
         if (found) return found
       }
+<<<<<<< HEAD
     } catch{
       // nothing
     }
+=======
+    } catch { /* localStorage unavailable */ }
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
     return DEFAULT_ACCENT
   }
 
   setAccentColor(color: AccentColor): void {
     try {
       localStorage.setItem(ACCENT_KEY, color.id)
+<<<<<<< HEAD
     } catch{
       // nothing
     }
+=======
+    } catch { /* localStorage unavailable */ }
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
     this.apply()
   }
 

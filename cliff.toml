@@ -13,19 +13,21 @@ trim = true
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+filter_unconventional = false
 split_commits = false
 commit_parsers = [
   { message = "^feat", group = "Nouveautés" },
   { message = "^fix", group = "Corrections" },
   { message = "^perf", group = "Performances" },
   { message = "^refactor", group = "Refactoring" },
+  { message = "^test", group = "Tests" },
   { message = "^chore\\(release\\)", skip = true },
   { message = "^chore", skip = true },
   { message = "^ci", skip = true },
   { message = "^docs", skip = true },
   { message = "^style", skip = true },
-  { message = "^test", skip = true },
+  { message = "^Merge", skip = true },
+  { message = ".*", group = "Autres" },
 ]
 filter_commits = true
 tag_pattern = "v[0-9].*"

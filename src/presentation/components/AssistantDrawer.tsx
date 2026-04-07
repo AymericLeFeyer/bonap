@@ -9,30 +9,38 @@ import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
 
 
 export function AssistantDrawer() {
+<<<<<<< HEAD
 
   const isConfigured = llmConfigService.isConfigured()
 
+=======
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const configured = llmConfigService.isConfigured()
   const { messages, loading, sendMessage, clearHistory, ensureContext } = useAssistant()
 
   // Load context when drawer opens
   useEffect(() => {
-    if (open) {
+    if (open && configured) {
       void ensureContext()
       setTimeout(() => inputRef.current?.focus(), 100)
     }
-  }, [open, ensureContext])
+  }, [open, configured, ensureContext])
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+<<<<<<< HEAD
   if (!isConfigured) return null
+=======
+  if (!configured) return null
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
 
   const handleSend = async () => {
     const text = input.trim()

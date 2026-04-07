@@ -25,3 +25,7 @@ dist-ssr
 .env
 
 docker-compose.dev.yml
+
+# Playwright
+playwright-report/
+test-results/

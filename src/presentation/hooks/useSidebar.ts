@@ -21,9 +21,13 @@ export function useSidebar() {
       const next = !prev
       try {
         localStorage.setItem(STORAGE_KEY, String(next))
+<<<<<<< HEAD
       } catch{
         // nothing
       }
+=======
+      } catch { /* localStorage unavailable */ }
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
       return next
     })
   }, [])

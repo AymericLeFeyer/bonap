@@ -4,7 +4,11 @@ import { Input } from "../components/ui/input"
 import { Search, X, RotateCcw } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
+<<<<<<< HEAD
 import type { Season, MealieCategory, MealieTag } from "../../shared/types/mealie"
+=======
+import type { MealieCategory, MealieTag, Season } from "../../shared/types/mealie"
+>>>>>>> f905814d36a40f0fea940f73a355cdfbad52ab11
 import { isSeasonTag } from "../../shared/utils/season"
 import { isCalorieTag } from "../../shared/utils/calorie"
 

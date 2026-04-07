@@ -14,19 +14,6 @@ on:
       - 'nginx.conf'
       - 'docker-entrypoint.sh'
       - '.github/workflows/docker.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'vite.config.*'
-      - 'package.json'
-      - 'Dockerfile'
-      - 'nginx.conf'
-      - 'docker-entrypoint.sh'
-      - '.github/workflows/docker.yml'
 
 env:
   REGISTRY: ghcr.io
@@ -119,6 +106,10 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git-cliff --tag "v${VERSION}" --unreleased --strip all > /tmp/release_notes.md
+          # Fallback si le changelog est vide (commits tous filtrés)
+          if ! grep -qE '\S' /tmp/release_notes.md; then
+            echo "Maintenance, tests et corrections mineures." > /tmp/release_notes.md
+          fi
           echo "notes_file=/tmp/release_notes.md" >> $GITHUB_OUTPUT
 
       - name: Create release if not exists
