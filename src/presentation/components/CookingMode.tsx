@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button.tsx"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
+import { sanitizeInstructionHtml } from "../../shared/utils/html.ts"
 
 interface CookingModeProps {
   recipeName: string
@@ -77,8 +78,6 @@ export function CookingMode({ recipeName, ingredients, instructions, onClose }: 
             <IngredientsScreen ingredients={ingredients} />
           ) : (
             <InstructionScreen
-              step={step + 1}
-              total={totalSteps}
               instruction={currentInstruction!}
               ingredients={ingredients}
             />
@@ -148,33 +147,14 @@ function InstructionScreen({
   instruction,
   ingredients,
 }: {
-  step: number
-  total: number
   instruction: MealieInstruction
   ingredients: MealieIngredient[]
 }) {
-
   const linkedIngredients = (instruction.ingredientReferences ?? [])
     .map((ref) =>
       ingredients.find((ing) => ing.referenceId === ref.referenceId),
     )
     .filter(Boolean)
-
-
-  const sanitizeInstructionHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, "text/html")
-
-    // supprimer tous les éléments sauf img
-    const all = doc.body.querySelectorAll("*")
-
-    all.forEach((el) => {
-      if (el.tagName.toLowerCase() !== "img") {
-        el.replaceWith(...Array.from(el.childNodes))
-      }
-    })
-
-    return doc.body.innerHTML
-  }
 
   return (
     <div className="space-y-8">
@@ -210,8 +190,8 @@ function InstructionScreen({
         </div>
       )}
 
-      {instruction.summary && (
-        <h3 className="font-heading text-2xl font-semibold">{instruction.summary}</h3>
+      {(instruction.summary ?? instruction.title) && (
+        <h3 className="font-heading text-2xl font-semibold">{instruction.summary ?? instruction.title}</h3>
       )}
       <p
         className="text-2xl leading-relaxed text-foreground space-y-4 [&_img]:rounded-xl [&_img]:mt-4 [&_img]:max-w-full"

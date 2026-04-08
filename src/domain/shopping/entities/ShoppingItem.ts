@@ -26,7 +26,7 @@ export interface ShoppingItem {
 }
 
 export interface RecipeReference {
-  recipeId?: string
+  recipeId: string
   recipeQuantity?: number
   recipeScale?: number
   recipeNote?: string
