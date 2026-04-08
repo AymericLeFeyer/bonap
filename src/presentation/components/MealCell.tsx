@@ -149,6 +149,8 @@ export function MealCell({
         <div className="flex gap-1">
           <button
             type="button"
+            aria-label="Ajouter un repas"
+            title="Ajouter un repas"
             onClick={onAdd}
             className={cn(
               "flex flex-1 items-center justify-center rounded-[var(--radius-md)]",

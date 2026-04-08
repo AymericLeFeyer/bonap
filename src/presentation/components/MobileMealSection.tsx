@@ -79,6 +79,8 @@ export function MobileMealSection({
       <button
         type="button"
         onClick={onAdd}
+        aria-label="Ajouter un repas"
+        title="Ajouter un repas"
         className={cn(
           "flex w-full items-center justify-center rounded-[var(--radius-lg)]",
           "border border-dashed border-border/60 py-3",
