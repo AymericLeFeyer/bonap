@@ -29,6 +29,7 @@ export class AddRecipesToListUseCase {
           return {
             quantity: ing.quantity,
             shoppingListId: listId,
+            isFood: Boolean(ing.food?.id),
             foodId: ing.food?.id,
             unitId: ing.unit?.id,
             recipeReferences: [

@@ -318,7 +318,7 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
                 item.checked && "line-through opacity-40",
               )}
             >
-              {item.foodName ?? "Article sans nom"}
+              {item.foodName ?? item.display ?? item.note ?? "Article sans nom"}
             </span>
             {/* recettes */}
             {item.recipeNames?.map((recipeName) => (

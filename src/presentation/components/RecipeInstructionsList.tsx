@@ -1,4 +1,5 @@
 import type { MealieInstruction } from "../../shared/types/mealie.ts"
+import { sanitizeInstructionHtml } from "../../shared/utils/html.ts"
 
 interface RecipeInstructionsListProps {
   instructions: MealieInstruction[]
@@ -14,25 +15,8 @@ export function RecipeInstructionsList({
 }: RecipeInstructionsListProps) {
   if (instructions.length === 0) return null
 
-  // helper pour supprimer le HTML
   const stripHtml = (html: string) =>
     html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim()
-
-
-  const sanitizeInstructionHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, "text/html")
-
-    // supprimer tous les éléments sauf img
-    const all = doc.body.querySelectorAll("*")
-
-    all.forEach((el) => {
-      if (el.tagName.toLowerCase() !== "img") {
-        el.replaceWith(...Array.from(el.childNodes))
-      }
-    })
-
-    return doc.body.innerHTML
-  }
 
   return (
     <section className="space-y-4">
@@ -45,8 +29,8 @@ export function RecipeInstructionsList({
               {i + 1}
             </span>
             <div className="space-y-0.5 flex-1">
-              {step.title && (
-                <p className="text-sm font-semibold">{step.title}</p>
+              {(step.summary ?? step.title) && (
+                <p className="text-sm font-semibold">{step.summary ?? step.title}</p>
               )}
               {renderHtml ? (
                 <div

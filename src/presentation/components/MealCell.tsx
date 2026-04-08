@@ -6,6 +6,8 @@ import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 
 
+const DROPDOWN_WIDTH = 200
+
 interface MealCellProps {
   meals: MealieMealPlan[]
   lastMeals: MealieMealPlan[]
@@ -29,7 +31,6 @@ export function MealCell({
   const copyBtnRef = useRef<HTMLButtonElement>(null)
   const isEmpty = meals.length === 0
 
-  const DROPDOWN_WIDTH = 200
   const handleCopyClick = () => {
     if (lastMeals.length === 0) return
     const rect = copyBtnRef.current?.getBoundingClientRect()
