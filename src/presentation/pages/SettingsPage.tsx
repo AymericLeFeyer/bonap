@@ -42,6 +42,10 @@ export function SettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [testStatus, setTestStatus] = useState<TestStatus>({ state: 'idle' })
   const [saved, setSaved] = useState(false)
+  const [availableModels, setAvailableModels] = useState<string[]>(
+    () => LLM_PROVIDERS[config.provider]?.models ?? [],
+  )
+  const [isFetchingModels, setIsFetchingModels] = useState(false)
 
   useEffect(() => {
     llmConfigService.save(config)
@@ -59,6 +63,7 @@ export function SettingsPage() {
       provider,
       model: info.models[0] ?? '',
     }))
+    setAvailableModels(info.models)
     setTestStatus({ state: 'idle' })
     setShowKey(false)
   }
@@ -71,6 +76,21 @@ export function SettingsPage() {
         ? { state: 'ok', message: result.message }
         : { state: 'error', message: result.message },
     )
+    if (result.ok) {
+      setIsFetchingModels(true)
+      try {
+        const models = await llmConfigService.fetchModels(config)
+        if (models.length > 0) {
+          setAvailableModels(models)
+          setConfig((prev) => ({
+            ...prev,
+            model: models.includes(prev.model) ? prev.model : models[0],
+          }))
+        }
+      } finally {
+        setIsFetchingModels(false)
+      }
+    }
   }
 
   const handleLogout = async () => {
@@ -334,14 +354,17 @@ export function SettingsPage() {
         )}
 
         {/* Sélecteur de modèle */}
-        {config.provider !== 'ollama' && providerInfo.models.length > 0 && (
+        {config.provider !== 'ollama' && availableModels.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <Label>Modèle</Label>
               {envFields.has('model') && <EnvBadge />}
+              {isFetchingModels && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {providerInfo.models.map((m) => (
+              {availableModels.map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -394,6 +417,15 @@ export function SettingsPage() {
             <span className="flex items-center gap-1.5 text-sm font-medium text-destructive">
               <XCircle className="h-4 w-4" />
               {testStatus.message}
+              {' — '}
+              <a
+                href="https://bonap.aylabs.fr/docs/configuration/llm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+              >
+                Aide à la configuration
+              </a>
             </span>
           )}
           {saved && testStatus.state === 'idle' && (

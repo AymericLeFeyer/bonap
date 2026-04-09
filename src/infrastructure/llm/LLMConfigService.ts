@@ -1,5 +1,5 @@
 import type { LLMConfig, LLMProvider } from '../../shared/types/llm.ts'
-import { DEFAULT_LLM_CONFIG } from '../../shared/types/llm.ts'
+import { DEFAULT_LLM_CONFIG, LLM_PROVIDERS } from '../../shared/types/llm.ts'
 
 const STORAGE_KEY = 'bonap_llm_config'
 
@@ -51,6 +51,29 @@ export class LLMConfigService {
     const config = this.load()
     if (config.provider === 'ollama') return Boolean(config.ollamaBaseUrl)
     return Boolean(config.apiKey)
+  }
+
+  async fetchModels(config: LLMConfig): Promise<string[]> {
+    try {
+      switch (config.provider) {
+        case 'anthropic':
+          return await fetchAnthropicModels(config.apiKey)
+        case 'openai':
+          return await fetchOpenAIModels(config.apiKey)
+        case 'google':
+          return await fetchGoogleModels(config.apiKey)
+        case 'mistral':
+          return await fetchMistralModels(config.apiKey)
+        case 'ollama':
+          return await fetchOllamaModels(config.ollamaBaseUrl)
+        case 'openrouter':
+          return await fetchOpenRouterModels(config.apiKey)
+        default:
+          return LLM_PROVIDERS[config.provider as LLMProvider]?.models ?? []
+      }
+    } catch {
+      return LLM_PROVIDERS[config.provider as LLMProvider]?.models ?? []
+    }
   }
 
   async testConnection(
@@ -173,6 +196,85 @@ async function testOpenRouter(
   if (res.ok || res.status === 400) return { ok: true, message: 'Clé valide' }
   if (res.status === 401) return { ok: false, message: 'Clé invalide (401)' }
   return { ok: false, message: `Erreur ${res.status}` }
+}
+
+// Garde uniquement les alias "latest" Gemini — exclut les versions figées
+// (-001, -002), les dates (-04-17, -12-2025), les previews, exp, tts, image, etc.
+function isGeminiLatestAlias(id: string): boolean {
+  if (/-\d{3}(-|$)/.test(id)) return false          // -001, -002
+  if (/-\d{2}-\d{2,4}(-|$)/.test(id)) return false  // -04-17, -12-2025
+  if (/-(preview|exp|tts|image|live|audio|embedding|robotics|computer-use|deep-research)(-|$)/.test(id)) return false
+  return true
+}
+
+async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://api.anthropic.com/v1/models', {
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id).filter((id) => id.startsWith('claude-'))
+}
+
+async function fetchOpenAIModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://api.openai.com/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data
+    .map((m) => m.id)
+    .filter((id) => /^(gpt-|o[1-9]|o[1-9]-|chatgpt-)/.test(id))
+    .sort()
+}
+
+async function fetchGoogleModels(apiKey: string): Promise<string[]> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+  )
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as {
+    models: { name: string; supportedGenerationMethods?: string[] }[]
+  }
+  return data.models
+    .filter(
+      (m) =>
+        m.name.includes('/gemini-') &&
+        (m.supportedGenerationMethods ?? []).includes('generateContent'),
+    )
+    .map((m) => m.name.replace('models/', ''))
+    .filter(isGeminiLatestAlias)
+    .sort()
+}
+
+async function fetchMistralModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://api.mistral.ai/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id).sort()
+}
+
+async function fetchOllamaModels(baseUrl: string): Promise<string[]> {
+  const url = baseUrl.replace(/\/+$/, '')
+  const res = await fetch(`${url}/api/tags`)
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { models: { name: string }[] }
+  return data.models.map((m) => m.name)
+}
+
+async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://openrouter.ai/api/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id).sort()
 }
 
 export const llmConfigService = new LLMConfigService()
