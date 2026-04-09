@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git rebase*)",
+      "Bash(chmod -R 777*)",
+      "Bash(sudo rm*)",
+      "Bash(dd *)",
+      "Bash(mkfs*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "language": "Français"
+}
