@@ -28,9 +28,9 @@ export const LLM_PROVIDERS: Record<
   anthropic: {
     label: 'Anthropic',
     models: [
-      'claude-opus-4-6',
-      'claude-sonnet-4-6',
       'claude-haiku-4-5-20251001',
+      'claude-sonnet-4-6',
+      'claude-opus-4-6',
     ],
     needsKey: true,
   },
@@ -41,7 +41,7 @@ export const LLM_PROVIDERS: Record<
   },
   google: {
     label: 'Google',
-    models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+    models: ['gemini-flash-lite-latest', 'gemini-flash-latest','gemini-pro-latest'],
     needsKey: true,
   },
   mistral: {
