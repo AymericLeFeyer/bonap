@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react"
-import { Sparkles, X, Send, Trash2, Loader2, Bot, User, Wrench } from "lucide-react"
+import { Sparkles, X, Send, Trash2, Loader2, Bot, User, Wrench, AlertCircle, Settings } from "lucide-react"
+import { Link } from "react-router-dom"
 import ReactMarkdown from "react-markdown"
 import { Button } from "./ui/button.tsx"
 import { Input } from "./ui/input.tsx"
@@ -29,8 +30,6 @@ export function AssistantDrawer() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
-
-  if (!configured) return null
 
   const handleSend = async () => {
     const text = input.trim()
@@ -115,8 +114,45 @@ export function AssistantDrawer() {
           </div>
         </div>
 
+        {/* Not configured warning */}
+        {!configured && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-5 py-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold text-foreground">Assistant non configuré</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Configurez un fournisseur IA et une clé API pour utiliser l'assistant.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 w-full">
+              <Link
+                to="/settings"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] px-4 py-2",
+                  "bg-primary text-primary-foreground text-sm font-medium",
+                  "hover:bg-primary/90 transition-colors",
+                )}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Ouvrir les paramètres
+              </Link>
+              <a
+                href="https://bonap.aylabs.fr/docs/configuration/llm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
+              >
+                Aide à la configuration →
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-3">
+        {configured && <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-3">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
               <Bot className="h-10 w-10 opacity-15" />
@@ -200,10 +236,10 @@ export function AssistantDrawer() {
           )}
 
           <div ref={messagesEndRef} />
-        </div>
+        </div>}
 
         {/* Input */}
-        <div className="border-t border-border/40 px-3 py-3 shrink-0">
+        {configured && <div className="border-t border-border/40 px-3 py-3 shrink-0">
           <div className="flex gap-2">
             <Input
               ref={inputRef}
@@ -224,7 +260,7 @@ export function AssistantDrawer() {
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Click-outside overlay */}

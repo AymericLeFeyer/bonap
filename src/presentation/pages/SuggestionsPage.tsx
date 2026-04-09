@@ -191,14 +191,24 @@ export function SuggestionsPage() {
           <div className="flex-1 text-sm text-[oklch(0.38_0.10_55)] dark:text-[oklch(0.80_0.08_72)]">
             <strong>Aucun fournisseur IA configuré.</strong> Configurez une clé API pour utiliser cette fonctionnalité.
           </div>
-          <Link
-            to="/settings"
-            className="flex items-center gap-1 text-sm font-semibold text-[oklch(0.42_0.12_55)] hover:text-[oklch(0.28_0.12_50)] dark:text-[oklch(0.72_0.12_72)] transition-colors"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            Paramètres
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/settings"
+              className="flex items-center gap-1 text-sm font-semibold text-[oklch(0.42_0.12_55)] hover:text-[oklch(0.28_0.12_50)] dark:text-[oklch(0.72_0.12_72)] transition-colors"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Paramètres
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+            <a
+              href="https://bonap.aylabs.fr/docs/configuration/llm"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[oklch(0.52_0.10_55)] dark:text-[oklch(0.65_0.08_72)] underline hover:no-underline transition-colors"
+            >
+              Aide →
+            </a>
+          </div>
         </div>
       )}
 
