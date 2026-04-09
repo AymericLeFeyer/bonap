@@ -47,7 +47,7 @@ test.describe("Navigation — accès aux pages", () => {
     await expect(page.getByRole("link", { name: /courses/i })).toBeVisible()
     await expect(page.getByRole("link", { name: /recettes/i })).toBeVisible()
     await expect(page.getByRole("link", { name: /statistiques/i })).toBeVisible()
-    await expect(page.getByRole("link", { name: /param/i })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Paramètres", exact: true })).toBeVisible()
   })
 
   test("navigation depuis la sidebar vers Planning", async ({ page }) => {
