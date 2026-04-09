@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -455,7 +455,7 @@ export function SettingsPage() {
       </section>
 
       {/* ── Section À propos ── */}
-      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle p-6">
+      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary/8">
             <Info className="h-4 w-4 text-primary" />
@@ -468,8 +468,7 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center gap-2">
             <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
-            <span className="text-sm font-semibold">
-              <a href="https://bonap.aylabs.fr" target="_blank" rel="noopener noreferrer" title="Bonap">Bonap</a></span>
+            <span className="text-sm font-semibold">Bonap</span>
             <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-mono font-semibold text-muted-foreground">
               <a
                 href={`https://github.com/AymericLeFeyer/bonap/releases/tag/v${__APP_VERSION__}`}
@@ -481,6 +480,36 @@ export function SettingsPage() {
               </a>
             </span>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="https://bonap.aylabs.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            bonap.aylabs.fr
+          </a>
+          <a
+            href="https://github.com/AymericLeFeyer/bonap"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <Github className="h-3.5 w-3.5" />
+            AymericLeFeyer/bonap
+          </a>
+          <a
+            href="https://aylabs.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            AyLabs
+          </a>
         </div>
       </section>
 
