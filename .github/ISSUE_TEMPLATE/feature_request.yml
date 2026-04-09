@@ -1,0 +1,40 @@
+name: Feature request
+description: Proposer une nouvelle fonctionnalité
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Avant de proposer une fonctionnalité, vérifiez qu'elle n'existe pas déjà dans les [issues ouvertes](https://github.com/AymericLeFeyer/bonap/issues) ou les [discussions](https://github.com/AymericLeFeyer/bonap/discussions).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Quel problème cette fonctionnalité résoudrait-elle ?
+      placeholder: "Je me retrouve souvent bloqué quand..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution proposée
+      placeholder: "Il serait utile de pouvoir..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+      description: Avez-vous une solution de contournement actuelle ?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité estimée
+      options:
+        - Nice to have
+        - Utile
+        - Important
+        - Bloquant pour moi

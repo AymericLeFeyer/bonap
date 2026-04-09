@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussion / Question
+    url: https://github.com/AymericLeFeyer/bonap/discussions
+    about: Pour les questions générales, demandez dans les Discussions plutôt que d'ouvrir une issue.
