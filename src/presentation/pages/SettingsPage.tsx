@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -33,6 +33,64 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'dark', label: 'Sombre', icon: Moon },
   { value: 'system', label: 'Système', icon: Monitor },
 ]
+
+// ─── CollapsibleSection ───────────────────────────────────────────────────────
+
+interface CollapsibleSectionProps {
+  icon: React.ReactNode
+  iconBg: string
+  title: string
+  subtitle: string | React.ReactNode
+  defaultOpen?: boolean
+  headerExtra?: React.ReactNode
+  children: React.ReactNode
+}
+
+function CollapsibleSection({ icon, iconBg, title, subtitle, defaultOpen = false, headerExtra, children }: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 p-5 text-left hover:bg-secondary/30 transition-colors"
+      >
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)]", iconBg)}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-bold leading-none">{title}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+        </div>
+        {headerExtra && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            {headerExtra}
+          </div>
+        )}
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      <div className={cn(
+        "grid transition-all duration-200 ease-in-out",
+        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+      )}>
+        <div className="overflow-hidden">
+          <div className="space-y-6 border-t border-border/40 px-5 pb-5 pt-5">
+            {children}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── SettingsPage ─────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
@@ -115,21 +173,14 @@ export function SettingsPage() {
         </p>
       </div>
 
-      {/* ── Section Apparence ── */}
-      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-6 p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary/8">
-            <Palette className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold leading-none">Apparence</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Personnalisez l'aspect visuel de l'application.
-            </p>
-          </div>
-        </div>
-
-        {/* Sélecteur de thème */}
+      {/* ── Apparence ── */}
+      <CollapsibleSection
+        icon={<Palette className="h-4 w-4 text-primary" />}
+        iconBg="bg-primary/8"
+        title="Apparence"
+        subtitle="Thème et couleur d'accent"
+        defaultOpen
+      >
         <div className="space-y-2.5">
           <Label>Thème</Label>
           <div className="flex gap-2">
@@ -153,7 +204,6 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Sélecteur de couleur principale */}
         <div className="space-y-3">
           <div>
             <Label>Couleur principale</Label>
@@ -188,31 +238,34 @@ export function SettingsPage() {
             ))}
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      {/* ── Section IA ── */}
-      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-6 p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-[oklch(0.93_0.04_290)] dark:bg-[oklch(0.22_0.04_290)]">
-            <Bot className="h-4 w-4 text-[oklch(0.50_0.14_290)] dark:text-[oklch(0.72_0.14_290)]" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold leading-none">Fournisseur IA</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {envFields.size > 0
-                ? "Certains paramètres sont gérés via variables d'environnement."
-                : "Utilisé pour l'assistant, les suggestions et la vision. La clé est stockée localement."}
-            </p>
-          </div>
-        </div>
-
+      {/* ── Fournisseur IA ── */}
+      <CollapsibleSection
+        icon={<Bot className="h-4 w-4 text-[oklch(0.50_0.14_290)] dark:text-[oklch(0.72_0.14_290)]" />}
+        iconBg="bg-[oklch(0.93_0.04_290)] dark:bg-[oklch(0.22_0.04_290)]"
+        title="Fournisseur IA"
+        subtitle={envFields.size > 0 ? "Certains paramètres via variables d'environnement" : `${LLM_PROVIDERS[config.provider].label} — ${config.model || 'non configuré'}`}
+        defaultOpen={!llmConfigService.isConfigured()}
+        headerExtra={
+          <a
+            href="https://bonap.aylabs.fr/docs/configuration/llm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Aide
+          </a>
+        }
+      >
         {/* Bannière localStorage */}
         {envFields.size === 0 && (
           <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
             <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
               Ces paramètres sont <span className="font-semibold">stockés localement</span> sur cet appareil uniquement.
-              Pour les appliquer sur tous vos appareils, définissez les variables d'environnement correspondantes dans votre{" "}
+              Pour les appliquer sur tous vos appareils, définissez les variables d'environnement dans votre{" "}
               <span className="font-semibold">docker-compose.yml</span> ou la{" "}
               <span className="font-semibold">configuration de l'addon Home Assistant</span>, puis redémarrez.
             </p>
@@ -276,6 +329,15 @@ export function SettingsPage() {
             <div className="flex items-center gap-2">
               <Label htmlFor="api-key">Clé API</Label>
               {envFields.has('apiKey') && <EnvBadge />}
+              <a
+                href="https://bonap.aylabs.fr/docs/configuration/llm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Comment obtenir une clé ?
+              </a>
             </div>
             <div className="relative">
               <Input
@@ -434,53 +496,15 @@ export function SettingsPage() {
             </span>
           )}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      {/* ── Section À propos ── */}
-      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary/8">
-            <Info className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-base font-bold leading-none">À propos</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Informations sur l'application.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
-            <span className="text-sm font-semibold">
-              <a href="https://bonap.aylabs.fr" target="_blank" rel="noopener noreferrer" title="Bonap">Bonap</a></span>
-            <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-mono font-semibold text-muted-foreground">
-              <a
-                href={`https://github.com/AymericLeFeyer/bonap/releases/tag/v${__APP_VERSION__}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`Bonap v${__APP_VERSION__}`}
-              >
-                v{__APP_VERSION__}
-              </a>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section Connexion Mealie ── */}
-      <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-5 p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-[oklch(0.93_0.05_160)] dark:bg-[oklch(0.22_0.04_160)]">
-            <Server className="h-4 w-4 text-[oklch(0.48_0.14_160)] dark:text-[oklch(0.70_0.14_160)]" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold leading-none">
-              Connexion Mealie
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Variables d'environnement (lecture seule).
-            </p>
-          </div>
-        </div>
+      {/* ── Connexion Mealie ── */}
+      <CollapsibleSection
+        icon={<Server className="h-4 w-4 text-[oklch(0.48_0.14_160)] dark:text-[oklch(0.70_0.14_160)]" />}
+        iconBg="bg-[oklch(0.93_0.05_160)] dark:bg-[oklch(0.22_0.04_160)]"
+        title="Connexion Mealie"
+        subtitle="Variables d'environnement (lecture seule)"
+      >
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.10em]">
@@ -504,26 +528,74 @@ export function SettingsPage() {
             />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
+      {/* ── Déconnexion ── */}
       {import.meta.env.VITE_PROTECTED_ROUTE === 'true' && (
-        <section className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle space-y-5 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-destructive/8">
-              <LogOut className="h-4 w-4 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold leading-none">Déconnexion</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Déconnecter le compte actuellement connecté.
-              </p>
-            </div>
-          </div>
+        <CollapsibleSection
+          icon={<LogOut className="h-4 w-4 text-destructive" />}
+          iconBg="bg-destructive/8"
+          title="Déconnexion"
+          subtitle="Déconnecter le compte actuellement connecté"
+        >
           <Button variant="destructive" onClick={handleLogout}>
             Se déconnecter
           </Button>
-        </section>
+        </CollapsibleSection>
       )}
+
+      {/* ── À propos ── */}
+      <CollapsibleSection
+        icon={<Info className="h-4 w-4 text-primary" />}
+        iconBg="bg-primary/8"
+        title="À propos"
+        subtitle={`Bonap v${__APP_VERSION__} — par AyLabs`}
+      >
+        <div className="flex items-center gap-2">
+          <img src={`${getIngressBasename()}/bonap.png`} alt="Bonap" className="h-6 w-6 rounded-md object-cover" />
+          <span className="text-sm font-semibold">Bonap</span>
+          <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-mono font-semibold text-muted-foreground">
+            <a
+              href={`https://github.com/AymericLeFeyer/bonap/releases/tag/v${__APP_VERSION__}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Bonap v${__APP_VERSION__}`}
+            >
+              v{__APP_VERSION__}
+            </a>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="https://bonap.aylabs.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            bonap.aylabs.fr
+          </a>
+          <a
+            href="https://github.com/AymericLeFeyer/bonap"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <Github className="h-3.5 w-3.5" />
+            AymericLeFeyer/bonap
+          </a>
+          <a
+            href="https://aylabs.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-[var(--radius-lg)] border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            AyLabs
+          </a>
+        </div>
+      </CollapsibleSection>
     </div>
   )
 }
