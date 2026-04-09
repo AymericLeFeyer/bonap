@@ -198,6 +198,15 @@ async function testOpenRouter(
   return { ok: false, message: `Erreur ${res.status}` }
 }
 
+// Garde uniquement les alias "latest" Gemini — exclut les versions figées
+// (-001, -002), les dates (-04-17, -12-2025), les previews, exp, tts, image, etc.
+function isGeminiLatestAlias(id: string): boolean {
+  if (/-\d{3}(-|$)/.test(id)) return false          // -001, -002
+  if (/-\d{2}-\d{2,4}(-|$)/.test(id)) return false  // -04-17, -12-2025
+  if (/-(preview|exp|tts|image|live|audio|embedding|robotics|computer-use|deep-research)(-|$)/.test(id)) return false
+  return true
+}
+
 async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
   const res = await fetch('https://api.anthropic.com/v1/models', {
     headers: {
@@ -238,6 +247,7 @@ async function fetchGoogleModels(apiKey: string): Promise<string[]> {
         (m.supportedGenerationMethods ?? []).includes('generateContent'),
     )
     .map((m) => m.name.replace('models/', ''))
+    .filter(isGeminiLatestAlias)
     .sort()
 }
 
