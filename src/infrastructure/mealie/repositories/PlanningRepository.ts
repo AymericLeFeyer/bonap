@@ -30,4 +30,17 @@ export class PlanningRepository implements IPlanningRepository {
   async deleteMeal(id: number): Promise<void> {
     await mealieApiClient.delete(`/api/households/mealplans/${id}`)
   }
+
+  async updateMealNote(meal: MealieMealPlan, text: string): Promise<MealieMealPlan> {
+    return mealieApiClient.put<MealieMealPlan>(`/api/households/mealplans/${meal.id}`, {
+      id: meal.id,
+      date: meal.date,
+      entryType: meal.entryType,
+      title: meal.title ?? "",
+      text,
+      recipeId: meal.recipeId,
+      groupId: meal.groupId,
+      userId: meal.userId,
+    })
+  }
 }

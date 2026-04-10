@@ -11,4 +11,5 @@ export interface IPlanningRepository {
     recipeId: string
   }): Promise<MealieMealPlan>
   deleteMeal(id: number): Promise<void>
+  updateMealNote(meal: import("../../../shared/types/mealie.ts").MealieMealPlan, text: string): Promise<import("../../../shared/types/mealie.ts").MealieMealPlan>
 }
