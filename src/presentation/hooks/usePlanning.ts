@@ -113,6 +113,7 @@ export function usePlanning() {
   const addMeal = useCallback(async (date: string, entryType: string, recipeId: string) => {
     const newMeal = await addMealUseCase.execute(date, entryType, recipeId)
     setMealPlans((prev) => [...prev, newMeal])
+    return newMeal
   }, [])
 
   const deleteMeal = useCallback(async (id: number) => {

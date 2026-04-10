@@ -470,8 +470,11 @@ export function PlanningPage() {
     if (draggedMeal.date === targetDate && draggedMeal.entryType === targetType) return
     if (!draggedMeal.recipe) return
     await deleteMeal(draggedMeal.id)
-    await addMeal(targetDate, targetType, draggedMeal.recipe.id)
-  }, [deleteMeal, addMeal])
+    const newMeal = await addMeal(targetDate, targetType, draggedMeal.recipe.id)
+    if (draggedMeal.text && newMeal) {
+      await updateMealNote(newMeal.id, draggedMeal.text)
+    }
+  }, [deleteMeal, addMeal, updateMealNote])
 
   // Use a ref so touch handlers always call the latest version without re-mounting the effect
   const handleDropRef = useRef(handleDrop)
