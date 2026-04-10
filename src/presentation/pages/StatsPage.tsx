@@ -1,6 +1,10 @@
+import { useState } from "react"
 import { useStats, type StatsPeriod } from "../hooks/useStats.ts"
-import { Calendar, RefreshCw, Zap, Layers } from "lucide-react"
+import { Calendar, RefreshCw, Zap, Layers, CalendarPlus } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
+import { Button } from "../components/ui/button.tsx"
+import { PlanningSlotPicker } from "../components/PlanningSlotPicker.tsx"
+import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: "30d", label: "30 jours" },
@@ -167,8 +171,10 @@ function CategoryBars({
 
 function NeverPlannedList({
   recipes,
+  onPlan,
 }: {
-  recipes: { slug: string; name: string }[]
+  recipes: { id: string; slug: string; name: string }[]
+  onPlan: (recipeId: string, recipeName: string) => void
 }) {
   if (recipes.length === 0) {
     return (
@@ -188,10 +194,19 @@ function NeverPlannedList({
         {recipes.length > 1 ? "s" : ""} du planning
         {recipes.length === 50 ? " (50 premières affichées)" : ""}
       </p>
-      <ul className="columns-1 sm:columns-2 gap-x-4 space-y-1">
+      <ul className="space-y-1">
         {recipes.map((r) => (
-          <li key={r.slug} className="break-inside-avoid text-sm text-muted-foreground truncate">
-            {r.name}
+          <li key={r.slug} className="flex items-center gap-2 group">
+            <span className="flex-1 text-sm text-muted-foreground truncate">{r.name}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Planifier cette recette"
+              onClick={() => onPlan(r.id, r.name)}
+            >
+              <CalendarPlus className="h-3.5 w-3.5" />
+            </Button>
           </li>
         ))}
       </ul>
@@ -203,6 +218,23 @@ function NeverPlannedList({
 
 export function StatsPage() {
   const { period, setPeriod, stats, loading, error } = useStats()
+  const [planningFor, setPlanningFor] = useState<{ recipeId: string; recipeName: string } | null>(null)
+  const [planError, setPlanError] = useState<string | null>(null)
+
+  const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
+    if (!planningFor) return
+    setPlanError(null)
+    try {
+      if (existingMealId !== undefined) {
+        await deleteMealUseCase.execute(existingMealId)
+      }
+      await addMealUseCase.execute(date, entryType, planningFor.recipeId)
+      setPlanningFor(null)
+    } catch (e) {
+      setPlanError(e instanceof Error ? e.message : "Erreur lors de l'ajout au planning")
+      setPlanningFor(null)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -234,9 +266,9 @@ export function StatsPage() {
       </div>
 
       {/* Erreur */}
-      {error && (
+      {(error || planError) && (
         <div className="rounded-[var(--radius-xl)] border border-destructive/20 bg-destructive/8 p-4 text-sm text-destructive">
-          {error}
+          {error ?? planError}
         </div>
       )}
 
@@ -339,14 +371,23 @@ export function StatsPage() {
               {/* Recettes jamais planifiées */}
               <NeverPlannedList
                 recipes={stats.neverPlannedRecipes.map((r) => ({
+                  id: r.id,
                   slug: r.slug,
                   name: r.name,
                 }))}
+                onPlan={(recipeId, recipeName) => setPlanningFor({ recipeId, recipeName })}
               />
             </>
           )}
         </div>
       )}
+
+      <PlanningSlotPicker
+        open={planningFor !== null}
+        onOpenChange={(v) => { if (!v) setPlanningFor(null) }}
+        recipeName={planningFor?.recipeName ?? ""}
+        onSelect={handleSlotSelect}
+      />
     </div>
   )
 }
