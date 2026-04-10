@@ -3,12 +3,14 @@ import { createPortal } from "react-dom"
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   Plus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
+  MessageSquarePlus, MessageSquare,
 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
@@ -113,6 +115,7 @@ interface MealCellProps {
   onAdd: () => void
   onDelete: (id: number) => void
   onSelectLeftover: (meal: MealieMealPlan) => void
+  onNote: (meal: MealieMealPlan) => void
   colorClass: string
   date: string
   entryType: string
@@ -121,7 +124,7 @@ interface MealCellProps {
 }
 
 function MealCell({
-  meals, lastMeals, onAdd, onDelete, onSelectLeftover,
+  meals, lastMeals, onAdd, onDelete, onSelectLeftover, onNote,
   colorClass, date, entryType, onDrop, onView,
 }: MealCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
@@ -221,6 +224,13 @@ function MealCell({
                 </span>
               </div>
 
+              {meal.text && (
+                <div className="px-2 pb-1.5">
+                  <p className="text-[11px] text-muted-foreground italic leading-snug line-clamp-2">
+                    {meal.text}
+                  </p>
+                </div>
+              )}
               <div className="flex border-t border-border/30">
                 {meal.recipe?.slug && (
                   <button
@@ -232,6 +242,22 @@ function MealCell({
                     <Eye className="h-3.5 w-3.5" />
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => onNote(meal)}
+                  title={meal.text ? "Modifier la note" : "Ajouter une note"}
+                  className={cn(
+                    "flex flex-1 items-center justify-center py-1.5 transition-colors border-l border-border/30",
+                    meal.text
+                      ? "text-primary/70 hover:bg-primary/8 hover:text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  {meal.text
+                    ? <MessageSquare className="h-3.5 w-3.5" />
+                    : <MessageSquarePlus className="h-3.5 w-3.5" />
+                  }
+                </button>
                 <button
                   type="button"
                   onClick={() => onDelete(meal.id)}
@@ -334,7 +360,7 @@ export function PlanningPage() {
   const {
     mealPlans, loading, error, centerDate, nbDays, setNbDays,
     goToPrevDay, goToNextDay, goToPrevPeriod, goToNextPeriod, goToToday, goToTodayMobile,
-    addMeal, deleteMeal,
+    addMeal, deleteMeal, updateMealNote,
   } = usePlanning()
 
   const {
@@ -348,6 +374,7 @@ export function PlanningPage() {
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
+  const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
   const mobileMenuMealRef = useRef<((data: { meal: MealieMealPlan; y: number } | null) => void) | null>(null)
 
   // ── Mobile touch drag state ──
@@ -420,6 +447,16 @@ export function PlanningPage() {
     setPendingSlot(null)
   }
 
+  const handleOpenNote = (meal: MealieMealPlan) => {
+    setNoteDialog({ meal, value: meal.text ?? "" })
+  }
+
+  const handleSaveNote = async () => {
+    if (!noteDialog) return
+    await updateMealNote(noteDialog.meal.id, noteDialog.value)
+    setNoteDialog(null)
+  }
+
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
     if (!meal.recipe) return
     await addMeal(formatDate(date), entryType, meal.recipe.id)
@@ -433,8 +470,11 @@ export function PlanningPage() {
     if (draggedMeal.date === targetDate && draggedMeal.entryType === targetType) return
     if (!draggedMeal.recipe) return
     await deleteMeal(draggedMeal.id)
-    await addMeal(targetDate, targetType, draggedMeal.recipe.id)
-  }, [deleteMeal, addMeal])
+    const newMeal = await addMeal(targetDate, targetType, draggedMeal.recipe.id)
+    if (draggedMeal.text && newMeal) {
+      await updateMealNote(newMeal.id, draggedMeal.text)
+    }
+  }, [deleteMeal, addMeal, updateMealNote])
 
   // Use a ref so touch handlers always call the latest version without re-mounting the effect
   const handleDropRef = useRef(handleDrop)
@@ -736,6 +776,7 @@ export function PlanningPage() {
                           onAdd={() => handleAddMeal(dateStr, key)}
                           onDelete={deleteMeal}
                           onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
+                          onNote={handleOpenNote}
                           colorClass={cn(color, "border-b border-r", borderColor)}
                           date={dateStr}
                           entryType={key}
@@ -821,6 +862,17 @@ export function PlanningPage() {
                 )}
                 <button
                   type="button"
+                  onClick={() => { handleOpenNote(mobileMenuMeal.meal); setMobileMenuMeal(null) }}
+                  className="flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-secondary transition-colors"
+                >
+                  {mobileMenuMeal.meal.text
+                    ? <MessageSquare className="h-4 w-4 text-primary/70" />
+                    : <MessageSquarePlus className="h-4 w-4 text-muted-foreground" />
+                  }
+                  {mobileMenuMeal.meal.text ? "Modifier la note" : "Ajouter une note"}
+                </button>
+                <button
+                  type="button"
                   onClick={() => { void deleteMeal(mobileMenuMeal.meal.id); setMobileMenuMeal(null) }}
                   className="flex items-center gap-3 px-4 py-3.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
@@ -839,6 +891,40 @@ export function PlanningPage() {
           </div>
         )
       })()}
+
+      {/* ── Dialog note ── */}
+      <Dialog open={noteDialog !== null} onOpenChange={(v) => { if (!v) setNoteDialog(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-base">Note pour ce repas</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {noteDialog?.meal.recipe?.name ?? noteDialog?.meal.title ?? "Repas"}
+            </p>
+          </DialogHeader>
+          <textarea
+            autoFocus
+            rows={3}
+            placeholder="Ex : prévoir une portion sans viande…"
+            value={noteDialog?.value ?? ""}
+            onChange={(e) => setNoteDialog((prev) => prev ? { ...prev, value: e.target.value } : null)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void handleSaveNote() }}
+            className={cn(
+              "flex w-full rounded-[var(--radius-lg)] border border-input bg-card",
+              "px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/60",
+              "focus-visible:outline-none focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/30",
+              "resize-none transition-[border-color,box-shadow] duration-150",
+            )}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setNoteDialog(null)}>
+              Annuler
+            </Button>
+            <Button size="sm" onClick={() => void handleSaveNote()}>
+              Enregistrer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <RecipePickerDialog
         open={pickerOpen}

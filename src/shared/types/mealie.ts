@@ -154,8 +154,12 @@ export interface MealieMealPlan {
   date: string
   entryType: string
   title?: string
+  text?: string
   recipeId?: string
   recipe?: MealieRecipe
+  groupId?: string
+  userId?: string
+  householdId?: string
 }
 
 export interface MealieRawPaginatedMealPlans {

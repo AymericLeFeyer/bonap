@@ -4,6 +4,7 @@ import {
   getWeekPlanningUseCase,
   addMealUseCase,
   deleteMealUseCase,
+  planningRepository,
 } from "../../infrastructure/container.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 
@@ -112,12 +113,26 @@ export function usePlanning() {
   const addMeal = useCallback(async (date: string, entryType: string, recipeId: string) => {
     const newMeal = await addMealUseCase.execute(date, entryType, recipeId)
     setMealPlans((prev) => [...prev, newMeal])
+    return newMeal
   }, [])
 
   const deleteMeal = useCallback(async (id: number) => {
     setMealPlans((prev) => prev.filter((m) => m.id !== id))
     await deleteMealUseCase.execute(id)
   }, [])
+
+  const updateMealNote = useCallback(async (id: number, text: string) => {
+    const meal = mealPlans.find((m) => m.id === id)
+    if (!meal) return
+    // Optimistic update
+    setMealPlans((prev) => prev.map((m) => m.id === id ? { ...m, text } : m))
+    try {
+      await planningRepository.updateMealNote(meal, text)
+    } catch {
+      // Rollback
+      setMealPlans((prev) => prev.map((m) => m.id === id ? { ...m, text: meal.text } : m))
+    }
+  }, [mealPlans])
 
   return {
     mealPlans,
@@ -134,5 +149,6 @@ export function usePlanning() {
     goToTodayMobile,
     addMeal,
     deleteMeal,
+    updateMealNote,
   }
 }
