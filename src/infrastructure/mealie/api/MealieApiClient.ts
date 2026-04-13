@@ -23,6 +23,49 @@ function getToken(): string {
 }
 
 export class MealieApiClient implements IMealieApiClient {
+  private extractErrorMessage(payload: unknown, status: number, statusText: string): string {
+    if (typeof payload === "string") {
+      const raw = payload.trim()
+      if (!raw) return `HTTP ${status}${statusText ? ` ${statusText}` : ""}`
+
+      try {
+        const parsed = JSON.parse(raw) as Record<string, unknown>
+        const detail = parsed.detail
+
+        if (typeof detail === "string" && detail.trim()) return detail.trim()
+        if (detail && typeof detail === "object") {
+          const detailMessage = (detail as Record<string, unknown>).message
+          if (typeof detailMessage === "string" && detailMessage.trim()) return detailMessage.trim()
+        }
+
+        const topMessage = parsed.message
+        if (typeof topMessage === "string" && topMessage.trim()) return topMessage.trim()
+
+        const title = parsed.title
+        if (typeof title === "string" && title.trim()) return title.trim()
+      } catch {
+        return raw
+      }
+
+      return raw
+    }
+
+    if (payload && typeof payload === "object") {
+      const obj = payload as Record<string, unknown>
+
+      if (typeof obj.detail === "string" && obj.detail.trim()) return obj.detail.trim()
+      if (obj.detail && typeof obj.detail === "object") {
+        const detailMessage = (obj.detail as Record<string, unknown>).message
+        if (typeof detailMessage === "string" && detailMessage.trim()) return detailMessage.trim()
+      }
+      if (typeof obj.message === "string" && obj.message.trim()) return obj.message.trim()
+      if (typeof obj.error === "string" && obj.error.trim()) return obj.error.trim()
+      if (typeof obj.title === "string" && obj.title.trim()) return obj.title.trim()
+    }
+
+    return `HTTP ${status}${statusText ? ` ${statusText}` : ""}`
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -42,7 +85,8 @@ export class MealieApiClient implements IMealieApiClient {
     })
 
     if (!response.ok) {
-      const message = await response.text().catch(() => response.statusText)
+      const raw = await response.text().catch(() => "")
+      const message = this.extractErrorMessage(raw, response.status, response.statusText)
 
       if (response.status === 401) {
         throw new MealieUnauthorizedError(message)
