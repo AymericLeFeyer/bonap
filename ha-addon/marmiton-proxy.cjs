@@ -723,6 +723,9 @@ function extractRecipeGustave(html, pageUrl) {
     .map(s => normalizeSpace(s))
     .filter(s => s.length >= 20)
 
+  const yieldMatch = html.match(/(?:pour|recette?\s+pour)\s+\d+\s*(?:personnes?|parts?|portions?)/i)
+  const recipeYield = yieldMatch ? normalizeSpace(yieldMatch[0]) : undefined
+
   if (!name || ingredients.length < 2 || steps.length < 1) return null
 
   return {
@@ -734,6 +737,7 @@ function extractRecipeGustave(html, pageUrl) {
     prepTime,
     cookTime,
     totalTime: '',
+    recipeYield,
     marmitonUrl: pageUrl,
   }
 }
@@ -767,6 +771,9 @@ function extractRecipeMarieClaire(html, pageUrl) {
     .map((s) => normalizeSpace(s))
     .filter((s) => s.length >= 8)
 
+  const yieldMatch = html.match(/(?:pour|recette?\s+pour)\s+\d+\s*(?:personnes?|parts?|portions?)/i)
+  const recipeYield = yieldMatch ? normalizeSpace(yieldMatch[0]) : undefined
+
   if (!name || ingredients.length < 2) return null
 
   return {
@@ -778,6 +785,7 @@ function extractRecipeMarieClaire(html, pageUrl) {
     prepTime: '',
     cookTime: '',
     totalTime: '',
+    recipeYield,
     marmitonUrl: pageUrl,
   }
 }
@@ -829,6 +837,9 @@ function extractRecipeLeFigaro(html, pageUrl) {
       .filter(Boolean)
       .slice(0, 10) || []
 
+  const yieldMatch = html.match(/(?:pour|recette?\s+pour)\s+\d+\s*(?:personnes?|parts?|portions?)/i)
+  const recipeYield = yieldMatch ? normalizeSpace(yieldMatch[0]) : undefined
+
   if (!name || ingredients.length < 2) return null
 
   return {
@@ -840,6 +851,7 @@ function extractRecipeLeFigaro(html, pageUrl) {
     prepTime,
     cookTime,
     totalTime: '',
+    recipeYield,
     marmitonUrl: pageUrl,
   }
 }
@@ -883,6 +895,10 @@ function extractRecipeFemina(html, pageUrl) {
     .filter((s) => !/^Ingr[eé]dients?\s+pour/i.test(s))
     .slice(0, 20)
 
+  const yieldMatchFemina = html.match(/Ingr[eé]dients?\s+(pour\s+\d+\s*(?:personnes?|parts?|portions?))/i)
+    || html.match(/(?:pour|recette?\s+pour)\s+\d+\s*(?:personnes?|parts?|portions?)/i)
+  const recipeYield = yieldMatchFemina ? normalizeSpace(yieldMatchFemina[1] ?? yieldMatchFemina[0]) : undefined
+
   if (!name || ingredients.length < 2) return null
 
   return {
@@ -894,6 +910,7 @@ function extractRecipeFemina(html, pageUrl) {
     prepTime,
     cookTime,
     totalTime: '',
+    recipeYield,
     marmitonUrl: pageUrl,
   }
 }
@@ -939,6 +956,9 @@ function extractRecipeHeuristic(html, pageUrl) {
       .slice(0, 20)
   }
 
+  const yieldMatchHeuristic = text.match(/(?:pour|recette?\s+pour)\s+\d+\s*(?:personnes?|parts?|portions?)/i)
+  const recipeYield = yieldMatchHeuristic ? normalizeSpace(yieldMatchHeuristic[0]) : undefined
+
   if (!name || ingredients.length < 2 || steps.length < 1) {
     return null
   }
@@ -952,6 +972,7 @@ function extractRecipeHeuristic(html, pageUrl) {
     prepTime: normalizeSpace(prepRaw),
     cookTime: normalizeSpace(cookRaw),
     totalTime: '',
+    recipeYield,
     marmitonUrl: pageUrl,
   }
 }
@@ -990,6 +1011,7 @@ async function fetchRecipeDetails(url) {
       prepTime: formatMinutes(prepMin),
       cookTime: formatMinutes(cookMin),
       totalTime: formatMinutes(totalMin),
+      recipeYield: recipe.recipeYield ?? undefined,
     }
   } catch (_) {
     return null
@@ -998,7 +1020,9 @@ async function fetchRecipeDetails(url) {
 
 // Fetch one search page → array of {name, imageUrl, marmitonUrl}
 async function fetchSearchPage(q, page) {
-  const url = `${SEARCH_URL}?aqt=${encodeURIComponent(q)}&page=${page}`
+  const url = page <= 1
+    ? `${SEARCH_URL}?aqt=${encodeURIComponent(q)}`
+    : `${SEARCH_URL}?aqt=${encodeURIComponent(q)}&page=${page}`
   const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(10000) })
   if (!res.ok) return []
   const html = await res.text()
@@ -1019,22 +1043,31 @@ async function fetchSearchPage(q, page) {
 
 // Fetch multiple pages until we have enough results
 async function fetchSearchList(q, needed) {
-  const PER_PAGE = 10
-  const pagesNeeded = Math.ceil(needed / PER_PAGE)
-  // Marmiton pagination starts at page=2 (page=1 returns same as no param)
-  const pageNums = Array.from({ length: pagesNeeded }, (_, i) => i + 2)
-  const pages = await Promise.all(pageNums.map(p => fetchSearchPage(q, p)))
-  // Deduplicate by URL
+  const PER_PAGE = 12
+  const maxPages = Math.max(1, Math.ceil(needed / PER_PAGE) + 1)
+
+  // Deduplicate by URL while progressively fetching pages.
   const seen = new Set()
   const all = []
-  for (const items of pages) {
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const items = await fetchSearchPage(q, page)
+    if (!items.length) break
+
+    let addedThisPage = 0
     for (const item of items) {
       if (!seen.has(item.marmitonUrl)) {
         seen.add(item.marmitonUrl)
         all.push(item)
+        addedThisPage += 1
       }
     }
+
+    if (all.length >= needed) break
+    // Stop early when page yields only duplicates; next pages are usually exhausted.
+    if (addedThisPage === 0) break
   }
+
   return all
 }
 
@@ -1126,7 +1159,7 @@ app.get('/search', async (req, res) => {
 
     const toHydrateCount = isMultiTerm
       ? Math.min(preRanked.length, Math.max(offset + limit + 24, 48))
-      : Math.min(preRanked.length, offset + limit)
+      : Math.min(preRanked.length, offset + limit + 1)
     const hydratedItems = preRanked.slice(0, toHydrateCount)
 
     // Fetch details for selected candidates in parallel (max 4 at a time)
@@ -1147,6 +1180,7 @@ app.get('/search', async (req, res) => {
         prepTime: details?.prepTime ?? '',
         cookTime: details?.cookTime ?? '',
         totalTime: details?.totalTime ?? '',
+        recipeYield: details?.recipeYield ?? undefined,
       }
     })
 
@@ -1449,6 +1483,7 @@ app.get('/fetch-recipe', async (req, res) => {
         prepTime: formatMinutes(prepMin),
         cookTime: formatMinutes(cookMin),
         totalTime: formatMinutes(totalMin),
+        recipeYield: recipeSchema.recipeYield ?? undefined,
       }
     }
 

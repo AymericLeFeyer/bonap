@@ -44,6 +44,7 @@ import type {
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
+import { parseServings } from "../../shared/utils/servings.ts"
 import { cn } from "../../lib/utils.ts"
 import { MarkdownContent } from "../components/MarkdownContent.tsx"
 
@@ -93,6 +94,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
     tags: (recipe.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
+    recipeYield: recipe.recipeYield ?? "",
   }
 }
 
@@ -424,6 +426,8 @@ export function RecipeDetailPage() {
           recipeName={recipe.name}
           ingredients={recipe.recipeIngredient ?? []}
           instructions={recipe.recipeInstructions ?? []}
+          baseServings={parseServings(recipe.recipeYield)}
+          targetServings={parseServings(formData.recipeYield)}
           onClose={() => setCookingMode(false)}
         />
       )}
@@ -667,6 +671,17 @@ export function RecipeDetailPage() {
                   value={formData.totalTime}
                   displayRaw={recipe.totalTime}
                   onChange={(v) => patch({ totalTime: v })}
+                  disabled={saving}
+                />
+                <InlineEditText
+                  value={formData.recipeYield ?? ""}
+                  displayValue={
+                    <span className="text-sm text-muted-foreground">
+                      Portions : {formData.recipeYield || "—"}
+                    </span>
+                  }
+                  onChange={(v) => patch({ recipeYield: v || undefined })}
+                  placeholder="ex : 4 personnes"
                   disabled={saving}
                 />
               </div>

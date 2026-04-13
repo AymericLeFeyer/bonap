@@ -11,9 +11,11 @@ import { Button } from "./ui/button.tsx"
 import { CookingMode } from "./CookingMode.tsx"
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
+import { parseServings } from "../../shared/utils/servings.ts"
 
 interface RecipeDetailModalProps {
   slug: string | null
+  targetServings?: number
   onOpenChange: (open: boolean) => void
 }
 
@@ -21,9 +23,11 @@ interface CookingSnapshot {
   name: string
   ingredients: MealieIngredient[]
   instructions: MealieInstruction[]
+  baseServings?: number
+  targetServings?: number
 }
 
-export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps) {
+export function RecipeDetailModal({ slug, targetServings, onOpenChange }: RecipeDetailModalProps) {
   const { recipe, loading, error } = useRecipe(slug ?? undefined)
   const [cookingSnapshot, setCookingSnapshot] = useState<CookingSnapshot | null>(null)
   const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
@@ -43,6 +47,8 @@ export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps
       name: recipe.name,
       ingredients: recipe.recipeIngredient ?? [],
       instructions: recipe.recipeInstructions ?? [],
+      baseServings: parseServings(recipe.recipeYield),
+      targetServings,
     })
     onOpenChange(false)
   }
@@ -54,6 +60,8 @@ export function RecipeDetailModal({ slug, onOpenChange }: RecipeDetailModalProps
           recipeName={cookingSnapshot.name}
           ingredients={cookingSnapshot.ingredients}
           instructions={cookingSnapshot.instructions}
+          baseServings={cookingSnapshot.baseServings}
+          targetServings={cookingSnapshot.targetServings}
           onClose={() => setCookingSnapshot(null)}
         />
       )}
