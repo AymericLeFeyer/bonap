@@ -2,12 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Plus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
-  MessageSquarePlus, MessageSquare,
+  Plus, Minus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
+  MessageSquarePlus, MessageSquare, Sparkles,
 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
+import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
@@ -15,6 +16,9 @@ import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
+import { getRecipesUseCase } from "../../infrastructure/container.ts"
+import { generateBalancedMealPlan } from "../../shared/utils/balancedMealPlanner.ts"
+import { parseServings, decodeServingsFromText, encodeServingsInText } from "../../shared/utils/servings.ts"
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
@@ -51,6 +55,33 @@ function addDays(date: Date, n: number): Date {
   return d
 }
 
+function getMealServings(meal: MealieMealPlan): number | undefined {
+  const fromText = decodeServingsFromText(meal.text).servings
+  if (fromText && fromText > 0) return fromText
+  const base = parseServings(meal.recipe?.recipeYield)
+  return base && base > 0 ? base : undefined
+}
+
+function getMealVisibleNote(meal: MealieMealPlan): string {
+  return decodeServingsFromText(meal.text).note
+}
+
+function getInitialServingsForNewMeal(recipe: MealieRecipe | undefined, familySize: number): number | undefined {
+  const recipeBase = parseServings(recipe?.recipeYield)
+  if (!recipeBase || recipeBase <= 0) return undefined
+  return familySize > 0 ? familySize : recipeBase
+}
+
+async function fetchAllRecipes(): Promise<MealieRecipe[]> {
+  const first = await getRecipesUseCase.execute(1, 100)
+  const all = [...first.items]
+  for (let page = 2; page <= first.totalPages; page += 1) {
+    const chunk = await getRecipesUseCase.execute(page, 100)
+    all.push(...chunk.items)
+  }
+  return all
+}
+
 // ─── MobileMealSection ────────────────────────────────────────────────────────
 
 interface MobileMealSectionProps {
@@ -63,6 +94,7 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
+        const mealServings = getMealServings(meal)
         return (
           <div
             key={meal.id}
@@ -87,6 +119,17 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
                 </span>
               </div>
             )}
+            <div className="border-t border-border/40 bg-secondary/20 px-2 py-1">
+              {mealServings && mealServings > 0 ? (
+                <span className="text-[10px] font-semibold text-muted-foreground">
+                  {mealServings} pers.
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  Définir les portions dans la recette
+                </span>
+              )}
+            </div>
           </div>
         )
       })}
@@ -120,12 +163,13 @@ interface MealCellProps {
   date: string
   entryType: string
   onDrop: (draggedMeal: MealieMealPlan, targetDate: string, targetType: string) => void
-  onView: (slug: string) => void
+  onView: (meal: MealieMealPlan) => void
+  onServingsChange: (meal: MealieMealPlan, servings: number) => void
 }
 
 function MealCell({
   meals, lastMeals, onAdd, onDelete, onSelectLeftover, onNote,
-  colorClass, date, entryType, onDrop, onView,
+  colorClass, date, entryType, onDrop, onView, onServingsChange,
 }: MealCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -195,6 +239,8 @@ function MealCell({
       <div className="flex flex-col gap-2">
         {meals.map((meal) => {
           const name = meal.recipe?.name ?? meal.title ?? "Sans titre"
+          const mealServings = getMealServings(meal)
+          const baseServings = parseServings(meal.recipe?.recipeYield)
           return (
             <div
               key={meal.id}
@@ -224,18 +270,52 @@ function MealCell({
                 </span>
               </div>
 
-              {meal.text && (
+              {getMealVisibleNote(meal) && (
                 <div className="px-2 pb-1.5">
                   <p className="text-[11px] text-muted-foreground italic leading-snug line-clamp-2">
-                    {meal.text}
+                    {getMealVisibleNote(meal)}
                   </p>
                 </div>
               )}
+              <div className="px-2 pb-1.5">
+                <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/40 bg-secondary/30 px-2 py-1">
+                  {mealServings && mealServings > 0 ? (
+                    <>
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        {mealServings} pers.
+                        {baseServings && baseServings > 0 && baseServings !== mealServings ? ` (base ${baseServings})` : ""}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onServingsChange(meal, Math.max(1, mealServings - 1))}
+                          className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                          title="Diminuer les portions"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onServingsChange(meal, mealServings + 1)}
+                          className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                          title="Augmenter les portions"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                      Définir les portions dans la recette
+                    </span>
+                  )}
+                </div>
+              </div>
               <div className="flex border-t border-border/30">
                 {meal.recipe?.slug && (
                   <button
                     type="button"
-                    onClick={() => onView(meal.recipe!.slug)}
+                    onClick={() => onView(meal)}
                     title="Voir la recette"
                     className="flex flex-1 items-center justify-center py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   >
@@ -245,15 +325,15 @@ function MealCell({
                 <button
                   type="button"
                   onClick={() => onNote(meal)}
-                  title={meal.text ? "Modifier la note" : "Ajouter une note"}
+                  title={getMealVisibleNote(meal) ? "Modifier la note" : "Ajouter une note"}
                   className={cn(
                     "flex flex-1 items-center justify-center py-1.5 transition-colors border-l border-border/30",
-                    meal.text
+                    getMealVisibleNote(meal)
                       ? "text-primary/70 hover:bg-primary/8 hover:text-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
-                  {meal.text
+                  {getMealVisibleNote(meal)
                     ? <MessageSquare className="h-3.5 w-3.5" />
                     : <MessageSquarePlus className="h-3.5 w-3.5" />
                   }
@@ -362,7 +442,7 @@ export function PlanningPage() {
     goToPrevDay, goToNextDay, goToPrevPeriod, goToNextPeriod, goToToday, goToTodayMobile,
     addMeal, deleteMeal, updateMealNote,
   } = usePlanning()
-
+  const { familySize } = useFamilySize()
   const {
     addRecipes: addRecipesToCart,
     loading: addingToCart,
@@ -372,9 +452,12 @@ export function PlanningPage() {
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
-  const [previewSlug, setPreviewSlug] = useState<string | null>(null)
+  const [previewRecipe, setPreviewRecipe] = useState<{ slug: string; targetServings?: number } | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
   const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
+  const [autoPlanning, setAutoPlanning] = useState(false)
+  const [autoPlanError, setAutoPlanError] = useState<string | null>(null)
+  const [autoPlanInfo, setAutoPlanInfo] = useState<string | null>(null)
   const mobileMenuMealRef = useRef<((data: { meal: MealieMealPlan; y: number } | null) => void) | null>(null)
 
   // ── Mobile touch drag state ──
@@ -392,7 +475,7 @@ export function PlanningPage() {
   useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
 
   const handlePreviewOpenChange = (open: boolean) => {
-    if (!open) setPreviewSlug(null)
+    if (!open) setPreviewRecipe(null)
   }
 
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
@@ -402,7 +485,12 @@ export function PlanningPage() {
     const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
     const meals = mealPlans
       .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.slug && m.recipe?.name)
-      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
+      .map((m) => {
+        const selected = getMealServings(m)
+        const base = parseServings(m.recipe?.recipeYield)
+        const servingsRatio = selected && base && base > 0 ? selected / base : 1
+        return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio }
+      })
     await addRecipesToCart(meals)
   }
 
@@ -441,26 +529,82 @@ export function PlanningPage() {
     setPickerOpen(true)
   }
 
+  const handleAutoPlan = async () => {
+    setAutoPlanning(true)
+    setAutoPlanError(null)
+    setAutoPlanInfo(null)
+
+    try {
+      const emptySlots = days.flatMap((date) => {
+        const dateStr = formatDate(date)
+        return MEAL_TYPES
+          .filter(({ key }) => getMeals(date, key).length === 0)
+          .map(({ key }) => ({ date: dateStr, entryType: key }))
+      })
+
+      if (emptySlots.length === 0) {
+        setAutoPlanInfo("Aucun créneau vide sur la période affichée.")
+        return
+      }
+
+      const recipes = await fetchAllRecipes()
+      const plannedMeals = generateBalancedMealPlan(recipes, mealPlans, emptySlots)
+
+      if (plannedMeals.length === 0) {
+        setAutoPlanError("Aucune recette avec données nutritionnelles suffisantes n'a été trouvée pour générer un planning équilibré.")
+        return
+      }
+
+      for (const plannedMeal of plannedMeals) {
+        const created = await addMeal(plannedMeal.slot.date, plannedMeal.slot.entryType, plannedMeal.recipe.id)
+        const initialServings = getInitialServingsForNewMeal(plannedMeal.recipe, familySize)
+        if (initialServings) {
+          await updateMealNote(created, encodeServingsInText(initialServings, getMealVisibleNote(created)))
+        }
+      }
+
+      setAutoPlanInfo(`${plannedMeals.length} repas équilibrés ont été ajoutés automatiquement sur la période affichée.`)
+    } catch (e) {
+      setAutoPlanError(e instanceof Error ? e.message : "Erreur lors de la planification automatique")
+    } finally {
+      setAutoPlanning(false)
+    }
+  }
+
   const handleRecipeSelect = async (recipe: MealieRecipe) => {
     if (!pendingSlot) return
-    await addMeal(pendingSlot.date, pendingSlot.entryType, recipe.id)
+    const created = await addMeal(pendingSlot.date, pendingSlot.entryType, recipe.id)
+    const initialServings = getInitialServingsForNewMeal(recipe, familySize)
+    if (initialServings) {
+      await updateMealNote(created, encodeServingsInText(initialServings, getMealVisibleNote(created)))
+    }
     setPendingSlot(null)
   }
 
   const handleOpenNote = (meal: MealieMealPlan) => {
-    setNoteDialog({ meal, value: meal.text ?? "" })
+    setNoteDialog({ meal, value: getMealVisibleNote(meal) })
   }
 
   const handleSaveNote = async () => {
     if (!noteDialog) return
-    await updateMealNote(noteDialog.meal.id, noteDialog.value)
+    const servings = getMealServings(noteDialog.meal)
+    await updateMealNote(noteDialog.meal, encodeServingsInText(servings, noteDialog.value))
     setNoteDialog(null)
   }
 
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
     if (!meal.recipe) return
-    await addMeal(formatDate(date), entryType, meal.recipe.id)
+    const newMeal = await addMeal(formatDate(date), entryType, meal.recipe.id)
+    const servings = getMealServings(meal)
+    if (servings) {
+      await updateMealNote(newMeal, encodeServingsInText(servings, getMealVisibleNote(newMeal)))
+    }
   }
+
+  const handleServingsChange = useCallback(async (meal: MealieMealPlan, servings: number) => {
+    const cleanNote = getMealVisibleNote(meal)
+    await updateMealNote(meal, encodeServingsInText(servings, cleanNote))
+  }, [updateMealNote])
 
   const handleDrop = useCallback(async (
     draggedMeal: MealieMealPlan,
@@ -472,7 +616,7 @@ export function PlanningPage() {
     await deleteMeal(draggedMeal.id)
     const newMeal = await addMeal(targetDate, targetType, draggedMeal.recipe.id)
     if (draggedMeal.text && newMeal) {
-      await updateMealNote(newMeal.id, draggedMeal.text)
+      await updateMealNote(newMeal, draggedMeal.text)
     }
   }, [deleteMeal, addMeal, updateMealNote])
 
@@ -659,6 +803,57 @@ export function PlanningPage() {
         </div>
       )}
 
+      <div className={cn(
+        "flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border/50 bg-card p-4 shadow-subtle",
+        "md:flex-row md:items-center md:justify-between",
+      )}>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Planification automatique équilibrée
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Remplit les créneaux vides de la période affichée avec des recettes ayant des données nutritionnelles,
+            en visant un équilibre repas adulte standard et en limitant les répétitions récentes.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          onClick={() => void handleAutoPlan()}
+          disabled={loading || autoPlanning}
+          className="gap-2 self-start md:self-auto"
+        >
+          {autoPlanning ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          Auto-planifier
+        </Button>
+      </div>
+
+      {autoPlanError && (
+        <div className={cn(
+          "flex items-center gap-3 rounded-[var(--radius-xl)]",
+          "border border-destructive/20 bg-destructive/8 p-4 text-destructive",
+        )}>
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span className="text-sm">{autoPlanError}</span>
+        </div>
+      )}
+
+      {autoPlanInfo && !autoPlanError && (
+        <div className={cn(
+          "flex items-center gap-3 rounded-[var(--radius-xl)]",
+          "border border-[oklch(0.82_0.08_150)] bg-[oklch(0.97_0.03_150)] p-4 text-[oklch(0.38_0.10_145)]",
+          "dark:border-[oklch(0.33_0.06_150)] dark:bg-[oklch(0.22_0.03_150)] dark:text-[oklch(0.76_0.10_145)]",
+        )}>
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          <span className="text-sm">{autoPlanInfo}</span>
+        </div>
+      )}
+
       {!loading && !error && (
         <>
           {/* ── Vue mobile : cartes verticales ── */}
@@ -781,7 +976,15 @@ export function PlanningPage() {
                           date={dateStr}
                           entryType={key}
                           onDrop={handleDrop}
-                          onView={setPreviewSlug}
+                          onView={(meal) => {
+                            const slug = meal.recipe?.slug
+                            if (!slug) return
+                            setPreviewRecipe({
+                              slug,
+                              targetServings: getMealServings(meal),
+                            })
+                          }}
+                          onServingsChange={(meal, servings) => void handleServingsChange(meal, servings)}
                         />
                       )
                     })}
@@ -853,7 +1056,15 @@ export function PlanningPage() {
                 {mobileMenuMeal.meal.recipe?.slug && (
                   <button
                     type="button"
-                    onClick={() => { setPreviewSlug(mobileMenuMeal.meal.recipe!.slug); setMobileMenuMeal(null) }}
+                    onClick={() => {
+                      const slug = mobileMenuMeal.meal.recipe?.slug
+                      if (!slug) return
+                      setPreviewRecipe({
+                        slug,
+                        targetServings: getMealServings(mobileMenuMeal.meal),
+                      })
+                      setMobileMenuMeal(null)
+                    }}
                     className="flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-secondary transition-colors"
                   >
                     <Eye className="h-4 w-4 text-muted-foreground" />
@@ -865,11 +1076,11 @@ export function PlanningPage() {
                   onClick={() => { handleOpenNote(mobileMenuMeal.meal); setMobileMenuMeal(null) }}
                   className="flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-secondary transition-colors"
                 >
-                  {mobileMenuMeal.meal.text
+                  {getMealVisibleNote(mobileMenuMeal.meal)
                     ? <MessageSquare className="h-4 w-4 text-primary/70" />
                     : <MessageSquarePlus className="h-4 w-4 text-muted-foreground" />
                   }
-                  {mobileMenuMeal.meal.text ? "Modifier la note" : "Ajouter une note"}
+                  {getMealVisibleNote(mobileMenuMeal.meal) ? "Modifier la note" : "Ajouter une note"}
                 </button>
                 <button
                   type="button"
@@ -933,7 +1144,8 @@ export function PlanningPage() {
       />
 
       <RecipeDetailModal
-        slug={previewSlug}
+        slug={previewRecipe?.slug ?? null}
+        targetServings={previewRecipe?.targetServings}
         onOpenChange={handlePreviewOpenChange}
       />
     </div>
