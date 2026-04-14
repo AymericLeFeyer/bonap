@@ -1172,7 +1172,7 @@ app.get('/search', async (req, res) => {
       const details = detailsList[i]
       return {
         name: item.name,
-        imageUrl: item.imageUrl,
+        imageUrl: details?.imageUrl || item.imageUrl,
         marmitonUrl: item.marmitonUrl,
         ingredients: details?.ingredients ?? [],
         steps: details?.steps ?? [],

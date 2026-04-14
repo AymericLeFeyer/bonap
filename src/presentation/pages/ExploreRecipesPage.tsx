@@ -10,7 +10,7 @@ import { createRecipeUseCase } from "../../infrastructure/container.ts"
 import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
 import { llmChat } from "../../infrastructure/llm/LLMService.ts"
 import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
-import type { RecipeFormIngredient } from "../../shared/types/mealie.ts"
+import type { RecipeFormIngredient, MealieRecipe } from "../../shared/types/mealie.ts"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,14 +36,178 @@ type ImportStatus =
 function resolveRecipeImageUrl(imageUrl: string, pageUrl?: string): string {
   const src = (imageUrl ?? '').trim()
   if (!src) return ''
-  if (/^https?:\/\//i.test(src)) return src
+  if (/^https?:\/\//i.test(src)) {
+    return normalizeMarmitonImageUrl(src)
+  }
   if (src.startsWith('//')) return `https:${src}`
   if (!pageUrl) return src
   try {
-    return new URL(src, pageUrl).toString()
+    return normalizeMarmitonImageUrl(new URL(src, pageUrl).toString())
   } catch {
     return src
   }
+}
+
+function normalizeMarmitonImageUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (!/assets\.afcdn\.com$/i.test(parsed.hostname)) return url
+
+    // Old Marmiton/AFCDN variants like "_origincxt...jpg" are often dead.
+    // Rewriting to the stable "_origin.jpg" fixes most 404s.
+    parsed.pathname = parsed.pathname.replace(
+      /(\/\d+)_originc[^/.]*(\.(?:jpe?g|png|webp))?$/i,
+      (_m, id, ext) => `${id}_origin${ext || '.jpg'}`,
+    )
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
+function buildMarmitonProxyImageUrl(imageUrl: string, pageUrl?: string): string {
+  const normalized = resolveRecipeImageUrl(imageUrl, pageUrl)
+  if (!normalized) return ''
+  const base = `${getIngressBasename()}/api/marmiton`
+  return `${base}/image?url=${encodeURIComponent(normalized)}`
+}
+
+function inferImageExtension(contentType: string): string {
+  const type = contentType.split(';')[0].trim().toLowerCase()
+  switch (type) {
+    case 'image/jpeg':
+      return 'jpg'
+    case 'image/png':
+      return 'png'
+    case 'image/webp':
+      return 'webp'
+    case 'image/avif':
+      return 'avif'
+    case 'image/gif':
+      return 'gif'
+    default:
+      return 'jpg'
+  }
+}
+
+function normalizeRecipeName(name: string): string {
+  return (name ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+async function findExistingRecipeByName(name: string): Promise<MealieRecipe | null> {
+  const query = name.trim()
+  if (!query) return null
+  const normalizedTarget = normalizeRecipeName(query)
+  const data = await mealieApiClient.get<{ items: MealieRecipe[] }>(
+    `/api/recipes?search=${encodeURIComponent(query)}&page=1&perPage=24`,
+  )
+  const exact = (data.items ?? []).find((item) => normalizeRecipeName(item.name) === normalizedTarget)
+  return exact ?? null
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function buildMarmitonImageCandidates(imageUrl: string, pageUrl?: string): string[] {
+  const first = resolveRecipeImageUrl(imageUrl, pageUrl)
+  if (!first) return []
+
+  const candidates = [first]
+  // Some AFCDN variants are flaky; keep an explicit origin fallback.
+  const originFallback = first.replace(
+    /(\/\d+)_w\d+h\d+c[^/.]*(\.(?:jpe?g|png|webp))$/i,
+    (_m, id, ext) => `${id}_origin${ext || '.jpg'}`,
+  )
+  if (originFallback !== first) candidates.push(originFallback)
+
+  return Array.from(new Set(candidates))
+}
+
+async function fetchMarmitonImageBlob(imageUrl: string, pageUrl?: string): Promise<Blob> {
+  const candidates = buildMarmitonImageCandidates(imageUrl, pageUrl)
+  if (!candidates.length) throw new Error('Aucune URL d\'image')
+
+  let lastError: Error | null = null
+  for (const candidate of candidates) {
+    const proxyImageUrl = buildMarmitonProxyImageUrl(candidate)
+    if (!proxyImageUrl) continue
+    try {
+      const imgRes = await fetch(proxyImageUrl)
+      if (!imgRes.ok) {
+        lastError = new Error(`Téléchargement image impossible (${imgRes.status})`)
+        continue
+      }
+      const blob = await imgRes.blob()
+      if (!blob.size) {
+        lastError = new Error('Image vide')
+        continue
+      }
+      return blob
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error('Erreur image')
+    }
+  }
+
+  throw lastError ?? new Error('Impossible de télécharger l\'image')
+}
+
+async function uploadImageWithRetry(slug: string, file: File): Promise<void> {
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await mealieApiClient.uploadImage(slug, file)
+      // Ensure image is actually attached before considering success.
+      const refreshed = await mealieApiClient.get<MealieRecipe>(`/api/recipes/${slug}`)
+      if (refreshed.image) return
+      throw new Error('Image non attachée après upload')
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error('Erreur upload image')
+      if (attempt < 3) {
+        await sleep(300 * attempt)
+      }
+    }
+  }
+  throw lastError ?? new Error('Upload image impossible')
+}
+
+async function uploadRecipeImageFromMarmiton(slug: string, imageUrl: string, pageUrl?: string): Promise<void> {
+  const blob = await fetchMarmitonImageBlob(imageUrl, pageUrl)
+
+  const ext = inferImageExtension(blob.type || 'image/jpeg')
+  const mime = blob.type?.startsWith('image/') ? blob.type : (ext === 'jpg' ? 'image/jpeg' : `image/${ext}`)
+  const file = new File([blob], `recipe.${ext}`, { type: mime })
+  await uploadImageWithRetry(slug, file)
+}
+
+async function uploadRecipeImageWithFallback(slug: string, recipe: ExternalRecipe): Promise<void> {
+  const firstImage = (recipe.imageUrl ?? '').trim()
+  if (firstImage) {
+    try {
+      await uploadRecipeImageFromMarmiton(slug, firstImage, recipe.marmitonUrl)
+      return
+    } catch {
+      // Fallback below: refresh from recipe page data.
+    }
+  }
+
+  if (!recipe.marmitonUrl) {
+    throw new Error('Aucune URL Marmiton disponible pour récupérer l\'image')
+  }
+
+  const refreshed = await fetchAndParseRecipeUrl(recipe.marmitonUrl)
+  if (!refreshed.imageUrl) {
+    throw new Error('Image introuvable depuis la page recette')
+  }
+
+  await uploadRecipeImageFromMarmiton(slug, refreshed.imageUrl, recipe.marmitonUrl)
 }
 
 function decodeHtmlEntities(input: string): string {
@@ -286,14 +450,32 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
 function UrlImportCard() {
   const [urlInput, setUrlInput] = useState('')
   const [status, setStatus] = useState<ImportStatus>({ state: 'idle' })
+  const [imageWarning, setImageWarning] = useState<string | null>(null)
 
   const handleImportUrl = async () => {
     const url = urlInput.trim()
     if (!url) return
     setStatus({ state: 'loading' })
+    setImageWarning(null)
     try {
       const recipe = await fetchAndParseRecipeUrl(url)
       if (!recipe.name) throw new Error('Impossible de détecter le nom de la recette.')
+
+      const existing = await findExistingRecipeByName(recipe.name)
+      if (existing) {
+        if (recipe.imageUrl) {
+          try {
+            await uploadRecipeImageWithFallback(existing.slug, recipe)
+            setImageWarning('Recette déjà présente: image mise à jour sur la recette existante.')
+          } catch {
+            setImageWarning('Recette déjà présente. Impossible de mettre à jour son image automatiquement.')
+          }
+        } else {
+          setImageWarning('Recette déjà présente dans Mealie.')
+        }
+        setStatus({ state: 'ok', slug: existing.slug })
+        return
+      }
 
       const created = await createRecipeUseCase.execute({
         name: recipe.name,
@@ -311,20 +493,10 @@ function UrlImportCard() {
 
       if (recipe.imageUrl) {
         try {
-          const normalizedImageUrl = resolveRecipeImageUrl(recipe.imageUrl, recipe.marmitonUrl)
-          if (!normalizedImageUrl) {
-            setStatus({ state: 'ok', slug: created.slug })
-            return
-          }
-          const base = `${getIngressBasename()}/api/marmiton`
-          const imgRes = await fetch(`${base}/image?url=${encodeURIComponent(normalizedImageUrl)}`)
-          if (imgRes.ok) {
-            const blob = await imgRes.blob()
-            const ext = normalizedImageUrl.split('.').pop()?.split('?')[0] ?? 'jpg'
-            const file = new File([blob], `recipe.${ext}`, { type: blob.type || 'image/jpeg' })
-            await mealieApiClient.uploadImage(created.slug, file)
-          }
-        } catch (_) { /* non critique */ }
+          await uploadRecipeImageWithFallback(created.slug, recipe)
+        } catch {
+          setImageWarning('Recette importée, mais image non ajoutée automatiquement.')
+        }
       }
 
       setStatus({ state: 'ok', slug: created.slug })
@@ -391,6 +563,12 @@ function UrlImportCard() {
           {status.message}
         </p>
       )}
+      {imageWarning && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          {imageWarning}
+        </p>
+      )}
     </div>
   )
 }
@@ -411,11 +589,29 @@ async function searchMarmiton(query: string, page: number): Promise<{ results: E
 
 function RecipeCard({ recipe }: { recipe: ExternalRecipe }) {
   const [status, setStatus] = useState<ImportStatus>({ state: 'idle' })
-  const normalizedImageUrl = resolveRecipeImageUrl(recipe.imageUrl, recipe.marmitonUrl)
+  const [imageWarning, setImageWarning] = useState<string | null>(null)
+  const proxyImageUrl = buildMarmitonProxyImageUrl(recipe.imageUrl, recipe.marmitonUrl)
 
   const handleImport = async () => {
     setStatus({ state: 'loading' })
+    setImageWarning(null)
     try {
+      const existing = await findExistingRecipeByName(recipe.name)
+      if (existing) {
+        if (recipe.imageUrl) {
+          try {
+            await uploadRecipeImageWithFallback(existing.slug, recipe)
+            setImageWarning('Recette déjà présente: image mise à jour sur la recette existante.')
+          } catch {
+            setImageWarning('Recette déjà présente. Impossible de mettre à jour son image automatiquement.')
+          }
+        } else {
+          setImageWarning('Recette déjà présente dans Mealie.')
+        }
+        setStatus({ state: 'ok', slug: existing.slug })
+        return
+      }
+
       const created = await createRecipeUseCase.execute({
         name: recipe.name,
         description: recipe.tags.join(', '),
@@ -432,17 +628,12 @@ function RecipeCard({ recipe }: { recipe: ExternalRecipe }) {
       const slug = created.slug
 
       // Upload image via le proxy Marmiton (évite les restrictions CORS)
-      if (normalizedImageUrl) {
+      if (recipe.imageUrl) {
         try {
-          const base = `${getIngressBasename()}/api/marmiton`
-          const imgRes = await fetch(`${base}/image?url=${encodeURIComponent(normalizedImageUrl)}`)
-          if (imgRes.ok) {
-            const blob = await imgRes.blob()
-            const ext = normalizedImageUrl.split('.').pop()?.split('?')[0] ?? 'jpg'
-            const file = new File([blob], `recipe.${ext}`, { type: blob.type || 'image/jpeg' })
-            await mealieApiClient.uploadImage(slug, file)
-          }
-        } catch (_) { /* l'image n'est pas critique */ }
+          await uploadRecipeImageWithFallback(slug, recipe)
+        } catch {
+          setImageWarning('Recette ajoutée, mais image non importée.')
+        }
       }
 
       setStatus({ state: 'ok', slug })
@@ -454,10 +645,10 @@ function RecipeCard({ recipe }: { recipe: ExternalRecipe }) {
   return (
     <div className="flex flex-col rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle overflow-hidden">
       {/* Image */}
-      {normalizedImageUrl ? (
+      {proxyImageUrl ? (
         <div className="relative h-44 shrink-0 bg-secondary">
           <img
-            src={normalizedImageUrl}
+            src={proxyImageUrl}
             alt={recipe.name}
             className="h-full w-full object-cover"
             loading="lazy"
@@ -563,6 +754,12 @@ function RecipeCard({ recipe }: { recipe: ExternalRecipe }) {
                 Réessayer
               </Button>
             </div>
+          )}
+          {imageWarning && status.state !== 'error' && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              {imageWarning}
+            </p>
           )}
         </div>
       </div>
