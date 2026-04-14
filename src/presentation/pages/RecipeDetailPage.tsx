@@ -677,11 +677,11 @@ export function RecipeDetailPage() {
                   value={formData.recipeYield ?? ""}
                   displayValue={
                     <span className="text-sm text-muted-foreground">
-                      Portions : {formData.recipeYield || "—"}
+                      Portions : {formData.recipeYield || "—"}
                     </span>
                   }
                   onChange={(v) => patch({ recipeYield: v || undefined })}
-                  placeholder="ex : 4 personnes"
+                  placeholder="ex : 4 personnes"
                   disabled={saving}
                 />
               </div>

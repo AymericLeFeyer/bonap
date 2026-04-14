@@ -1,15 +1,21 @@
 // Fixtures de données Mealie réalistes pour les tests E2E
 
-/** Retourne la date ISO (YYYY-MM-DD) du lundi de la semaine courante + offset en jours. */
-function currentWeekDate(offsetFromMonday: number): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dow = today.getDay() // 0=dim, 1=lun, ..., 6=sam
-  const diffToMonday = dow === 0 ? -6 : 1 - dow
-  const d = new Date(today)
-  d.setDate(today.getDate() + diffToMonday + offsetFromMonday)
-  return d.toISOString().split("T")[0]
+function toDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
 }
+
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+const TODAY = new Date()
+const TODAY_STR = toDateStr(TODAY)
+const TOMORROW_STR = toDateStr(addDays(TODAY, 1))
 
 export const RECIPE_PIZZA = {
   id: "abc123",
@@ -115,7 +121,7 @@ export const MEALPLANS_RESPONSE = {
   items: [
     {
       id: 1,
-      date: currentWeekDate(0), // lundi
+      date: TODAY_STR,
       entryType: "dinner",
       title: null,
       recipeId: "abc123",
@@ -128,7 +134,7 @@ export const MEALPLANS_RESPONSE = {
     },
     {
       id: 2,
-      date: currentWeekDate(1), // mardi
+      date: TOMORROW_STR,
       entryType: "lunch",
       title: null,
       recipeId: "def456",
