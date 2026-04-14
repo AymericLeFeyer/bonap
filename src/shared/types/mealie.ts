@@ -91,6 +91,7 @@ export interface RecipeFormData {
   prepTime: string
   performTime: string
   totalTime: string
+  recipeYield?: string
   imageFile?: File
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
@@ -111,6 +112,7 @@ export interface MealieRecipe {
   prepTime?: string
   performTime?: string
   totalTime?: string
+  recipeYield?: string
   recipeIngredient?: MealieIngredient[]
   recipeInstructions?: MealieInstruction[]
   extras?: Record<string, string>
