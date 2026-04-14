@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, ExternalLink, Settings, Sparkles } from "lucide-react"
+import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, ExternalLink, Settings, Sparkles, Globe } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
 import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
@@ -13,6 +13,7 @@ const navItems = [
   ...(isAIEnabled
     ? [{ to: "/suggestions", label: "Suggestions IA", icon: Sparkles }]
     : []),
+  { to: "/explore", label: "Explorer", icon: Globe },
   { to: "/stats", label: "Statistiques", icon: BarChart2 },
 ]
 
