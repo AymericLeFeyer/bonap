@@ -25,11 +25,18 @@ window.__ENV__ = {
 };
 EOF
 
-# Retirer le slash final si présent
+# Retirer les slash finaux si présents
 VITE_MEALIE_URL="${VITE_MEALIE_URL%/}"
+LLM_OLLAMA_URL="${LLM_OLLAMA_URL%/}"
 export VITE_MEALIE_URL
+export LLM_OLLAMA_URL
 
 # Substituer les variables dans la config nginx
-envsubst '${VITE_MEALIE_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+envsubst '${VITE_MEALIE_URL} ${LLM_OLLAMA_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+
+# Démarrer le proxy Marmiton en arrière-plan (hors addon HA)
+if command -v node >/dev/null 2>&1 && [ -f /proxy/marmiton-proxy.cjs ]; then
+  OLLAMA_URL="${LLM_OLLAMA_URL}" OLLAMA_MODEL="${LLM_MODEL:-}" node /proxy/marmiton-proxy.cjs &
+fi
 
 exec nginx -g "daemon off;"
