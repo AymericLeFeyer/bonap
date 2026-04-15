@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Users, Minus, Plus, Sliders } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
