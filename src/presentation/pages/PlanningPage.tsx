@@ -83,12 +83,19 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
             )}
           >
             {meal.recipe ? (
-              <img
-                src={recipeImageUrl(meal.recipe, "min-original")}
-                alt={meal.recipe.name ?? "Repas"}
-                draggable={false}
-                className="w-full aspect-square object-cover pointer-events-none"
-              />
+              <div className="relative w-full aspect-square">
+                <img
+                  src={recipeImageUrl(meal.recipe, "min-original")}
+                  alt={meal.recipe.name ?? "Repas"}
+                  draggable={false}
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4">
+                  <span className="block text-[11px] font-semibold text-white leading-tight line-clamp-2">
+                    {meal.recipe.name}
+                  </span>
+                </div>
+              </div>
             ) : (
               <div className="w-full aspect-square bg-secondary flex items-center justify-center">
                 <span className="text-[11px] text-muted-foreground font-medium px-2 text-center">
