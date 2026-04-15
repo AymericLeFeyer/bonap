@@ -657,7 +657,7 @@ export function PlanningPage() {
 
   const getLastMeals = (date: Date, type: string, count: number): MealieMealPlan[] => {
     const result: MealieMealPlan[] = []
-    const seenIds = new Set<string>()
+    const seenKeys = new Set<string>()
     let currentDate = date
     let currentType = type
     for (let i = 0; i < count * 8 && result.length < count; i++) {
@@ -670,8 +670,9 @@ export function PlanningPage() {
       const key = formatDate(currentDate)
       const slots = mealPlans.filter((m) => m.date === key && m.entryType === currentType)
       for (const meal of slots) {
-        if (meal.recipe && !seenIds.has(meal.recipe.id)) {
-          seenIds.add(meal.recipe.id)
+        const uniqueKey = meal.recipe?.id ?? meal.title ?? ""
+        if (uniqueKey && !seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey)
           result.push(meal)
           if (result.length >= count) break
         }
@@ -749,8 +750,9 @@ export function PlanningPage() {
   }
 
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
-    if (!meal.recipe) return
-    const newMeal = await addMeal(formatDate(date), entryType, meal.recipe.id)
+    const newMeal = meal.recipe
+      ? await addMeal(formatDate(date), entryType, meal.recipe.id)
+      : await addMeal(formatDate(date), entryType, undefined, meal.title)
     const servings = getMealServings(meal)
     if (servings) {
       await updateMealNote(newMeal, encodeServingsInText(servings, getMealVisibleNote(newMeal)))

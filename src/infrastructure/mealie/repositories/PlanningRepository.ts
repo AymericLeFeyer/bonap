@@ -19,7 +19,8 @@ export class PlanningRepository implements IPlanningRepository {
   async addMeal(entry: {
     date: string
     entryType: string
-    recipeId: string
+    recipeId?: string
+    title?: string
   }): Promise<MealieMealPlan> {
     return mealieApiClient.post<MealieMealPlan>(
       "/api/households/mealplans",
