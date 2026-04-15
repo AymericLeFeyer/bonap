@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button.tsx"
 import { cn } from "../../lib/utils.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
+import { MarkdownContent } from "./MarkdownContent.tsx"
 
 interface CookingModeProps {
   recipeName: string
@@ -171,7 +172,9 @@ function InstructionScreen({
       {instruction.title && (
         <h3 className="font-heading text-2xl font-semibold">{instruction.title}</h3>
       )}
-      <p className="text-2xl leading-relaxed text-foreground">{instruction.text}</p>
+      <MarkdownContent className="text-2xl leading-relaxed text-foreground [&_p]:leading-relaxed [&_ul]:ml-6 [&_ol]:ml-6">
+        {instruction.text ?? ""}
+      </MarkdownContent>
     </div>
   )
 }
