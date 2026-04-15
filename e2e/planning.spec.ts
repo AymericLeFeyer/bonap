@@ -29,12 +29,12 @@ test.describe("Planning", () => {
 
     test("affiche les repas du planning (vue desktop)", async ({ page }) => {
       await page.goto("/planning")
-      await expect(page.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+      await expect(page.locator("table").getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
     })
 
     test("affiche les labels Déjeuner et Dîner (vue desktop)", async ({ page }) => {
       await page.goto("/planning")
-      await expect(page.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+      await expect(page.locator("table").getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
       // Cibler le tableau desktop (hidden md:block)
       await expect(page.locator("table").getByText(/déjeuner/i)).toBeVisible()
       await expect(page.locator("table").getByText(/dîner/i)).toBeVisible()
@@ -56,7 +56,7 @@ test.describe("Planning", () => {
   test.describe("Ajout d'un repas", () => {
     test("cliquer sur + ouvre le sélecteur de recette", async ({ page }) => {
       await page.goto("/planning")
-      await expect(page.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+      await expect(page.locator("table").getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
 
       // Utiliser l'aria-label ajouté aux boutons d'ajout de repas
       await page.getByRole("button", { name: "Ajouter un repas" }).first().click()
@@ -89,7 +89,7 @@ test.describe("Planning", () => {
       })
 
       await page.goto("/planning")
-      await expect(page.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+      await expect(page.locator("table").getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
 
       await page.getByRole("button", { name: "Ajouter un repas" }).first().click()
 
@@ -120,7 +120,7 @@ test.describe("Planning", () => {
       })
 
       await page.goto("/planning")
-      await expect(page.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+      await expect(page.locator("table").getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
 
       const deleteButtons = page.locator("button[title='Supprimer du planning']")
       await deleteButtons.first().click()

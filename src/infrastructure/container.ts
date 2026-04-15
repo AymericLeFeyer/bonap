@@ -30,8 +30,10 @@ import { GetRecipeUseCase } from "../application/recipe/usecases/GetRecipeUseCas
 import { GetRecipesByIdsUseCase } from "../application/recipe/usecases/GetRecipesByIdsUseCase.ts"
 import { CreateRecipeUseCase } from "../application/recipe/usecases/CreateRecipeUseCase.ts"
 import { UpdateRecipeUseCase } from "../application/recipe/usecases/UpdateRecipeUseCase.ts"
+import { DeleteRecipeUseCase } from "../application/recipe/usecases/DeleteRecipeUseCase.ts"
 import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeasonsUseCase.ts"
 import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
+import { UpdateNutritionUseCase } from "../application/recipe/usecases/UpdateNutritionUseCase.ts"
 import { UpdateCategoriesUseCase } from "../application/recipe/usecases/UpdateCategoriesUseCase.ts"
 import { FetchAiImageUseCase } from "../application/recipe/usecases/FetchAiImageUseCase.ts"
 
@@ -95,7 +97,9 @@ export const updateRecipeUseCase = new UpdateRecipeUseCase(
 )
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
 export const updateCalorieTagUseCase = new UpdateCalorieTagUseCase(recipeRepository)
+export const updateNutritionUseCase = new UpdateNutritionUseCase(recipeRepository)
 export const updateCategoriesUseCase = new UpdateCategoriesUseCase(recipeRepository)
+export const deleteRecipeUseCase = new DeleteRecipeUseCase(recipeRepository)
 export const fetchAiImageUseCase = new FetchAiImageUseCase()
 
 // --- Singleton use case instances — User ---

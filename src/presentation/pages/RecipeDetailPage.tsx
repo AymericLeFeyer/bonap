@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom"
+import { Link, useParams, useNavigate } from "react-router-dom"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
@@ -44,12 +44,16 @@ import type {
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
+import { parseServings } from "../../shared/utils/servings.ts"
 import { cn } from "../../lib/utils.ts"
 import { MarkdownContent } from "../components/MarkdownContent.tsx"
 
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
 import { useGetFavorites } from "../../presentation/hooks/useGetFavorites"
 import { useToggleFavorite } from "../../presentation/hooks/useToggleFavorite"
+import { useDeleteRecipe } from "../hooks/useDeleteRecipe.ts"
+import { useUpdateNutrition } from "../hooks/useUpdateNutrition.ts"
+import { estimateRecipeNutrition, type NutritionEstimateResult } from "../../infrastructure/nutrition/estimateRecipeNutrition.ts"
 
 function buildFormData(recipe: MealieRecipe): RecipeFormData {
   const structured =
@@ -90,6 +94,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
     tags: (recipe.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
+    recipeYield: recipe.recipeYield ?? "",
   }
 }
 
@@ -132,7 +137,11 @@ export function RecipeDetailPage() {
   const { units } = useUnits()
   const { updateRecipe, loading: saving, error: saveError } = useRecipeForm()
   const { fetchAiImage } = useAiImage()
+  const { deleteRecipe, deleting } = useDeleteRecipe()
+  const { updateNutrition, loading: nutritionSaving, error: nutritionSaveError } = useUpdateNutrition()
+  const navigate = useNavigate()
   const [aiProvider, setAiProvider] = useState<ImageProvider>("wikipedia-en")
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   // ─── Local editable state (initialized from recipe) ────────────────────────
 
@@ -140,7 +149,19 @@ export function RecipeDetailPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
+  const [nutritionLoading, setNutritionLoading] = useState(false)
+  const [nutritionError, setNutritionError] = useState<string | null>(null)
+  const [nutritionInfo, setNutritionInfo] = useState<string | null>(null)
+  const [nutritionEstimate, setNutritionEstimate] = useState<NutritionEstimateResult | null>(null)
+  const [nutritionMatchHints, setNutritionMatchHints] = useState<Record<string, string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDelete = async () => {
+    if (!recipe) return
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    const ok = await deleteRecipe(recipe.slug)
+    if (ok) navigate('/recipes')
+  }
   const { getFavorites } = useGetFavorites()
   const [ratings, setRatings] = useState<MealieRatings[]>([])
   // Initialise formData once recipe is loaded
@@ -183,6 +204,77 @@ export function RecipeDetailPage() {
     const mealieUrl = await fetchAiImage(recipe.name, recipe.slug, recipe.id, aiProvider)
     if (mealieUrl) setImagePreview(mealieUrl)
   }
+
+  const handleEstimateNutrition = async () => {
+    if (!recipe || !formData) return
+    setNutritionLoading(true)
+    setNutritionError(null)
+    setNutritionInfo(null)
+    setNutritionEstimate(null)
+
+    try {
+      const activeIngredients = formData.recipeIngredient.filter(
+        (ing) => ing.food.trim() || ing.note.trim(),
+      )
+
+      if (activeIngredients.length === 0) {
+        setNutritionError("La recette ne contient pas assez d'ingrédients exploitables pour estimer la nutrition.")
+        return
+      }
+
+      const cleanedHints = Object.fromEntries(
+        Object.entries(nutritionMatchHints)
+          .map(([k, v]) => [k.trim(), v.trim()])
+          .filter(([k, v]) => !!k && !!v),
+      )
+
+      const estimate = await estimateRecipeNutrition(activeIngredients, cleanedHints)
+      const updated = await updateNutrition(
+        recipe.slug,
+        estimate.nutrition,
+        estimate.source,
+        estimate.ciqualMappings,
+      )
+
+      if (updated) {
+        setRecipe(updated)
+        setNutritionEstimate(estimate)
+        const matchMessage = `${estimate.matchedCount} ingrédient${estimate.matchedCount > 1 ? 's' : ''} apparié${estimate.matchedCount > 1 ? 's' : ''}`
+        const unmatchedMessage = estimate.unmatchedCount > 0
+          ? `, ${estimate.unmatchedCount} non pris en compte`
+          : ""
+        setNutritionInfo(`${estimate.source} · ${matchMessage}${unmatchedMessage}`)
+
+        const nextHints: Record<string, string> = {}
+        for (const item of estimate.unmatched) {
+          const existing = nutritionMatchHints[item.ingredient]?.trim()
+          if (existing) {
+            nextHints[item.ingredient] = existing
+            continue
+          }
+          const suggestion = item.suggestions?.[0]
+          if (suggestion) nextHints[item.ingredient] = suggestion
+        }
+        setNutritionMatchHints(nextHints)
+      }
+    } catch (e) {
+      setNutritionError(e instanceof Error ? e.message : "Impossible d'estimer la nutrition")
+    } finally {
+      setNutritionLoading(false)
+    }
+  }
+
+  const setNutritionHint = (ingredient: string, value: string) => {
+    setNutritionMatchHints((prev) => ({
+      ...prev,
+      [ingredient]: value,
+    }))
+  }
+
+  const hasUsableHints = nutritionEstimate?.unmatched?.some((item) => {
+    const value = nutritionMatchHints[item.ingredient]
+    return typeof value === "string" && value.trim().length > 0
+  })
 
   // ─── Categories, Seasons, stars and favorites (saved immediately, no dirty needed) ─────────────
 
@@ -334,6 +426,8 @@ export function RecipeDetailPage() {
           recipeName={recipe.name}
           ingredients={recipe.recipeIngredient ?? []}
           instructions={recipe.recipeInstructions ?? []}
+          baseServings={parseServings(recipe.recipeYield)}
+          targetServings={parseServings(formData.recipeYield)}
           onClose={() => setCookingMode(false)}
         />
       )}
@@ -346,6 +440,24 @@ export function RecipeDetailPage() {
           </Button>
 
           <div className="flex items-center gap-2">
+            {recipe && (
+              <Button
+                variant={confirmDelete ? "destructive" : "ghost"}
+                size="sm"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="gap-1.5"
+                onBlur={() => setConfirmDelete(false)}
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                {confirmDelete ? "Confirmer la suppression" : "Supprimer"}
+              </Button>
+            )}
+
             {recipe && (
               <Button
                 variant="outline"
@@ -561,6 +673,17 @@ export function RecipeDetailPage() {
                   onChange={(v) => patch({ totalTime: v })}
                   disabled={saving}
                 />
+                <InlineEditText
+                  value={formData.recipeYield ?? ""}
+                  displayValue={
+                    <span className="text-sm text-muted-foreground">
+                      Portions : {formData.recipeYield || "—"}
+                    </span>
+                  }
+                  onChange={(v) => patch({ recipeYield: v || undefined })}
+                  placeholder="ex : 4 personnes"
+                  disabled={saving}
+                />
               </div>
 
               {/* Rating + Favorite */}
@@ -605,7 +728,132 @@ export function RecipeDetailPage() {
                 </button>
               </div>
 
-              {/* nutrition / Pas encore editable */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                    Nutrition
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {recipe && (
+                      <Button asChild type="button" variant="secondary" size="sm" className="gap-1.5">
+                        <Link to={`/recipes/${recipe.slug}/nutrition`}>
+                          Compléter via CIQUAL
+                        </Link>
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleEstimateNutrition()}
+                      disabled={nutritionLoading || nutritionSaving || saving}
+                      className="gap-1.5"
+                    >
+                      {nutritionLoading || nutritionSaving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {recipe?.nutrition?.calories ? "Recalculer (CIQUAL)" : "Calculer (CIQUAL)"}
+                    </Button>
+                  </div>
+                </div>
+
+                {(nutritionError || nutritionSaveError) && (
+                  <p className="text-xs text-destructive">
+                    {nutritionError ?? nutritionSaveError}
+                  </p>
+                )}
+
+                {nutritionInfo && (
+                  <p className="text-xs text-muted-foreground">{nutritionInfo}</p>
+                )}
+
+                {nutritionEstimate && (
+                  <div className="space-y-2 rounded-[var(--radius-lg)] border border-border/50 bg-background/70 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-foreground">Détail de l'estimation</p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => void handleEstimateNutrition()}
+                        disabled={!hasUsableHints || nutritionLoading || nutritionSaving || saving}
+                        className="h-7 px-2 text-[11px]"
+                      >
+                        Relancer avec correspondances
+                      </Button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        Ingrédients pris en compte ({nutritionEstimate.matches.length})
+                      </p>
+                      {nutritionEstimate.matches.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Aucun ingrédient n'a pu être utilisé.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {nutritionEstimate.matches.map((item, idx) => (
+                            <div key={`${item.ingredient}-${idx}`} className="rounded-md border border-border/50 bg-secondary/20 px-2 py-1.5 text-xs">
+                              <span className="font-medium text-foreground">{item.ingredient}</span>
+                              <span className="text-muted-foreground">{" -> "}{item.ciqualFood} ({item.amountGrams} g)</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        Ingrédients non pris en compte ({nutritionEstimate.unmatched.length})
+                      </p>
+                      {nutritionEstimate.unmatched.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Tout a été apparié.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {nutritionEstimate.unmatched.map((item, idx) => (
+                            <div key={`${item.ingredient}-${idx}`} className="space-y-1 rounded-md border border-dashed border-border/60 bg-secondary/10 px-2 py-2">
+                              <p className="text-xs text-foreground">
+                                <span className="font-medium">{item.ingredient}</span>
+                                <span className="text-muted-foreground"> - {item.reason}</span>
+                              </p>
+
+                              <Input
+                                value={nutritionMatchHints[item.ingredient] || ""}
+                                onChange={(e) => setNutritionHint(item.ingredient, e.target.value)}
+                                placeholder="Ex: boeuf, tomate en conserve, mais en conserve"
+                                className="h-8 text-xs"
+                              />
+
+                              {item.suggestions && item.suggestions.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {item.suggestions.map((suggestion) => (
+                                    <button
+                                      key={`${item.ingredient}-${suggestion}`}
+                                      type="button"
+                                      onClick={() => setNutritionHint(item.ingredient, suggestion)}
+                                      className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary"
+                                    >
+                                      {suggestion}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {recipe?.extras?.nutritionSource && !nutritionInfo && (
+                  <p className="text-xs text-muted-foreground">
+                    Source : {recipe.extras.nutritionSource}
+                  </p>
+                )}
+              </div>
+
               {recipe?.nutrition?.calories && (
                 <div
                   className={cn(
@@ -613,10 +861,6 @@ export function RecipeDetailPage() {
                     "border border-border/50 bg-secondary/30 p-3.5",
                   )}
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
-                    Nutrition
-                  </p>
-
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant="outline">
                       {recipe.nutrition.calories} kcal

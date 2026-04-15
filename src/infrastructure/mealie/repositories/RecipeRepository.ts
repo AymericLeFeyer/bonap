@@ -9,12 +9,14 @@ import type {
   RecipeFilters,
   RecipeFormData,
   Season,
+  MealieNutrition,
 } from "../../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../../shared/utils/season.ts"
 import { isCalorieTag, buildCalorieTag } from "../../../shared/utils/calorie.ts"
 import { generateId } from "../../../shared/utils/id.ts"
 import { mealieApiClient } from "../api/index.ts"
 import { AuthService } from "../auth/AuthService.ts"
+import { MealieApiError } from "../../../shared/types/errors.ts"
 
 interface MealieTagObject { id?: string; name: string; slug: string }
 
@@ -104,6 +106,51 @@ export class RecipeRepository implements IRecipeRepository {
     return m === 1 ? "1 minute" : `${m} minutes`
   }
 
+  private parseQuantity(value?: string): number {
+    const raw = String(value ?? '').trim()
+    if (!raw) return 0
+    const normalizedFractions = raw
+      .replace(/\u00BC/g, '1/4')
+      .replace(/\u00BD/g, '1/2')
+      .replace(/\u00BE/g, '3/4')
+    // Handle common fractions like 1/2, 1/4, 3/4.
+    const frac = normalizedFractions.match(/^(\d+)\s*\/\s*(\d+)$/)
+    if (frac) {
+      const num = parseFloat(frac[1])
+      const den = parseFloat(frac[2])
+      if (den > 0) return num / den
+    }
+    const normalized = normalizedFractions.replace(',', '.')
+    const n = parseFloat(normalized)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  private normalizeNutritionValue(value?: string): string | undefined {
+    const raw = String(value ?? "").trim()
+    if (!raw) return undefined
+    const match = raw.match(/-?\d+(?:[.,]\d+)?/)
+    if (!match) return undefined
+    const numeric = Number.parseFloat(match[0].replace(',', '.'))
+    if (!Number.isFinite(numeric)) return undefined
+    return `${Math.round(numeric * 10) / 10}`
+  }
+
+  private normalizeNutrition(nutrition: MealieNutrition): MealieNutrition {
+    return {
+      calories: this.normalizeNutritionValue(nutrition.calories),
+      carbohydrateContent: this.normalizeNutritionValue(nutrition.carbohydrateContent),
+      cholesterolContent: this.normalizeNutritionValue(nutrition.cholesterolContent),
+      fatContent: this.normalizeNutritionValue(nutrition.fatContent),
+      fiberContent: this.normalizeNutritionValue(nutrition.fiberContent),
+      proteinContent: this.normalizeNutritionValue(nutrition.proteinContent),
+      saturatedFatContent: this.normalizeNutritionValue(nutrition.saturatedFatContent),
+      sodiumContent: this.normalizeNutritionValue(nutrition.sodiumContent),
+      sugarContent: this.normalizeNutritionValue(nutrition.sugarContent),
+      transFatContent: this.normalizeNutritionValue(nutrition.transFatContent),
+      unsaturatedFatContent: this.normalizeNutritionValue(nutrition.unsaturatedFatContent),
+    }
+  }
+
   async update(slug: string, data: RecipeFormData): Promise<MealieRecipe> {
     const [current, seasonTags] = await Promise.all([
       this.getBySlug(slug),
@@ -117,7 +164,7 @@ export class RecipeRepository implements IRecipeRepository {
           ? current.recipeIngredient?.find((i) => i.referenceId === ing.referenceId)
           : undefined
 
-        const quantity = ing.quantity ? parseFloat(ing.quantity) : 0
+        const quantity = this.parseQuantity(ing.quantity)
         const hasFood = Boolean(ing.foodId)
         const hasUnit = Boolean(ing.unitId)
 
@@ -137,6 +184,7 @@ export class RecipeRepository implements IRecipeRepository {
       prepTime: this.minutesToString(data.prepTime) ?? current.prepTime,
       performTime: this.minutesToString(data.performTime) ?? current.performTime,
       totalTime: this.minutesToString(data.totalTime) ?? current.totalTime,
+      recipeYield: data.recipeYield ?? current.recipeYield,
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c
@@ -179,6 +227,53 @@ export class RecipeRepository implements IRecipeRepository {
     })
   }
 
+  async updateNutrition(
+    slug: string,
+    nutrition: MealieNutrition,
+    source?: string,
+    ciqualMappings?: Record<string, string>,
+  ): Promise<MealieRecipe> {
+    const current = await this.getBySlug(slug)
+    const normalizedNutrition = this.normalizeNutrition(nutrition)
+    const hasCiqualMappings = !!ciqualMappings && Object.keys(ciqualMappings).length > 0
+
+    const extrasPayload: Record<string, string> = {
+      ...(current.extras ?? {}),
+      ...(source ? { nutritionSource: source, nutritionEstimatedAt: new Date().toISOString() } : {}),
+      ...(hasCiqualMappings ? { nutritionCiqualMappings: JSON.stringify(ciqualMappings) } : {}),
+    }
+
+    const payloadWithExtras = {
+      nutrition: normalizedNutrition,
+      extras: extrasPayload,
+    }
+
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, payloadWithExtras)
+    } catch (error) {
+      // Some Mealie versions reject extras patch payloads with 500; retry with nutrition only.
+      if (error instanceof MealieApiError && error.statusCode >= 500) {
+        try {
+          return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
+            nutrition: normalizedNutrition,
+          })
+        } catch (retryError) {
+          // Final fallback: full PUT update (same strategy as recipe editor save),
+          // which is more stable across Mealie versions than PATCH for nested fields.
+          if (retryError instanceof MealieApiError && retryError.statusCode >= 500) {
+            return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+              ...current,
+              nutrition: normalizedNutrition,
+              extras: extrasPayload,
+            })
+          }
+          throw retryError
+        }
+      }
+      throw error
+    }
+  }
+
   async updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe> {
     const current = await this.getBySlug(slug)
 
@@ -218,6 +313,10 @@ export class RecipeRepository implements IRecipeRepository {
       `/api/users/${userId}/favorites`,
     )
     return res
+  }
+
+  async delete(slug: string): Promise<void> {
+    await mealieApiClient.delete(`/api/recipes/${slug}`)
   }
 
   async toggleFavorite(slug: string, isFavorite: boolean): Promise<void> {

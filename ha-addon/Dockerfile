@@ -13,12 +13,23 @@ COPY . .
 
 RUN npm run build
 
-# Stage 2 — Serve with HA base image
+# Stage 2 — Build Marmiton proxy dependencies
+FROM --platform=linux/amd64 node:20-alpine AS marmiton-builder
+
+WORKDIR /proxy
+
+COPY ha-addon/marmiton-package.json package.json
+RUN npm install --production
+
+# Stage 3 — Serve with HA base image
 FROM ${BUILD_FROM}
 
-RUN apk add --no-cache nginx gettext jq
+RUN apk add --no-cache nginx gettext jq nodejs unzip
 
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=marmiton-builder /proxy/node_modules /proxy/node_modules
+
+COPY ha-addon/marmiton-proxy.cjs /proxy/marmiton-proxy.cjs
 
 COPY ha-addon/nginx.conf /etc/nginx/templates/default.conf.template
 

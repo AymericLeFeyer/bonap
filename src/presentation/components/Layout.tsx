@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom"
-import { CalendarDays, ShoppingCart, UtensilsCrossed, Sparkles, BarChart2, Settings } from "lucide-react"
+import { CalendarDays, ShoppingCart, UtensilsCrossed, Sparkles, BarChart2, Settings, Globe } from "lucide-react"
 import { Sidebar } from "./Sidebar.tsx"
 import { AssistantDrawer } from "./AssistantDrawer.tsx"
 import { useSidebar } from "../hooks/useSidebar.ts"
@@ -15,6 +15,7 @@ const mobileNavItems = [
   ...(isAIEnabled
     ? [{ to: "/suggestions", label: "Suggestions IA", icon: Sparkles }]
     : []),
+  { to: "/explore", label: "Explorer", icon: Globe },
   { to: "/stats", label: "Stats", icon: BarChart2 },
   { to: "/settings", label: "Settings", icon: Settings },
 ]

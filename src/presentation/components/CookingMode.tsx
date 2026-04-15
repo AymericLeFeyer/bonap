@@ -4,15 +4,25 @@ import { Button } from "./ui/button.tsx"
 import { cn } from "../../lib/utils.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
 import { MarkdownContent } from "./MarkdownContent.tsx"
+import { formatQuantity } from "../../shared/utils/servings.ts"
 
 interface CookingModeProps {
   recipeName: string
   ingredients: MealieIngredient[]
   instructions: MealieInstruction[]
+  baseServings?: number
+  targetServings?: number
   onClose: () => void
 }
 
-export function CookingMode({ recipeName, ingredients, instructions, onClose }: CookingModeProps) {
+export function CookingMode({
+  recipeName,
+  ingredients,
+  instructions,
+  baseServings,
+  targetServings,
+  onClose,
+}: CookingModeProps) {
   // step -1 = ingrédients, 0..N-1 = instructions
   const [step, setStep] = useState(-1)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
@@ -20,6 +30,9 @@ export function CookingMode({ recipeName, ingredients, instructions, onClose }: 
   const totalSteps = instructions.length
   const isIngredients = step === -1
   const isLast = step === totalSteps - 1
+  const safeBase = baseServings && baseServings > 0 ? baseServings : undefined
+  const safeTarget = targetServings && targetServings > 0 ? targetServings : safeBase
+  const servingsRatio = safeBase && safeTarget ? safeTarget / safeBase : 1
 
   // Wake lock
   useEffect(() => {
@@ -77,7 +90,12 @@ export function CookingMode({ recipeName, ingredients, instructions, onClose }: 
       <div className="flex-1 overflow-y-auto px-6 py-8">
         <div className="mx-auto max-w-xl">
           {isIngredients ? (
-            <IngredientsScreen ingredients={ingredients} />
+            <IngredientsScreen
+              ingredients={ingredients}
+              baseServings={safeBase}
+              targetServings={safeTarget}
+              servingsRatio={servingsRatio}
+            />
           ) : (
             <InstructionScreen
               step={step + 1}
@@ -117,28 +135,52 @@ export function CookingMode({ recipeName, ingredients, instructions, onClose }: 
 
 // ─── Ingrédients screen ───────────────────────────────────────────────────────
 
-function IngredientsScreen({ ingredients }: { ingredients: MealieIngredient[] }) {
+function IngredientsScreen({
+  ingredients,
+  baseServings,
+  targetServings,
+  servingsRatio,
+}: {
+  ingredients: MealieIngredient[]
+  baseServings?: number
+  targetServings?: number
+  servingsRatio: number
+}) {
   const filtered = ingredients.filter(
     (ing) => ing.food?.name || ing.note || (ing.quantity != null && ing.quantity !== 0),
   )
 
   return (
     <div className="space-y-6">
-      <h2 className="font-heading text-3xl font-bold tracking-tight">Ingrédients</h2>
+      <div className="space-y-1">
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Ingrédients</h2>
+        {targetServings && (
+          <p className="text-sm text-muted-foreground">
+            Portions: {targetServings}
+            {baseServings && baseServings !== targetServings ? ` (base ${baseServings})` : ""}
+          </p>
+        )}
+      </div>
       <ul className="space-y-4">
-        {filtered.map((ing, i) => (
-          <li key={i} className="flex items-baseline gap-2 text-xl">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-primary mt-2.5" />
-            {ing.quantity != null && ing.quantity !== 0 && (
-              <span className="font-semibold tabular-nums">{ing.quantity}</span>
-            )}
-            {ing.unit?.name && (
-              <span className="text-muted-foreground">{ing.unit.name}</span>
-            )}
-            {ing.food?.name && <span className="font-medium">{ing.food.name}</span>}
-            {ing.note && <span className="text-muted-foreground text-base"> — {ing.note}</span>}
-          </li>
-        ))}
+        {filtered.map((ing, i) => {
+          const scaledQuantity =
+            ing.quantity != null && ing.quantity !== 0
+              ? formatQuantity(ing.quantity * servingsRatio)
+              : null
+          return (
+            <li key={i} className="flex items-baseline gap-2 text-xl">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary mt-2.5" />
+              {scaledQuantity && (
+                <span className="font-semibold tabular-nums">{scaledQuantity}</span>
+              )}
+              {ing.unit?.name && (
+                <span className="text-muted-foreground">{ing.unit.name}</span>
+              )}
+              {ing.food?.name && <span className="font-medium">{ing.food.name}</span>}
+              {ing.note && <span className="text-muted-foreground text-base"> — {ing.note}</span>}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

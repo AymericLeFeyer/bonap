@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Users, Minus, Plus, Sliders } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -10,6 +10,8 @@ import type { LLMConfig, LLMProvider } from "../../shared/types/llm.ts"
 import { LLM_PROVIDERS } from "../../shared/types/llm.ts"
 import { useTheme } from "../hooks/useTheme.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
+import { useFamilySize } from "../hooks/useFamilySize.ts"
+import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
@@ -91,11 +93,35 @@ function CollapsibleSection({ icon, iconBg, title, subtitle, defaultOpen = false
   )
 }
 
+// ─── FeatureRow ───────────────────────────────────────────────────────────────
+
+function FeatureRow({ label, description, enabled, onChange }: { label: string; description: string; enabled: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3 px-1">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${enabled ? "bg-primary" : "bg-input"}`}
+      >
+        <span className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
+      </button>
+    </div>
+  )
+}
+
 // ─── SettingsPage ─────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
   const { showBreakfast, setShowBreakfast } = usePlanningPreferences()
+  const { familySize, setFamilySize } = useFamilySize()
+  const { flags, setFlag } = useFeatureFlags()
   const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
@@ -163,6 +189,23 @@ export function SettingsPage() {
       localStorage.removeItem('bonap-mealie-token')
       window.__ENV__ = undefined
       navigate('/login', { replace: true })
+    }
+  }
+
+  const handleFetchModels = async () => {
+    if (!config.ollamaBaseUrl) return
+    setIsFetchingModels(true)
+    try {
+      const models = await llmConfigService.fetchModels(config)
+      if (models.length > 0) {
+        setAvailableModels(models)
+        setConfig((prev) => ({
+          ...prev,
+          model: models.includes(prev.model) ? prev.model : models[0],
+        }))
+      }
+    } finally {
+      setIsFetchingModels(false)
     }
   }
 
@@ -239,6 +282,72 @@ export function SettingsPage() {
               </button>
             ))}
           </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Foyer ── */}
+      <CollapsibleSection
+        icon={<Users className="h-4 w-4 text-[oklch(0.52_0.16_255)]" />}
+        iconBg="bg-[oklch(0.92_0.04_255)] dark:bg-[oklch(0.25_0.04_255)]"
+        title="Foyer"
+        subtitle="Nombre de personnes par défaut pour la planification"
+      >
+        <div className="space-y-2.5">
+          <Label>Taille du foyer</Label>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize - 1)}
+              disabled={familySize <= 1}
+              aria-label="Diminuer la taille du foyer"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              max={99}
+              value={familySize}
+              onChange={(e) => setFamilySize(Number(e.target.value || 1))}
+              className="w-24 text-center font-semibold"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize + 1)}
+              disabled={familySize >= 99}
+              aria-label="Augmenter la taille du foyer"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">personnes</span>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Fonctionnalités ── */}
+      <CollapsibleSection
+        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
+        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
+        title="Fonctionnalités"
+        subtitle="Activer ou désactiver certaines fonctionnalités de l'interface"
+      >
+        <div className="divide-y divide-border">
+          <FeatureRow
+            label="Calcul nutritionnel"
+            description="Affiche les calories et protéines sur les recettes"
+            enabled={flags.nutrition}
+            onChange={(v) => setFlag("nutrition", v)}
+          />
+          <FeatureRow
+            label="Système de portions"
+            description="Permet d'ajuster le nombre de portions dans le planning"
+            enabled={flags.servings}
+            onChange={(v) => setFlag("servings", v)}
+          />
         </div>
       </CollapsibleSection>
 
@@ -401,24 +510,48 @@ export function SettingsPage() {
                   envFields.has('ollamaBaseUrl') && 'bg-secondary/40',
                 )}
               />
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFetchModels}
+                  disabled={isFetchingModels || !config.ollamaBaseUrl}
+                  className="gap-1.5"
+                  title="Récupérer la liste des modèles depuis Ollama"
+                >
+                  {isFetchingModels ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Récupérer les modèles
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Utilise l'URL ci-dessus pour appeler <code className="rounded bg-secondary px-1 py-0.5">/api/tags</code>.
+                </span>
+              </div>
             </div>
-            <div className="space-y-2.5">
-              <Label htmlFor="ollama-model">Modèle</Label>
-              <Input
-                id="ollama-model"
-                type="text"
-                placeholder="llama3.2, mistral, …"
-                value={config.model}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, model: e.target.value }))
-                }
-              />
-            </div>
+
+            {availableModels.length === 0 && (
+              <div className="space-y-2.5">
+                <Label htmlFor="ollama-model">Modèle</Label>
+                <Input
+                  id="ollama-model"
+                  type="text"
+                  placeholder="llama3.2, mistral, …"
+                  value={config.model}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, model: e.target.value }))
+                  }
+                />
+              </div>
+            )}
           </div>
         )}
 
         {/* Sélecteur de modèle */}
-        {config.provider !== 'ollama' && availableModels.length > 0 && (
+        {availableModels.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <Label>Modèle</Label>
@@ -553,32 +686,40 @@ export function SettingsPage() {
         title="Planning"
         subtitle="Options d'affichage du planning"
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold">Petit-déjeuner</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Afficher et planifier le petit-déjeuner dans le planning
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showBreakfast}
-            onClick={() => setShowBreakfast(!showBreakfast)}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
-              "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              showBreakfast ? "bg-primary" : "bg-input",
-            )}
-          >
-            <span
+        <div className="divide-y divide-border">
+          <div className="flex items-center justify-between py-3 px-1">
+            <div>
+              <p className="text-sm font-semibold">Petit-déjeuner</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Afficher et planifier le petit-déjeuner dans le planning
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBreakfast}
+              onClick={() => setShowBreakfast(!showBreakfast)}
               className={cn(
-                "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg",
-                "transform transition-transform duration-200",
-                showBreakfast ? "translate-x-4" : "translate-x-0",
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+                "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                showBreakfast ? "bg-primary" : "bg-input",
               )}
-            />
-          </button>
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg",
+                  "transform transition-transform duration-200",
+                  showBreakfast ? "translate-x-4" : "translate-x-0",
+                )}
+              />
+            </button>
+          </div>
+          <FeatureRow
+            label="Auto-planification"
+            description="Suggère automatiquement des recettes pour compléter la semaine"
+            enabled={flags.autoPlan}
+            onChange={(v) => setFlag("autoPlan", v)}
+          />
         </div>
       </CollapsibleSection>
 
