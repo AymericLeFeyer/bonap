@@ -121,13 +121,6 @@ function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTo
     setDropdownOpen(true)
   }
 
-  useEffect(() => {
-    if (!dropdownOpen) return
-    const close = () => setDropdownOpen(false)
-    document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
-  }, [dropdownOpen])
-
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
