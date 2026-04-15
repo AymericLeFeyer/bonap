@@ -224,7 +224,6 @@ export function SettingsPage() {
         iconBg="bg-primary/8"
         title="Apparence"
         subtitle="Thème et couleur d'accent"
-        defaultOpen
       >
         <div className="space-y-2.5">
           <Label>Thème</Label>
@@ -285,13 +284,114 @@ export function SettingsPage() {
         </div>
       </CollapsibleSection>
 
+      {/* ── Planning ── */}
+      <CollapsibleSection
+        icon={<Calendar className="h-4 w-4 text-[oklch(0.50_0.16_250)] dark:text-[oklch(0.72_0.16_250)]" />}
+        iconBg="bg-[oklch(0.93_0.05_250)] dark:bg-[oklch(0.22_0.04_250)]"
+        title="Planning"
+        subtitle="Repas, foyer et options d'affichage"
+      >
+        <div className="space-y-2.5">
+          <Label>Taille du foyer</Label>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize - 1)}
+              disabled={familySize <= 1}
+              aria-label="Diminuer la taille du foyer"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              max={99}
+              value={familySize}
+              onChange={(e) => setFamilySize(Number(e.target.value || 1))}
+              className="w-24 text-center font-semibold"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize + 1)}
+              disabled={familySize >= 99}
+              aria-label="Augmenter la taille du foyer"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">personnes</span>
+          </div>
+        </div>
+
+        <div className="divide-y divide-border">
+          <div className="flex items-center justify-between py-3 px-1">
+            <div>
+              <p className="text-sm font-medium">Petit-déjeuner</p>
+              <p className="text-xs text-muted-foreground">
+                Afficher et planifier le petit-déjeuner dans le planning
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBreakfast}
+              onClick={() => setShowBreakfast(!showBreakfast)}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+                "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                showBreakfast ? "bg-primary" : "bg-input",
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg",
+                  "transform transition-transform duration-200",
+                  showBreakfast ? "translate-x-4" : "translate-x-0",
+                )}
+              />
+            </button>
+          </div>
+          <FeatureRow
+            label="Système de portions"
+            description="Permet d'ajuster le nombre de portions dans le planning"
+            enabled={flags.servings}
+            onChange={(v) => setFlag("servings", v)}
+          />
+          <FeatureRow
+            label="Auto-planification"
+            description="Suggère automatiquement des recettes pour compléter la semaine"
+            enabled={flags.autoPlan}
+            onChange={(v) => setFlag("autoPlan", v)}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Recettes ── */}
+      <CollapsibleSection
+        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
+        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
+        title="Recettes"
+        subtitle="Options d'affichage des recettes"
+      >
+        <div className="divide-y divide-border">
+          <FeatureRow
+            label="Calcul nutritionnel"
+            description="Affiche les calories et protéines sur les recettes"
+            enabled={flags.nutrition}
+            onChange={(v) => setFlag("nutrition", v)}
+          />
+        </div>
+      </CollapsibleSection>
+
       {/* ── Fournisseur IA ── */}
       <CollapsibleSection
         icon={<Bot className="h-4 w-4 text-[oklch(0.50_0.14_290)] dark:text-[oklch(0.72_0.14_290)]" />}
         iconBg="bg-[oklch(0.93_0.04_290)] dark:bg-[oklch(0.22_0.04_290)]"
         title="Fournisseur IA"
         subtitle={envFields.size > 0 ? "Certains paramètres via variables d'environnement" : `${LLM_PROVIDERS[config.provider].label} — ${config.model || 'non configuré'}`}
-        defaultOpen={!llmConfigService.isConfigured()}
         headerExtra={
           <a
             href="https://bonap.aylabs.fr/docs/configuration/llm"
@@ -596,108 +696,6 @@ export function SettingsPage() {
               className="bg-secondary/40 font-mono text-xs"
             />
           </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* ── Planning ── */}
-      <CollapsibleSection
-        icon={<Calendar className="h-4 w-4 text-[oklch(0.50_0.16_250)] dark:text-[oklch(0.72_0.16_250)]" />}
-        iconBg="bg-[oklch(0.93_0.05_250)] dark:bg-[oklch(0.22_0.04_250)]"
-        title="Planning"
-        subtitle="Repas, foyer et options d'affichage"
-      >
-        <div className="space-y-2.5">
-          <Label>Taille du foyer</Label>
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setFamilySize(familySize - 1)}
-              disabled={familySize <= 1}
-              aria-label="Diminuer la taille du foyer"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Input
-              type="number"
-              min={1}
-              max={99}
-              value={familySize}
-              onChange={(e) => setFamilySize(Number(e.target.value || 1))}
-              className="w-24 text-center font-semibold"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setFamilySize(familySize + 1)}
-              disabled={familySize >= 99}
-              aria-label="Augmenter la taille du foyer"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">personnes</span>
-          </div>
-        </div>
-
-        <div className="divide-y divide-border">
-          <div className="flex items-center justify-between py-3 px-1">
-            <div>
-              <p className="text-sm font-medium">Petit-déjeuner</p>
-              <p className="text-xs text-muted-foreground">
-                Afficher et planifier le petit-déjeuner dans le planning
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showBreakfast}
-              onClick={() => setShowBreakfast(!showBreakfast)}
-              className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
-                "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                showBreakfast ? "bg-primary" : "bg-input",
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg",
-                  "transform transition-transform duration-200",
-                  showBreakfast ? "translate-x-4" : "translate-x-0",
-                )}
-              />
-            </button>
-          </div>
-          <FeatureRow
-            label="Système de portions"
-            description="Permet d'ajuster le nombre de portions dans le planning"
-            enabled={flags.servings}
-            onChange={(v) => setFlag("servings", v)}
-          />
-          <FeatureRow
-            label="Auto-planification"
-            description="Suggère automatiquement des recettes pour compléter la semaine"
-            enabled={flags.autoPlan}
-            onChange={(v) => setFlag("autoPlan", v)}
-          />
-        </div>
-      </CollapsibleSection>
-
-      {/* ── Recettes ── */}
-      <CollapsibleSection
-        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
-        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
-        title="Recettes"
-        subtitle="Options d'affichage des recettes"
-      >
-        <div className="divide-y divide-border">
-          <FeatureRow
-            label="Calcul nutritionnel"
-            description="Affiche les calories et protéines sur les recettes"
-            enabled={flags.nutrition}
-            onChange={(v) => setFlag("nutrition", v)}
-          />
         </div>
       </CollapsibleSection>
 

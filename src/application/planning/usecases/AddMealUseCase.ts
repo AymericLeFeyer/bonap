@@ -11,8 +11,9 @@ export class AddMealUseCase {
   async execute(
     date: string,
     entryType: string,
-    recipeId: string,
+    recipeId?: string,
+    title?: string,
   ): Promise<MealieMealPlan> {
-    return this.planningRepository.addMeal({ date, entryType, recipeId })
+    return this.planningRepository.addMeal({ date, entryType, recipeId, title })
   }
 }

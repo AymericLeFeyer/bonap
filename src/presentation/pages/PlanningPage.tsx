@@ -95,12 +95,32 @@ async function fetchAllRecipes(): Promise<MealieRecipe[]> {
 
 interface MobileMealSectionProps {
   meals: MealieMealPlan[]
+  lastMeals: MealieMealPlan[]
   onAdd: () => void
+  onSelectLeftover: (meal: MealieMealPlan) => void
   onMealTouchStart: (meal: MealieMealPlan, e: React.TouchEvent) => void
   servingsEnabled: boolean
 }
 
-function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
+function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
+  const copyBtnRef = useRef<HTMLButtonElement>(null)
+  const isEmpty = meals.length === 0
+
+  const DROPDOWN_WIDTH = 200
+  const handleCopyClick = () => {
+    const rect = copyBtnRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const overflowsRight = rect.left + DROPDOWN_WIDTH > window.innerWidth
+    // position: fixed → coordonnées viewport, pas besoin d'ajouter scrollY/scrollX
+    setDropdownPos({
+      top: rect.bottom + 4,
+      left: overflowsRight ? rect.right - DROPDOWN_WIDTH : rect.left,
+    })
+    setDropdownOpen(true)
+  }
+
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
@@ -152,19 +172,87 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: 
           </div>
         )
       })}
-      <button
-        type="button"
-        onClick={onAdd}
-        aria-label="Ajouter un repas"
-        className={cn(
-          "flex w-full items-center justify-center rounded-[var(--radius-lg)]",
-          "border border-dashed border-border/60 py-3",
-          "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
-          "transition-all duration-150",
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="Ajouter un repas"
+          className={cn(
+            "flex flex-1 items-center justify-center rounded-[var(--radius-lg)]",
+            "border border-dashed border-border/60 py-3",
+            "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
+            "transition-all duration-150",
+          )}
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+
+        {isEmpty && (
+          <>
+            <button
+              ref={copyBtnRef}
+              type="button"
+              onClick={handleCopyClick}
+              title="Copier un repas précédent (restes)"
+              className={cn(
+                "flex items-center justify-center rounded-[var(--radius-lg)]",
+                "border border-dashed border-border/60 px-3 py-3",
+                "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
+                "transition-all duration-150",
+              )}
+            >
+              <Copy className="h-4 w-4" />
+            </button>
+            {dropdownOpen && dropdownPos && createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setDropdownOpen(false)}
+                />
+                <div
+                  className={cn(
+                    "fixed z-50 w-[200px]",
+                    "rounded-[var(--radius-lg)] border border-border/60",
+                    "bg-card shadow-lg overflow-hidden",
+                  )}
+                  style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                >
+                  {lastMeals.length === 0 ? (
+                    <p className="px-3 py-2.5 text-xs text-muted-foreground">
+                      Aucun repas précédent disponible
+                    </p>
+                  ) : (
+                    lastMeals.map((meal) => (
+                      <button
+                        key={meal.id}
+                        type="button"
+                        onClick={() => { setDropdownOpen(false); onSelectLeftover(meal) }}
+                        className={cn(
+                          "flex items-center gap-2 w-full px-2 py-1.5 text-left",
+                          "text-sm hover:bg-accent hover:text-accent-foreground",
+                          "transition-colors",
+                        )}
+                      >
+                        {meal.recipe && (
+                          <img
+                            src={recipeImageUrl(meal.recipe, "min-original")}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                          />
+                        )}
+                        <span className="line-clamp-2 leading-snug">
+                          {meal.recipe?.name ?? meal.title ?? "Sans titre"}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>,
+              document.body,
+            )}
+          </>
         )}
-      >
-        <Plus className="h-4 w-4" />
-      </button>
+      </div>
     </div>
   )
 }
@@ -560,7 +648,7 @@ export function PlanningPage() {
 
   const getLastMeals = (date: Date, type: string, count: number): MealieMealPlan[] => {
     const result: MealieMealPlan[] = []
-    const seenIds = new Set<string>()
+    const seenKeys = new Set<string>()
     let currentDate = date
     let currentType = type
     for (let i = 0; i < count * 8 && result.length < count; i++) {
@@ -573,8 +661,9 @@ export function PlanningPage() {
       const key = formatDate(currentDate)
       const slots = mealPlans.filter((m) => m.date === key && m.entryType === currentType)
       for (const meal of slots) {
-        if (meal.recipe && !seenIds.has(meal.recipe.id)) {
-          seenIds.add(meal.recipe.id)
+        const uniqueKey = meal.recipe?.id ?? meal.title ?? ""
+        if (uniqueKey && !seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey)
           result.push(meal)
           if (result.length >= count) break
         }
@@ -652,8 +741,9 @@ export function PlanningPage() {
   }
 
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
-    if (!meal.recipe) return
-    const newMeal = await addMeal(formatDate(date), entryType, meal.recipe.id)
+    const newMeal = meal.recipe
+      ? await addMeal(formatDate(date), entryType, meal.recipe.id)
+      : await addMeal(formatDate(date), entryType, undefined, meal.title)
     const servings = getMealServings(meal)
     if (servings) {
       await updateMealNote(newMeal, encodeServingsInText(servings, getMealVisibleNote(newMeal)))
@@ -976,7 +1066,9 @@ export function PlanningPage() {
                           </div>
                           <MobileMealSection
                             meals={meals}
+                            lastMeals={getLastMeals(date, key, 3)}
                             onAdd={() => handleAddMeal(dateStr, key)}
+                            onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                             onMealTouchStart={handleMealTouchStart}
                             servingsEnabled={flags.servings}
                           />

@@ -486,11 +486,9 @@ interface GroupHeaderProps {
   label: string
   color?: string
   isFirst?: boolean
-  onAiCategorize?: () => void
-  aiCategorizeLoading?: boolean
 }
 
-function GroupHeader({ label, isFirst, onAiCategorize, aiCategorizeLoading }: GroupHeaderProps) {
+function GroupHeader({ label, isFirst }: GroupHeaderProps) {
   const isNone = label === "Sans étiquette"
   return (
     <div className={cn(
@@ -504,21 +502,6 @@ function GroupHeader({ label, isFirst, onAiCategorize, aiCategorizeLoading }: Gr
       <span className="text-[9.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
         {label}
       </span>
-      {onAiCategorize && (
-        <button
-          type="button"
-          onClick={onAiCategorize}
-          disabled={aiCategorizeLoading}
-          title="Catégoriser via IA"
-          className="ml-auto flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.10em] text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-        >
-          {aiCategorizeLoading
-            ? <Loader2 className="h-3 w-3 animate-spin" />
-            : <Sparkles className="h-3 w-3" />
-          }
-          IA
-        </button>
-      )}
     </div>
   )
 }
@@ -533,8 +516,6 @@ interface GroupedItemsProps {
   onUpdateQuantity: (item: ShoppingItem, qty: number) => void
   onUpdateNote: (item: ShoppingItem, note: string) => void
   onUpdateLabel: (item: ShoppingItem, labelId: string | undefined) => void
-  onAiCategorize?: (uncategorizedItems: ShoppingItem[]) => void
-  aiCategorizeLoading?: boolean
   onViewRecipe?: (recipeName: string) => void
 }
 
@@ -543,7 +524,7 @@ function itemSortKey(item: ShoppingItem): string {
   return (item.foodName ?? note).toLowerCase()
 }
 
-function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onUpdateNote, onUpdateLabel, onAiCategorize, aiCategorizeLoading, onViewRecipe }: GroupedItemsProps) {
+function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onUpdateNote, onUpdateLabel, onViewRecipe }: GroupedItemsProps) {
   const unchecked = items.filter((i) => !i.checked)
   const checked = items.filter((i) => i.checked)
 
@@ -587,12 +568,7 @@ function GroupedItems({ items, labels, onToggle, onDelete, onUpdateQuantity, onU
       {uncheckedGroups.map(([key, group]) => (
         <div key={key}>
           {uncheckedGroups.length > 1 && (
-            <GroupHeader
-              label={group.label}
-              color={group.color}
-              onAiCategorize={key === "__none__" && onAiCategorize ? () => onAiCategorize(group.items) : undefined}
-              aiCategorizeLoading={key === "__none__" ? aiCategorizeLoading : undefined}
-            />
+            <GroupHeader label={group.label} color={group.color} />
           )}
           <ul>
             {group.items.map((item) => (
@@ -906,12 +882,29 @@ export function ShoppingPage() {
             </div>
 
             <div className="rounded-[var(--radius-2xl)] border border-border/50 bg-card shadow-subtle">
-              {/* Barre de progression */}
+              {/* Barre de progression + bouton IA */}
               {totalCount > 0 && (
                 <div className="px-4 pt-3 pb-2">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-medium text-muted-foreground">{progressPct}% complété</span>
-                    <span className="text-xs text-muted-foreground">{checkedCount}/{totalCount}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{checkedCount}/{totalCount}</span>
+                      {labels.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => void handleAiCategorize(items.filter((i) => !i.checked && !i.label))}
+                          disabled={aiLoading || items.filter((i) => !i.checked && !i.label).length === 0}
+                          title="Catégoriser les articles sans étiquette via IA"
+                          className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.10em] text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {aiLoading
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Sparkles className="h-3 w-3" />
+                          }
+                          IA
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
@@ -930,8 +923,6 @@ export function ShoppingPage() {
                 onUpdateQuantity={(item, qty) => void updateItemQuantity(item, qty)}
                 onUpdateNote={(item, note) => void updateItemNote(item, note)}
                 onUpdateLabel={(item, labelId) => void updateItemLabel(item, labelId)}
-                onAiCategorize={labels.length > 0 ? (uncategorized) => void handleAiCategorize(uncategorized) : undefined}
-                aiCategorizeLoading={aiLoading}
                 onViewRecipe={(name) => void handleViewRecipe(name)}
               />
 

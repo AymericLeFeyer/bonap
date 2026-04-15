@@ -110,8 +110,8 @@ export function usePlanning() {
   const goToToday = () => setCenterDate(currentWeekTuesday())
   const goToTodayMobile = () => setCenterDate(today())
 
-  const addMeal = useCallback(async (date: string, entryType: string, recipeId: string) => {
-    const newMeal = await addMealUseCase.execute(date, entryType, recipeId)
+  const addMeal = useCallback(async (date: string, entryType: string, recipeId?: string, title?: string) => {
+    const newMeal = await addMealUseCase.execute(date, entryType, recipeId, title)
     setMealPlans((prev) => [...prev, newMeal])
     return newMeal
   }, [])
