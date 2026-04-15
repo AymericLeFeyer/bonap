@@ -1,3 +1,5 @@
+import { saveSettingToServer } from '../settings/ServerSettingsService.ts'
+
 const KEY = "bonap_planning_prefs"
 
 interface PlanningPrefs {
@@ -17,6 +19,8 @@ export const planningPrefsService = {
     }
   },
   save(prefs: PlanningPrefs): void {
-    localStorage.setItem(KEY, JSON.stringify(prefs))
+    const serialized = JSON.stringify(prefs)
+    localStorage.setItem(KEY, serialized)
+    saveSettingToServer('bonap_planning_prefs', serialized)
   },
 }

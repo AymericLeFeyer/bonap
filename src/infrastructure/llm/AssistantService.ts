@@ -6,6 +6,24 @@
  */
 import { llmConfigService } from './LLMConfigService.ts'
 import type { LLMConfig } from '../../shared/types/llm.ts'
+import { getIngressBasename, isDockerRuntime } from '../../shared/utils/env.ts'
+
+function getOllamaFetchConfig(
+  ollamaBaseUrl: string,
+): { url: string; extraHeaders: Record<string, string> } {
+  const clean = ollamaBaseUrl.replace(/\/+$/, '')
+  if (import.meta.env.DEV) return { url: '/api/ollama/api/chat', extraHeaders: {} }
+  if (clean.startsWith('/')) {
+    return { url: `${getIngressBasename()}${clean}/api/chat`, extraHeaders: {} }
+  }
+  if (isDockerRuntime()) {
+    return {
+      url: `${getIngressBasename()}/api/marmiton/ollama-proxy/api/chat`,
+      extraHeaders: { 'X-Ollama-Target': clean },
+    }
+  }
+  return { url: `${clean}/api/chat`, extraHeaders: {} }
+}
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -394,10 +412,10 @@ async function chatFallback(
     }
     text = data.candidates[0]?.content.parts[0]?.text ?? ''
   } else if (config.provider === 'ollama') {
-    const base = config.ollamaBaseUrl.replace(/\/+$/, '')
-    const res = await fetch(`${base}/api/chat`, {
+    const { url: ollamaUrl, extraHeaders } = getOllamaFetchConfig(config.ollamaBaseUrl)
+    const res = await fetch(ollamaUrl, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...extraHeaders },
       body: JSON.stringify({ model: config.model, stream: false, messages }),
     })
     if (!res.ok) throw new Error(`Ollama ${res.status}`)

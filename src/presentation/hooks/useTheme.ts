@@ -12,6 +12,17 @@ export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => themeService.getTheme())
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => themeService.getAccentColor())
 
+  // Synchronise l'état React si ThemeService.apply() est appelé en dehors du hook
+  // (ex: syncSettingsFromServer au démarrage met à jour localStorage puis appelle apply())
+  useEffect(() => {
+    const handler = () => {
+      setThemeState(themeService.getTheme())
+      setAccentColorState(themeService.getAccentColor())
+    }
+    window.addEventListener('bonap:theme-changed', handler)
+    return () => window.removeEventListener('bonap:theme-changed', handler)
+  }, [])
+
   // Appliquer le thème à chaque changement et écouter les changements système
   useEffect(() => {
     themeService.apply()

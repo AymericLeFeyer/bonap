@@ -1,4 +1,5 @@
 import { getEnv } from "../../shared/utils/env.ts"
+import { saveSettingToServer } from "../settings/ServerSettingsService.ts"
 
 export type Theme = "light" | "dark" | "system"
 
@@ -70,6 +71,7 @@ export class ThemeService {
     try {
       localStorage.setItem(THEME_KEY, theme)
     } catch { /* localStorage unavailable */ }
+    saveSettingToServer('bonap_theme', theme)
     this.apply()
   }
 
@@ -88,6 +90,7 @@ export class ThemeService {
     try {
       localStorage.setItem(ACCENT_KEY, color.id)
     } catch { /* localStorage unavailable */ }
+    saveSettingToServer('bonap_accent', color.id)
     this.apply()
   }
 
@@ -116,6 +119,9 @@ export class ThemeService {
     if (theme === "system") {
       this._setupSystemListener()
     }
+
+    // Notifie les composants React qui écoutent (ex: useTheme) d'un changement externe
+    window.dispatchEvent(new CustomEvent('bonap:theme-changed'))
   }
 
   private _setupSystemListener(): void {

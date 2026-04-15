@@ -1218,6 +1218,39 @@ app.get('/health', (_req, res) => res.json({
   ollamaConfigured: !!(OLLAMA_URL && OLLAMA_MODEL),
 }))
 
+// ─── Shared settings (cross-origin persistent storage) ────────────────────────
+// Stored in /data/bonap-settings.json so they survive container restarts and
+// are shared between http://ip:8123 and https://domain access.
+const SETTINGS_FILE = '/data/bonap-settings.json'
+
+function readSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))
+    }
+  } catch { /* ignore */ }
+  return {}
+}
+
+function writeSettings(data) {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8')
+  } catch (e) {
+    console.error('[Bonap] Failed to write settings:', e.message)
+  }
+}
+
+app.get('/settings', (_req, res) => {
+  res.json(readSettings())
+})
+
+app.patch('/settings', (req, res) => {
+  const current = readSettings()
+  const updated = { ...current, ...req.body }
+  writeSettings(updated)
+  res.json(updated)
+})
+
 app.get('/ciqual/search', async (req, res) => {
   try {
     const q = normalizeSpace(req.query.q || '')
@@ -1576,6 +1609,54 @@ app.get('/image', async (req, res) => {
     res.send(Buffer.from(buf))
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+// ─── Dynamic Ollama proxy ─────────────────────────────────────────────────────
+// Allows the browser to reach a local Ollama instance via server-side forwarding,
+// avoiding mixed-content errors (HTTPS page → HTTP Ollama).
+// Restricted to private/local network addresses only (no SSRF to public internet).
+
+function isPrivateOrLocalUrl(rawUrl) {
+  try {
+    const u = new URL(rawUrl)
+    const h = u.hostname
+    return (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      /^10\./.test(h) ||
+      /^192\.168\./.test(h) ||
+      /^172\.(1[6-9]|2[0-9]|3[01])\./.test(h) ||
+      h.endsWith('.local')
+    )
+  } catch {
+    return false
+  }
+}
+
+app.all('/ollama-proxy/*path', async (req, res) => {
+  const target = req.headers['x-ollama-target']
+  if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
+    return res
+      .status(400)
+      .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
+  }
+  const subpath = req.params.path
+  const url = `${target.replace(/\/+$/, '')}/${subpath}`
+  try {
+    const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
+    const upstreamRes = await fetch(url, {
+      method: req.method,
+      headers: { 'content-type': 'application/json' },
+      body: hasBody ? JSON.stringify(req.body) : undefined,
+    })
+    res.status(upstreamRes.status)
+    const ct = upstreamRes.headers.get('content-type')
+    if (ct) res.set('content-type', ct)
+    const body = await upstreamRes.text()
+    res.send(body)
+  } catch (e) {
+    res.status(502).json({ error: `Proxy Ollama dynamique : ${e.message}` })
   }
 })
 

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { saveSettingToServer } from "../../infrastructure/settings/ServerSettingsService.ts"
 
 const STORAGE_KEY = "bonap.familySize"
 const DEFAULT_SIZE = 4
@@ -12,7 +13,9 @@ export function useFamilySize() {
 
   const setFamilySize = useCallback((n: number) => {
     const clamped = Math.max(1, Math.min(99, Math.round(n)))
-    localStorage.setItem(STORAGE_KEY, String(clamped))
+    const value = String(clamped)
+    localStorage.setItem(STORAGE_KEY, value)
+    saveSettingToServer('bonap.familySize', value)
     setFamilySizeState(clamped)
   }, [])
 
