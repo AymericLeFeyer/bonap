@@ -970,7 +970,7 @@ export function PlanningPage() {
 
       {/* ── Dialog sélection des jours pour la liste de courses ── */}
       <Dialog open={dayPickerOpen} onOpenChange={setDayPickerOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Ajouter au panier</DialogTitle>
             <DialogDescription>Sélectionnez les jours à inclure dans la liste de courses.</DialogDescription>
@@ -986,20 +986,20 @@ export function PlanningPage() {
               {selectedDays.size === pickerDays.length ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
 
-            {/* Liste des jours */}
-            <div className="flex flex-col gap-1.5">
+            {/* Grille 2 colonnes × 7 lignes */}
+            <div className="grid grid-cols-2 gap-1.5">
               {pickerDays.map((day) => {
                 const dateStr = formatDate(day)
                 const dayMeals = mealPlans.filter((m) => m.date === dateStr && m.recipe)
                 const checked = selectedDays.has(dateStr)
-                const dayLabel = day.toLocaleDateString("fr-FR", { weekday: "long" })
+                const dayLabel = day.toLocaleDateString("fr-FR", { weekday: "short" })
                 const dateLabel = formatDayDate(day)
                 return (
                   <label
                     key={dateStr}
                     className={cn(
-                      "flex items-start gap-3 cursor-pointer select-none",
-                      "rounded-[var(--radius-lg)] border px-3 py-2.5 transition-colors",
+                      "flex items-center gap-2 cursor-pointer select-none",
+                      "rounded-[var(--radius-lg)] border px-2.5 py-2 transition-colors",
                       checked
                         ? "border-primary/40 bg-primary/5"
                         : "border-border/40 bg-card hover:bg-secondary/50",
@@ -1009,16 +1009,16 @@ export function PlanningPage() {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleDay(dateStr)}
-                      className="mt-0.5 h-4 w-4 accent-[oklch(var(--color-primary))] cursor-pointer"
+                      className="h-3.5 w-3.5 shrink-0 accent-[oklch(var(--color-primary))] cursor-pointer"
                     />
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm font-semibold capitalize leading-tight">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold capitalize leading-tight">
                         {dayLabel} <span className="font-normal text-muted-foreground">{dateLabel}</span>
                       </span>
                       {dayMeals.length === 0 ? (
-                        <span className="text-xs text-muted-foreground/60 italic">Aucun repas</span>
+                        <span className="text-[10px] text-muted-foreground/50 italic">Aucun repas</span>
                       ) : (
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-[10px] text-muted-foreground truncate">
                           {dayMeals.map((m) => m.recipe!.name).join(" · ")}
                         </span>
                       )}
