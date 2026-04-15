@@ -161,7 +161,7 @@ export function generateBalancedMealPlan(
   recipes: MealieRecipe[],
   existingMeals: MealieMealPlan[],
   slots: AutoPlanSlot[],
-  familySize: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _familySize = 1,
 ): AutoPlannedMeal[] {
   // Pool principal : recettes avec nutrition. Pool secondaire : toutes les recettes (variété seulement).
   const withNutrition = recipes
