@@ -110,15 +110,13 @@ function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTo
 
   const DROPDOWN_WIDTH = 200
   const handleCopyClick = () => {
-    if (lastMeals.length === 0) return
     const rect = copyBtnRef.current?.getBoundingClientRect()
     if (!rect) return
     const overflowsRight = rect.left + DROPDOWN_WIDTH > window.innerWidth
+    // position: fixed → coordonnées viewport, pas besoin d'ajouter scrollY/scrollX
     setDropdownPos({
-      top: rect.bottom + window.scrollY + 4,
-      left: overflowsRight
-        ? rect.right + window.scrollX - DROPDOWN_WIDTH
-        : rect.left + window.scrollX,
+      top: rect.bottom + 4,
+      left: overflowsRight ? rect.right - DROPDOWN_WIDTH : rect.left,
     })
     setDropdownOpen(true)
   }
@@ -127,11 +125,7 @@ function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTo
     if (!dropdownOpen) return
     const close = () => setDropdownOpen(false)
     document.addEventListener("mousedown", close)
-    document.addEventListener("touchstart", close)
-    return () => {
-      document.removeEventListener("mousedown", close)
-      document.removeEventListener("touchstart", close)
-    }
+    return () => document.removeEventListener("mousedown", close)
   }, [dropdownOpen])
 
   return (
@@ -206,57 +200,61 @@ function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTo
               ref={copyBtnRef}
               type="button"
               onClick={handleCopyClick}
-              disabled={lastMeals.length === 0}
-              title={
-                lastMeals.length > 0
-                  ? "Copier un repas précédent (restes)"
-                  : "Aucun repas précédent disponible"
-              }
+              title="Copier un repas précédent (restes)"
               className={cn(
                 "flex items-center justify-center rounded-[var(--radius-lg)]",
                 "border border-dashed border-border/60 px-3 py-3",
                 "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
-                "disabled:cursor-not-allowed disabled:opacity-30",
                 "transition-all duration-150",
               )}
             >
               <Copy className="h-4 w-4" />
             </button>
             {dropdownOpen && dropdownPos && createPortal(
-              <div
-                className={cn(
-                  "fixed z-50 w-[200px]",
-                  "rounded-[var(--radius-lg)] border border-border/60",
-                  "bg-card shadow-lg overflow-hidden",
-                )}
-                style={{ top: dropdownPos.top, left: dropdownPos.left }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-              >
-                {lastMeals.map((meal) => (
-                  <button
-                    key={meal.id}
-                    type="button"
-                    onClick={() => { setDropdownOpen(false); onSelectLeftover(meal) }}
-                    className={cn(
-                      "flex items-center gap-2 w-full px-2 py-1.5 text-left",
-                      "text-sm hover:bg-accent hover:text-accent-foreground",
-                      "transition-colors",
-                    )}
-                  >
-                    {meal.recipe && (
-                      <img
-                        src={recipeImageUrl(meal.recipe, "min-original")}
-                        alt=""
-                        className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
-                      />
-                    )}
-                    <span className="line-clamp-2 leading-snug">
-                      {meal.recipe?.name ?? meal.title ?? "Sans titre"}
-                    </span>
-                  </button>
-                ))}
-              </div>,
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setDropdownOpen(false)}
+                />
+                <div
+                  className={cn(
+                    "fixed z-50 w-[200px]",
+                    "rounded-[var(--radius-lg)] border border-border/60",
+                    "bg-card shadow-lg overflow-hidden",
+                  )}
+                  style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                >
+                  {lastMeals.length === 0 ? (
+                    <p className="px-3 py-2.5 text-xs text-muted-foreground">
+                      Aucun repas précédent disponible
+                    </p>
+                  ) : (
+                    lastMeals.map((meal) => (
+                      <button
+                        key={meal.id}
+                        type="button"
+                        onClick={() => { setDropdownOpen(false); onSelectLeftover(meal) }}
+                        className={cn(
+                          "flex items-center gap-2 w-full px-2 py-1.5 text-left",
+                          "text-sm hover:bg-accent hover:text-accent-foreground",
+                          "transition-colors",
+                        )}
+                      >
+                        {meal.recipe && (
+                          <img
+                            src={recipeImageUrl(meal.recipe, "min-original")}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                          />
+                        )}
+                        <span className="line-clamp-2 leading-snug">
+                          {meal.recipe?.name ?? meal.title ?? "Sans titre"}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>,
               document.body,
             )}
           </>
