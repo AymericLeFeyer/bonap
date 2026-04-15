@@ -400,6 +400,7 @@ export function PlanningPage() {
 
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
   const mobileDays = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i))
+  const pickerDays = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i))
 
   const handleAddToCart = async () => {
     const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
@@ -410,7 +411,7 @@ export function PlanningPage() {
   }
 
   const openDayPicker = () => {
-    setSelectedDays(new Set(days.map((d) => formatDate(d))))
+    setSelectedDays(new Set(pickerDays.map((d) => formatDate(d))))
     setDayPickerOpen(true)
   }
 
@@ -424,7 +425,7 @@ export function PlanningPage() {
   }
 
   const toggleAllDays = () => {
-    const allDays = new Set(days.map((d) => formatDate(d)))
+    const allDays = new Set(pickerDays.map((d) => formatDate(d)))
     setSelectedDays(selectedDays.size === allDays.size ? new Set() : allDays)
   }
 
@@ -982,12 +983,12 @@ export function PlanningPage() {
               onClick={toggleAllDays}
               className="self-start text-xs font-medium text-primary hover:underline"
             >
-              {selectedDays.size === days.length ? "Tout désélectionner" : "Tout sélectionner"}
+              {selectedDays.size === pickerDays.length ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
 
             {/* Liste des jours */}
             <div className="flex flex-col gap-1.5">
-              {days.map((day) => {
+              {pickerDays.map((day) => {
                 const dateStr = formatDate(day)
                 const dayMeals = mealPlans.filter((m) => m.date === dateStr && m.recipe)
                 const checked = selectedDays.has(dateStr)
