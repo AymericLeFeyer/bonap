@@ -593,8 +593,8 @@ export function PlanningPage() {
       const emptySlots = days.flatMap((date) => {
         const dateStr = formatDate(date)
         return MEAL_TYPES
-          .filter(({ key }) => getMeals(date, key).length === 0)
-          .map(({ key }) => ({ date: dateStr, entryType: key }))
+          .filter(({ key }) => key !== "breakfast" && getMeals(date, key).length === 0)
+          .map(({ key }) => ({ date: dateStr, entryType: key as "lunch" | "dinner" }))
       })
 
       if (emptySlots.length === 0) {
