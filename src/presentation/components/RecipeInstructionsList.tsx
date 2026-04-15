@@ -1,4 +1,5 @@
 import type { MealieInstruction } from "../../shared/types/mealie.ts"
+import { MarkdownContent } from "./MarkdownContent.tsx"
 
 interface RecipeInstructionsListProps {
   instructions: MealieInstruction[]
@@ -26,7 +27,7 @@ export function RecipeInstructionsList({
               {step.title && (
                 <p className="text-sm font-semibold">{step.title}</p>
               )}
-              <p className="text-sm text-muted-foreground leading-relaxed">{step.text}</p>
+              <MarkdownContent>{step.text ?? ""}</MarkdownContent>
             </div>
           </li>
         ))}

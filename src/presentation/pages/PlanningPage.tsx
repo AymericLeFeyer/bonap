@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import {
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown,
   Plus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
   MessageSquarePlus, MessageSquare,
 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
+import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog.tsx"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
@@ -19,6 +20,12 @@ import { recipeImageUrl } from "../../shared/utils/image.ts"
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
 const MEAL_TYPES = [
+  {
+    key: "breakfast",
+    label: "Petit-déjeuner",
+    color: "bg-[oklch(0.97_0.014_105)] dark:bg-[oklch(0.19_0.014_100)]",
+    borderColor: "border-[oklch(0.88_0.028_105)] dark:border-[oklch(0.28_0.018_100)]",
+  },
   {
     key: "lunch",
     label: "Déjeuner",
@@ -32,6 +39,7 @@ const MEAL_TYPES = [
     borderColor: "border-[oklch(0.87_0.030_52)] dark:border-[oklch(0.26_0.018_50)]",
   },
 ] as const
+
 
 function formatDayDate(date: Date): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
@@ -74,12 +82,19 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
             )}
           >
             {meal.recipe ? (
-              <img
-                src={recipeImageUrl(meal.recipe, "min-original")}
-                alt={meal.recipe.name ?? "Repas"}
-                draggable={false}
-                className="w-full aspect-square object-cover pointer-events-none"
-              />
+              <div className="relative w-full aspect-square">
+                <img
+                  src={recipeImageUrl(meal.recipe, "min-original")}
+                  alt={meal.recipe.name ?? "Repas"}
+                  draggable={false}
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4">
+                  <span className="block text-[11px] font-semibold text-white leading-tight line-clamp-2">
+                    {meal.recipe.name}
+                  </span>
+                </div>
+              </div>
             ) : (
               <div className="w-full aspect-square bg-secondary flex items-center justify-center">
                 <span className="text-[11px] text-muted-foreground font-medium px-2 text-center">
@@ -370,11 +385,16 @@ export function PlanningPage() {
     success: cartSuccess,
   } = useAddRecipesToCart()
 
+  const { showBreakfast } = usePlanningPreferences()
+  const mealTypes = MEAL_TYPES.filter((t) => t.key !== "breakfast" || showBreakfast)
+
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
   const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
+  const [dayPickerOpen, setDayPickerOpen] = useState(false)
+  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set())
   const mobileMenuMealRef = useRef<((data: { meal: MealieMealPlan; y: number } | null) => void) | null>(null)
 
   // ── Mobile touch drag state ──
@@ -390,6 +410,7 @@ export function PlanningPage() {
   const [mobileDragOver, setMobileDragOver] = useState<{ date: string; type: string } | null>(null)
 
   useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
+  useEffect(() => { if (cartSuccess && dayPickerOpen) setDayPickerOpen(false) }, [cartSuccess, dayPickerOpen])
 
   const handlePreviewOpenChange = (open: boolean) => {
     if (!open) setPreviewSlug(null)
@@ -397,11 +418,41 @@ export function PlanningPage() {
 
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
   const mobileDays = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i))
+  const pickerDays = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i))
 
   const handleAddToCart = async () => {
     const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
     const meals = mealPlans
       .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.slug && m.recipe?.name)
+      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
+    await addRecipesToCart(meals)
+  }
+
+  const openDayPicker = () => {
+    const daysWithMeals = pickerDays
+      .map((d) => formatDate(d))
+      .filter((dateStr) => mealPlans.some((m) => m.date === dateStr && m.recipe))
+    setSelectedDays(new Set(daysWithMeals))
+    setDayPickerOpen(true)
+  }
+
+  const toggleDay = (dateStr: string) => {
+    setSelectedDays((prev) => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
+  const toggleAllDays = () => {
+    const allDays = new Set(pickerDays.map((d) => formatDate(d)))
+    setSelectedDays(selectedDays.size === allDays.size ? new Set() : allDays)
+  }
+
+  const handleAddToCartWithDays = async () => {
+    const meals = mealPlans
+      .filter((m) => selectedDays.has(m.date) && m.recipe?.slug && m.recipe?.name)
       .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
     await addRecipesToCart(meals)
   }
@@ -578,25 +629,37 @@ export function PlanningPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Ajouter au panier */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void handleAddToCart()}
-              disabled={addingToCart}
-              className="gap-1.5"
-            >
-              {addingToCart ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : cartSuccess ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.55_0.16_145)]" />
-              ) : (
-                <ShoppingCart className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
-              </span>
-            </Button>
+            {/* Ajouter au panier — split button */}
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleAddToCart()}
+                disabled={addingToCart}
+                className="gap-1.5 rounded-r-none border-r-0"
+              >
+                {addingToCart ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : cartSuccess ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.55_0.16_145)]" />
+                ) : (
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openDayPicker}
+                disabled={addingToCart}
+                className="rounded-l-none px-2 border-l border-border/60"
+                title="Sélectionner les jours"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </div>
 
             {/* Sélecteur nombre de jours */}
             <div className={cn(
@@ -684,7 +747,7 @@ export function PlanningPage() {
                     {formatDayDate(date)}
                   </div>
                   <div className="grid grid-cols-2 divide-x divide-border/40">
-                    {MEAL_TYPES.map(({ key, label, color }) => {
+                    {mealTypes.map(({ key, label, color }) => {
                       const dateStr = formatDate(date)
                       const meals = getMeals(date, key)
                       const isDropTarget = mobileDragOver?.date === dateStr && mobileDragOver.type === key
@@ -754,7 +817,7 @@ export function PlanningPage() {
                 </tr>
               </thead>
               <tbody>
-                {MEAL_TYPES.map(({ key, label, color, borderColor }) => (
+                {mealTypes.map(({ key, label, color, borderColor }) => (
                   <tr key={key}>
                     <td className={cn(
                       "border-b border-r border-border/50 bg-secondary/60",
@@ -921,6 +984,88 @@ export function PlanningPage() {
             </Button>
             <Button size="sm" onClick={() => void handleSaveNote()}>
               Enregistrer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog sélection des jours pour la liste de courses ── */}
+      <Dialog open={dayPickerOpen} onOpenChange={setDayPickerOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ajouter au panier</DialogTitle>
+            <DialogDescription>Sélectionnez les jours à inclure dans la liste de courses.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2">
+            {/* Toggle tout */}
+            <button
+              type="button"
+              onClick={toggleAllDays}
+              className="self-start text-xs font-medium text-primary hover:underline"
+            >
+              {selectedDays.size === pickerDays.length ? "Tout désélectionner" : "Tout sélectionner"}
+            </button>
+
+            {/* Grille 2 colonnes × 7 lignes */}
+            <div className="grid grid-cols-2 gap-1.5">
+              {pickerDays.map((day) => {
+                const dateStr = formatDate(day)
+                const dayMeals = mealPlans.filter((m) => m.date === dateStr && m.recipe)
+                const checked = selectedDays.has(dateStr)
+                const dayLabel = day.toLocaleDateString("fr-FR", { weekday: "short" })
+                const dateLabel = formatDayDate(day)
+                return (
+                  <label
+                    key={dateStr}
+                    className={cn(
+                      "flex items-center gap-2 cursor-pointer select-none",
+                      "rounded-[var(--radius-lg)] border px-2.5 py-2 transition-colors",
+                      checked
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border/40 bg-card hover:bg-secondary/50",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleDay(dateStr)}
+                      className="h-3.5 w-3.5 shrink-0 accent-[oklch(var(--color-primary))] cursor-pointer"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold capitalize leading-tight">
+                        {dayLabel} <span className="font-normal text-muted-foreground">{dateLabel}</span>
+                      </span>
+                      {dayMeals.length === 0 ? (
+                        <span className="text-[10px] text-muted-foreground/50 italic">Aucun repas</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {dayMeals.map((m) => m.recipe!.name).join(" · ")}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" size="sm" onClick={() => setDayPickerOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => void handleAddToCartWithDays()}
+              disabled={selectedDays.size === 0 || addingToCart}
+              className="gap-1.5"
+            >
+              {addingToCart ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )}
+              Ajouter {selectedDays.size > 0 ? `${selectedDays.size} jour${selectedDays.size > 1 ? "s" : ""}` : ""}
             </Button>
           </div>
         </DialogContent>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -9,6 +9,7 @@ import { llmConfigService, getLLMEnvFields } from "../../infrastructure/llm/LLMC
 import type { LLMConfig, LLMProvider } from "../../shared/types/llm.ts"
 import { LLM_PROVIDERS } from "../../shared/types/llm.ts"
 import { useTheme } from "../hooks/useTheme.ts"
+import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
@@ -94,6 +95,7 @@ function CollapsibleSection({ icon, iconBg, title, subtitle, defaultOpen = false
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
+  const { showBreakfast, setShowBreakfast } = usePlanningPreferences()
   const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
@@ -543,6 +545,42 @@ export function SettingsPage() {
           </Button>
         </CollapsibleSection>
       )}
+
+      {/* ── Planning ── */}
+      <CollapsibleSection
+        icon={<Calendar className="h-4 w-4 text-[oklch(0.50_0.16_250)] dark:text-[oklch(0.72_0.16_250)]" />}
+        iconBg="bg-[oklch(0.93_0.05_250)] dark:bg-[oklch(0.22_0.04_250)]"
+        title="Planning"
+        subtitle="Options d'affichage du planning"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">Petit-déjeuner</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Afficher et planifier le petit-déjeuner dans le planning
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showBreakfast}
+            onClick={() => setShowBreakfast(!showBreakfast)}
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+              "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              showBreakfast ? "bg-primary" : "bg-input",
+            )}
+          >
+            <span
+              className={cn(
+                "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg",
+                "transform transition-transform duration-200",
+                showBreakfast ? "translate-x-4" : "translate-x-0",
+              )}
+            />
+          </button>
+        </div>
+      </CollapsibleSection>
 
       {/* ── À propos ── */}
       <CollapsibleSection

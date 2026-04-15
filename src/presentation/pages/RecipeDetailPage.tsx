@@ -45,6 +45,7 @@ import type {
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
 import { cn } from "../../lib/utils.ts"
+import { MarkdownContent } from "../components/MarkdownContent.tsx"
 
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
 import { useGetFavorites } from "../../presentation/hooks/useGetFavorites"
@@ -651,6 +652,7 @@ export function RecipeDetailPage() {
               {/* Description */}
               <InlineEditText
                 value={formData.description}
+                displayValue={formData.description ? <MarkdownContent>{formData.description}</MarkdownContent> : undefined}
                 onChange={(v) => patch({ description: v })}
                 placeholder="Ajouter une description…"
                 multiline
