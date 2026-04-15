@@ -1,5 +1,16 @@
 // Fixtures de données Mealie réalistes pour les tests E2E
 
+/** Retourne la date ISO (YYYY-MM-DD) du lundi de la semaine courante + offset en jours. */
+function currentWeekDate(offsetFromMonday: number): string {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dow = today.getDay() // 0=dim, 1=lun, ..., 6=sam
+  const diffToMonday = dow === 0 ? -6 : 1 - dow
+  const d = new Date(today)
+  d.setDate(today.getDate() + diffToMonday + offsetFromMonday)
+  return d.toISOString().split("T")[0]
+}
+
 export const RECIPE_PIZZA = {
   id: "abc123",
   slug: "pizza-maison",
@@ -99,11 +110,12 @@ export const RECIPES_LIST_RESPONSE = {
 }
 
 // Réponse pour GET /api/households/mealplans
+// Les dates sont dynamiques (lun/mar de la semaine courante) pour rester dans la fenêtre visible.
 export const MEALPLANS_RESPONSE = {
   items: [
     {
       id: 1,
-      date: "2026-04-07",
+      date: currentWeekDate(0), // lundi
       entryType: "dinner",
       title: null,
       recipeId: "abc123",
@@ -116,7 +128,7 @@ export const MEALPLANS_RESPONSE = {
     },
     {
       id: 2,
-      date: "2026-04-08",
+      date: currentWeekDate(1), // mardi
       entryType: "lunch",
       title: null,
       recipeId: "def456",
