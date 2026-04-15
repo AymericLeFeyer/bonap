@@ -411,7 +411,10 @@ export function PlanningPage() {
   }
 
   const openDayPicker = () => {
-    setSelectedDays(new Set(pickerDays.map((d) => formatDate(d))))
+    const daysWithMeals = pickerDays
+      .map((d) => formatDate(d))
+      .filter((dateStr) => mealPlans.some((m) => m.date === dateStr && m.recipe))
+    setSelectedDays(new Set(daysWithMeals))
     setDayPickerOpen(true)
   }
 
