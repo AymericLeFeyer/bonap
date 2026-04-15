@@ -8,6 +8,7 @@ import {
 import { Button } from "../components/ui/button.tsx"
 import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
+import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog.tsx"
@@ -19,6 +20,12 @@ import { recipeImageUrl } from "../../shared/utils/image.ts"
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
 const MEAL_TYPES = [
+  {
+    key: "breakfast",
+    label: "Petit-déjeuner",
+    color: "bg-[oklch(0.97_0.014_105)] dark:bg-[oklch(0.19_0.014_100)]",
+    borderColor: "border-[oklch(0.88_0.028_105)] dark:border-[oklch(0.28_0.018_100)]",
+  },
   {
     key: "lunch",
     label: "Déjeuner",
@@ -32,6 +39,8 @@ const MEAL_TYPES = [
     borderColor: "border-[oklch(0.87_0.030_52)] dark:border-[oklch(0.26_0.018_50)]",
   },
 ] as const
+
+type MealTypeKey = (typeof MEAL_TYPES)[number]["key"]
 
 function formatDayDate(date: Date): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
@@ -369,6 +378,9 @@ export function PlanningPage() {
     error: cartError,
     success: cartSuccess,
   } = useAddRecipesToCart()
+
+  const { showBreakfast } = usePlanningPreferences()
+  const mealTypes = MEAL_TYPES.filter((t) => t.key !== "breakfast" || showBreakfast)
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
@@ -729,7 +741,7 @@ export function PlanningPage() {
                     {formatDayDate(date)}
                   </div>
                   <div className="grid grid-cols-2 divide-x divide-border/40">
-                    {MEAL_TYPES.map(({ key, label, color }) => {
+                    {mealTypes.map(({ key, label, color }) => {
                       const dateStr = formatDate(date)
                       const meals = getMeals(date, key)
                       const isDropTarget = mobileDragOver?.date === dateStr && mobileDragOver.type === key
@@ -799,7 +811,7 @@ export function PlanningPage() {
                 </tr>
               </thead>
               <tbody>
-                {MEAL_TYPES.map(({ key, label, color, borderColor }) => (
+                {mealTypes.map(({ key, label, color, borderColor }) => (
                   <tr key={key}>
                     <td className={cn(
                       "border-b border-r border-border/50 bg-secondary/60",
