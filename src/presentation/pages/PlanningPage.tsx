@@ -95,12 +95,45 @@ async function fetchAllRecipes(): Promise<MealieRecipe[]> {
 
 interface MobileMealSectionProps {
   meals: MealieMealPlan[]
+  lastMeals: MealieMealPlan[]
   onAdd: () => void
+  onSelectLeftover: (meal: MealieMealPlan) => void
   onMealTouchStart: (meal: MealieMealPlan, e: React.TouchEvent) => void
   servingsEnabled: boolean
 }
 
-function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
+function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
+  const copyBtnRef = useRef<HTMLButtonElement>(null)
+  const isEmpty = meals.length === 0
+
+  const DROPDOWN_WIDTH = 200
+  const handleCopyClick = () => {
+    if (lastMeals.length === 0) return
+    const rect = copyBtnRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const overflowsRight = rect.left + DROPDOWN_WIDTH > window.innerWidth
+    setDropdownPos({
+      top: rect.bottom + window.scrollY + 4,
+      left: overflowsRight
+        ? rect.right + window.scrollX - DROPDOWN_WIDTH
+        : rect.left + window.scrollX,
+    })
+    setDropdownOpen(true)
+  }
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const close = () => setDropdownOpen(false)
+    document.addEventListener("mousedown", close)
+    document.addEventListener("touchstart", close)
+    return () => {
+      document.removeEventListener("mousedown", close)
+      document.removeEventListener("touchstart", close)
+    }
+  }, [dropdownOpen])
+
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
@@ -152,19 +185,83 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: 
           </div>
         )
       })}
-      <button
-        type="button"
-        onClick={onAdd}
-        aria-label="Ajouter un repas"
-        className={cn(
-          "flex w-full items-center justify-center rounded-[var(--radius-lg)]",
-          "border border-dashed border-border/60 py-3",
-          "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
-          "transition-all duration-150",
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="Ajouter un repas"
+          className={cn(
+            "flex flex-1 items-center justify-center rounded-[var(--radius-lg)]",
+            "border border-dashed border-border/60 py-3",
+            "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
+            "transition-all duration-150",
+          )}
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+
+        {isEmpty && (
+          <>
+            <button
+              ref={copyBtnRef}
+              type="button"
+              onClick={handleCopyClick}
+              disabled={lastMeals.length === 0}
+              title={
+                lastMeals.length > 0
+                  ? "Copier un repas précédent (restes)"
+                  : "Aucun repas précédent disponible"
+              }
+              className={cn(
+                "flex items-center justify-center rounded-[var(--radius-lg)]",
+                "border border-dashed border-border/60 px-3 py-3",
+                "text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/4",
+                "disabled:cursor-not-allowed disabled:opacity-30",
+                "transition-all duration-150",
+              )}
+            >
+              <Copy className="h-4 w-4" />
+            </button>
+            {dropdownOpen && dropdownPos && createPortal(
+              <div
+                className={cn(
+                  "fixed z-50 w-[200px]",
+                  "rounded-[var(--radius-lg)] border border-border/60",
+                  "bg-card shadow-lg overflow-hidden",
+                )}
+                style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+              >
+                {lastMeals.map((meal) => (
+                  <button
+                    key={meal.id}
+                    type="button"
+                    onClick={() => { setDropdownOpen(false); onSelectLeftover(meal) }}
+                    className={cn(
+                      "flex items-center gap-2 w-full px-2 py-1.5 text-left",
+                      "text-sm hover:bg-accent hover:text-accent-foreground",
+                      "transition-colors",
+                    )}
+                  >
+                    {meal.recipe && (
+                      <img
+                        src={recipeImageUrl(meal.recipe, "min-original")}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                      />
+                    )}
+                    <span className="line-clamp-2 leading-snug">
+                      {meal.recipe?.name ?? meal.title ?? "Sans titre"}
+                    </span>
+                  </button>
+                ))}
+              </div>,
+              document.body,
+            )}
+          </>
         )}
-      >
-        <Plus className="h-4 w-4" />
-      </button>
+      </div>
     </div>
   )
 }
@@ -976,7 +1073,9 @@ export function PlanningPage() {
                           </div>
                           <MobileMealSection
                             meals={meals}
+                            lastMeals={getLastMeals(date, key, 3)}
                             onAdd={() => handleAddMeal(dateStr, key)}
+                            onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                             onMealTouchStart={handleMealTouchStart}
                             servingsEnabled={flags.servings}
                           />
