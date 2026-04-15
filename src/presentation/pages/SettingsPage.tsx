@@ -285,72 +285,6 @@ export function SettingsPage() {
         </div>
       </CollapsibleSection>
 
-      {/* ── Foyer ── */}
-      <CollapsibleSection
-        icon={<Users className="h-4 w-4 text-[oklch(0.52_0.16_255)]" />}
-        iconBg="bg-[oklch(0.92_0.04_255)] dark:bg-[oklch(0.25_0.04_255)]"
-        title="Foyer"
-        subtitle="Nombre de personnes par défaut pour la planification"
-      >
-        <div className="space-y-2.5">
-          <Label>Taille du foyer</Label>
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setFamilySize(familySize - 1)}
-              disabled={familySize <= 1}
-              aria-label="Diminuer la taille du foyer"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Input
-              type="number"
-              min={1}
-              max={99}
-              value={familySize}
-              onChange={(e) => setFamilySize(Number(e.target.value || 1))}
-              className="w-24 text-center font-semibold"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setFamilySize(familySize + 1)}
-              disabled={familySize >= 99}
-              aria-label="Augmenter la taille du foyer"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">personnes</span>
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* ── Fonctionnalités ── */}
-      <CollapsibleSection
-        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
-        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
-        title="Fonctionnalités"
-        subtitle="Activer ou désactiver certaines fonctionnalités de l'interface"
-      >
-        <div className="divide-y divide-border">
-          <FeatureRow
-            label="Calcul nutritionnel"
-            description="Affiche les calories et protéines sur les recettes"
-            enabled={flags.nutrition}
-            onChange={(v) => setFlag("nutrition", v)}
-          />
-          <FeatureRow
-            label="Système de portions"
-            description="Permet d'ajuster le nombre de portions dans le planning"
-            enabled={flags.servings}
-            onChange={(v) => setFlag("servings", v)}
-          />
-        </div>
-      </CollapsibleSection>
-
       {/* ── Fournisseur IA ── */}
       <CollapsibleSection
         icon={<Bot className="h-4 w-4 text-[oklch(0.50_0.14_290)] dark:text-[oklch(0.72_0.14_290)]" />}
@@ -665,32 +599,53 @@ export function SettingsPage() {
         </div>
       </CollapsibleSection>
 
-      {/* ── Déconnexion ── */}
-      {import.meta.env.VITE_PROTECTED_ROUTE === 'true' && (
-        <CollapsibleSection
-          icon={<LogOut className="h-4 w-4 text-destructive" />}
-          iconBg="bg-destructive/8"
-          title="Déconnexion"
-          subtitle="Déconnecter le compte actuellement connecté"
-        >
-          <Button variant="destructive" onClick={handleLogout}>
-            Se déconnecter
-          </Button>
-        </CollapsibleSection>
-      )}
-
       {/* ── Planning ── */}
       <CollapsibleSection
         icon={<Calendar className="h-4 w-4 text-[oklch(0.50_0.16_250)] dark:text-[oklch(0.72_0.16_250)]" />}
         iconBg="bg-[oklch(0.93_0.05_250)] dark:bg-[oklch(0.22_0.04_250)]"
         title="Planning"
-        subtitle="Options d'affichage du planning"
+        subtitle="Repas, foyer et options d'affichage"
       >
+        <div className="space-y-2.5">
+          <Label>Taille du foyer</Label>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize - 1)}
+              disabled={familySize <= 1}
+              aria-label="Diminuer la taille du foyer"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              max={99}
+              value={familySize}
+              onChange={(e) => setFamilySize(Number(e.target.value || 1))}
+              className="w-24 text-center font-semibold"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setFamilySize(familySize + 1)}
+              disabled={familySize >= 99}
+              aria-label="Augmenter la taille du foyer"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">personnes</span>
+          </div>
+        </div>
+
         <div className="divide-y divide-border">
           <div className="flex items-center justify-between py-3 px-1">
             <div>
-              <p className="text-sm font-semibold">Petit-déjeuner</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm font-medium">Petit-déjeuner</p>
+              <p className="text-xs text-muted-foreground">
                 Afficher et planifier le petit-déjeuner dans le planning
               </p>
             </div>
@@ -715,6 +670,12 @@ export function SettingsPage() {
             </button>
           </div>
           <FeatureRow
+            label="Système de portions"
+            description="Permet d'ajuster le nombre de portions dans le planning"
+            enabled={flags.servings}
+            onChange={(v) => setFlag("servings", v)}
+          />
+          <FeatureRow
             label="Auto-planification"
             description="Suggère automatiquement des recettes pour compléter la semaine"
             enabled={flags.autoPlan}
@@ -722,6 +683,37 @@ export function SettingsPage() {
           />
         </div>
       </CollapsibleSection>
+
+      {/* ── Recettes ── */}
+      <CollapsibleSection
+        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
+        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
+        title="Recettes"
+        subtitle="Options d'affichage des recettes"
+      >
+        <div className="divide-y divide-border">
+          <FeatureRow
+            label="Calcul nutritionnel"
+            description="Affiche les calories et protéines sur les recettes"
+            enabled={flags.nutrition}
+            onChange={(v) => setFlag("nutrition", v)}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Déconnexion ── */}
+      {import.meta.env.VITE_PROTECTED_ROUTE === 'true' && (
+        <CollapsibleSection
+          icon={<LogOut className="h-4 w-4 text-destructive" />}
+          iconBg="bg-destructive/8"
+          title="Déconnexion"
+          subtitle="Déconnecter le compte actuellement connecté"
+        >
+          <Button variant="destructive" onClick={handleLogout}>
+            Se déconnecter
+          </Button>
+        </CollapsibleSection>
+      )}
 
       {/* ── À propos ── */}
       <CollapsibleSection

@@ -137,14 +137,16 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: 
               </div>
             )}
             <div className="border-t border-border/40 bg-secondary/20 px-2 py-1">
-              {servingsEnabled && mealServings && mealServings > 0 ? (
-                <span className="text-[10px] font-semibold text-muted-foreground">
-                  {mealServings} pers.
-                </span>
-              ) : (
-                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                  Définir les portions dans la recette
-                </span>
+              {servingsEnabled && (
+                mealServings && mealServings > 0 ? (
+                  <span className="text-[10px] font-semibold text-muted-foreground">
+                    {mealServings} pers.
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                    Définir les portions dans la recette
+                  </span>
+                )
               )}
             </div>
           </div>
@@ -295,40 +297,42 @@ function MealCell({
                   </p>
                 </div>
               )}
-              <div className="px-2 pb-1.5">
-                <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/40 bg-secondary/30 px-2 py-1">
-                  {servingsEnabled && mealServings && mealServings > 0 ? (
-                    <>
-                      <span className="text-[10px] font-semibold text-muted-foreground">
-                        {mealServings} pers.
-                        {baseServings && baseServings > 0 && baseServings !== mealServings ? ` (base ${baseServings})` : ""}
+              {servingsEnabled && (
+                <div className="px-2 pb-1.5">
+                  <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/40 bg-secondary/30 px-2 py-1">
+                    {mealServings && mealServings > 0 ? (
+                      <>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {mealServings} pers.
+                          {baseServings && baseServings > 0 && baseServings !== mealServings ? ` (base ${baseServings})` : ""}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onServingsChange(meal, Math.max(1, mealServings - 1))}
+                            className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                            title="Diminuer les portions"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onServingsChange(meal, mealServings + 1)}
+                            className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                            title="Augmenter les portions"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        Définir les portions dans la recette
                       </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => onServingsChange(meal, Math.max(1, mealServings - 1))}
-                          className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                          title="Diminuer les portions"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onServingsChange(meal, mealServings + 1)}
-                          className="rounded border border-border/60 p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                          title="Augmenter les portions"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                      Définir les portions dans la recette
-                    </span>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex border-t border-border/30">
                 {meal.recipe?.slug && (
                   <button
