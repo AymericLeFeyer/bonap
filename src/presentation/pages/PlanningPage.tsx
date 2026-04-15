@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import {
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown,
   Plus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
   MessageSquarePlus, MessageSquare,
 } from "lucide-react"
@@ -10,7 +10,7 @@ import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog.tsx"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
@@ -375,6 +375,8 @@ export function PlanningPage() {
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
   const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
+  const [dayPickerOpen, setDayPickerOpen] = useState(false)
+  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set())
   const mobileMenuMealRef = useRef<((data: { meal: MealieMealPlan; y: number } | null) => void) | null>(null)
 
   // ── Mobile touch drag state ──
@@ -390,6 +392,7 @@ export function PlanningPage() {
   const [mobileDragOver, setMobileDragOver] = useState<{ date: string; type: string } | null>(null)
 
   useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
+  useEffect(() => { if (cartSuccess && dayPickerOpen) setDayPickerOpen(false) }, [cartSuccess])
 
   const handlePreviewOpenChange = (open: boolean) => {
     if (!open) setPreviewSlug(null)
@@ -402,6 +405,32 @@ export function PlanningPage() {
     const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
     const meals = mealPlans
       .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.slug && m.recipe?.name)
+      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
+    await addRecipesToCart(meals)
+  }
+
+  const openDayPicker = () => {
+    setSelectedDays(new Set(days.map((d) => formatDate(d))))
+    setDayPickerOpen(true)
+  }
+
+  const toggleDay = (dateStr: string) => {
+    setSelectedDays((prev) => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
+  const toggleAllDays = () => {
+    const allDays = new Set(days.map((d) => formatDate(d)))
+    setSelectedDays(selectedDays.size === allDays.size ? new Set() : allDays)
+  }
+
+  const handleAddToCartWithDays = async () => {
+    const meals = mealPlans
+      .filter((m) => selectedDays.has(m.date) && m.recipe?.slug && m.recipe?.name)
       .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
     await addRecipesToCart(meals)
   }
@@ -578,25 +607,37 @@ export function PlanningPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Ajouter au panier */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void handleAddToCart()}
-              disabled={addingToCart}
-              className="gap-1.5"
-            >
-              {addingToCart ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : cartSuccess ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.55_0.16_145)]" />
-              ) : (
-                <ShoppingCart className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
-              </span>
-            </Button>
+            {/* Ajouter au panier — split button */}
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleAddToCart()}
+                disabled={addingToCart}
+                className="gap-1.5 rounded-r-none border-r-0"
+              >
+                {addingToCart ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : cartSuccess ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.55_0.16_145)]" />
+                ) : (
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openDayPicker}
+                disabled={addingToCart}
+                className="rounded-l-none px-2 border-l border-border/60"
+                title="Sélectionner les jours"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </div>
 
             {/* Sélecteur nombre de jours */}
             <div className={cn(
@@ -921,6 +962,88 @@ export function PlanningPage() {
             </Button>
             <Button size="sm" onClick={() => void handleSaveNote()}>
               Enregistrer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog sélection des jours pour la liste de courses ── */}
+      <Dialog open={dayPickerOpen} onOpenChange={setDayPickerOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Ajouter au panier</DialogTitle>
+            <DialogDescription>Sélectionnez les jours à inclure dans la liste de courses.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2">
+            {/* Toggle tout */}
+            <button
+              type="button"
+              onClick={toggleAllDays}
+              className="self-start text-xs font-medium text-primary hover:underline"
+            >
+              {selectedDays.size === days.length ? "Tout désélectionner" : "Tout sélectionner"}
+            </button>
+
+            {/* Liste des jours */}
+            <div className="flex flex-col gap-1.5">
+              {days.map((day) => {
+                const dateStr = formatDate(day)
+                const dayMeals = mealPlans.filter((m) => m.date === dateStr && m.recipe)
+                const checked = selectedDays.has(dateStr)
+                const dayLabel = day.toLocaleDateString("fr-FR", { weekday: "long" })
+                const dateLabel = formatDayDate(day)
+                return (
+                  <label
+                    key={dateStr}
+                    className={cn(
+                      "flex items-start gap-3 cursor-pointer select-none",
+                      "rounded-[var(--radius-lg)] border px-3 py-2.5 transition-colors",
+                      checked
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border/40 bg-card hover:bg-secondary/50",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleDay(dateStr)}
+                      className="mt-0.5 h-4 w-4 accent-[oklch(var(--color-primary))] cursor-pointer"
+                    />
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-sm font-semibold capitalize leading-tight">
+                        {dayLabel} <span className="font-normal text-muted-foreground">{dateLabel}</span>
+                      </span>
+                      {dayMeals.length === 0 ? (
+                        <span className="text-xs text-muted-foreground/60 italic">Aucun repas</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground truncate">
+                          {dayMeals.map((m) => m.recipe!.name).join(" · ")}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" size="sm" onClick={() => setDayPickerOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => void handleAddToCartWithDays()}
+              disabled={selectedDays.size === 0 || addingToCart}
+              className="gap-1.5"
+            >
+              {addingToCart ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )}
+              Ajouter {selectedDays.size > 0 ? `${selectedDays.size} jour${selectedDays.size > 1 ? "s" : ""}` : ""}
             </Button>
           </div>
         </DialogContent>
