@@ -1,5 +1,6 @@
 import type { MealieMealPlan, MealieRecipe } from "../types/mealie.ts"
 import { getCaloriesFromTags } from "./calorie.ts"
+import { parseServings } from "./servings.ts"
 
 export interface AutoPlanSlot {
   date: string
@@ -77,16 +78,23 @@ function normalizeKey(value: string): string {
 }
 
 function getNutritionProfile(recipe: MealieRecipe): NutritionProfile {
+  const servings = parseServings(recipe.recipeYield)
+  // Normalise par portion (valeurs par personne) pour comparer aux MEAL_TARGETS qui sont par personne.
+  // On ignore familySize ici : on veut scorer la valeur nutritionnelle d'une portion adulte.
+  const divisor = (servings && servings > 0) ? servings : 1
+
+  const scale = (v: number | null) => v !== null ? Math.round(v / divisor * 10) / 10 : null
+
   const calories = parseNutritionValue(recipe.nutrition?.calories) ?? getCaloriesFromTags(recipe.tags)
   return {
-    calories,
-    protein: parseNutritionValue(recipe.nutrition?.proteinContent),
-    carbs: parseNutritionValue(recipe.nutrition?.carbohydrateContent),
-    fat: parseNutritionValue(recipe.nutrition?.fatContent),
-    fiber: parseNutritionValue(recipe.nutrition?.fiberContent),
-    sugar: parseNutritionValue(recipe.nutrition?.sugarContent),
-    sodium: parseNutritionValue(recipe.nutrition?.sodiumContent),
-    saturatedFat: parseNutritionValue(recipe.nutrition?.saturatedFatContent),
+    calories: scale(calories),
+    protein: scale(parseNutritionValue(recipe.nutrition?.proteinContent)),
+    carbs: scale(parseNutritionValue(recipe.nutrition?.carbohydrateContent)),
+    fat: scale(parseNutritionValue(recipe.nutrition?.fatContent)),
+    fiber: scale(parseNutritionValue(recipe.nutrition?.fiberContent)),
+    sugar: scale(parseNutritionValue(recipe.nutrition?.sugarContent)),
+    sodium: scale(parseNutritionValue(recipe.nutrition?.sodiumContent)),
+    saturatedFat: scale(parseNutritionValue(recipe.nutrition?.saturatedFatContent)),
   }
 }
 
@@ -136,9 +144,15 @@ function getVarietyKey(recipe: MealieRecipe): string {
 
 function buildRecentCounts(mealPlans: MealieMealPlan[]): Map<string, number> {
   const counts = new Map<string, number>()
+  const now = Date.now()
+  const MS_PER_DAY = 1000 * 60 * 60 * 24
   for (const meal of mealPlans) {
     if (!meal.recipe?.slug) continue
-    counts.set(meal.recipe.slug, (counts.get(meal.recipe.slug) ?? 0) + 1)
+    // Pondération exponentielle : recette d'il y a 1 jour = poids 1.0, 7 jours = 0.5, 30 jours ≈ 0.1
+    const mealDate = new Date(meal.date).getTime()
+    const daysAgo = Math.max(0, (now - mealDate) / MS_PER_DAY)
+    const weight = Math.exp(-daysAgo / 10)
+    counts.set(meal.recipe.slug, (counts.get(meal.recipe.slug) ?? 0) + weight)
   }
   return counts
 }
@@ -147,10 +161,18 @@ export function generateBalancedMealPlan(
   recipes: MealieRecipe[],
   existingMeals: MealieMealPlan[],
   slots: AutoPlanSlot[],
+  familySize: number, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): AutoPlannedMeal[] {
-  const candidates = recipes
+  // Pool principal : recettes avec nutrition. Pool secondaire : toutes les recettes (variété seulement).
+  const withNutrition = recipes
     .map((recipe) => ({ recipe, nutrition: getNutritionProfile(recipe) }))
     .filter(({ nutrition }) => hasUsableNutrition(nutrition))
+
+  const allCandidates = recipes
+    .map((recipe) => ({ recipe, nutrition: getNutritionProfile(recipe) }))
+
+  // Si moins de candidats avec nutrition que de créneaux, on complète avec le pool complet.
+  const candidates = withNutrition.length >= slots.length ? withNutrition : allCandidates
 
   if (candidates.length === 0 || slots.length === 0) return []
 
@@ -163,38 +185,48 @@ export function generateBalancedMealPlan(
     const target = MEAL_TARGETS[slot.entryType]
     let best: AutoPlannedMeal | null = null
 
-    for (const { recipe, nutrition } of candidates) {
-      if (!recipe.slug) continue
+    // Passe 1 (stricte) : exclure recettes déjà planifiées dans cette session ET très récentes (< 5j)
+    // Passe 2 (souple) : exclure uniquement celles déjà dans cette session
+    // Passe 3 (fallback total) : aucune exclusion, score seul décide
+    for (const pass of [1, 2, 3]) {
+      if (best !== null) break
+      for (const { recipe, nutrition } of candidates) {
+        if (!recipe.slug) continue
 
-      const varietyKey = getVarietyKey(recipe)
-      let score = 0
-      score += scoreRange(nutrition.calories, target.calories)
-      score += scoreRange(nutrition.protein, target.protein)
-      score += scoreRange(nutrition.carbs, target.carbs)
-      score += scoreRange(nutrition.fat, target.fat)
-      score += scoreRange(nutrition.fiber, target.fiber)
+        if (pass === 1 && generatedBySlug.has(recipe.slug)) continue
+        if (pass === 1 && (recentCounts.get(recipe.slug) ?? 0) > 0.61) continue
+        if (pass === 2 && generatedBySlug.has(recipe.slug)) continue
 
-      if (nutrition.sugar !== null && nutrition.sugar > target.sugarMax) {
-        score -= Math.min(4, (nutrition.sugar - target.sugarMax) / 3)
-      }
-      if (nutrition.sodium !== null && nutrition.sodium > target.sodiumMax) {
-        score -= Math.min(4, (nutrition.sodium - target.sodiumMax) / 250)
-      }
-      if (nutrition.saturatedFat !== null && nutrition.saturatedFat > target.saturatedFatMax) {
-        score -= Math.min(5, nutrition.saturatedFat - target.saturatedFatMax)
-      }
+        const varietyKey = getVarietyKey(recipe)
+        let score = 0
+        score += scoreRange(nutrition.calories, target.calories)
+        score += scoreRange(nutrition.protein, target.protein)
+        score += scoreRange(nutrition.carbs, target.carbs)
+        score += scoreRange(nutrition.fat, target.fat)
+        score += scoreRange(nutrition.fiber, target.fiber)
 
-      const completeness = [nutrition.calories, nutrition.protein, nutrition.carbs, nutrition.fat, nutrition.fiber]
-        .filter((value) => value !== null)
-        .length
-      score += completeness
+        if (nutrition.sugar !== null && nutrition.sugar > target.sugarMax) {
+          score -= Math.min(4, (nutrition.sugar - target.sugarMax) / 3)
+        }
+        if (nutrition.sodium !== null && nutrition.sodium > target.sodiumMax) {
+          score -= Math.min(4, (nutrition.sodium - target.sodiumMax) / 250)
+        }
+        if (nutrition.saturatedFat !== null && nutrition.saturatedFat > target.saturatedFatMax) {
+          score -= Math.min(5, nutrition.saturatedFat - target.saturatedFatMax)
+        }
 
-      score -= (recentCounts.get(recipe.slug) ?? 0) * 4
-      score -= (generatedBySlug.get(recipe.slug) ?? 0) * 7
-      score -= (generatedByVariety.get(varietyKey) ?? 0) * 3
+        const completeness = [nutrition.calories, nutrition.protein, nutrition.carbs, nutrition.fat, nutrition.fiber]
+          .filter((value) => value !== null)
+          .length
+        score += completeness
 
-      if (best === null || score > best.score) {
-        best = { slot, recipe, score }
+        score -= (recentCounts.get(recipe.slug) ?? 0) * 12
+        score -= (generatedBySlug.get(recipe.slug) ?? 0) * 20
+        score -= (generatedByVariety.get(varietyKey) ?? 0) * 8
+
+        if (best === null || score > best.score) {
+          best = { slot, recipe, score }
+        }
       }
     }
 

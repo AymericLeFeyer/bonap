@@ -184,6 +184,7 @@ export class RecipeRepository implements IRecipeRepository {
       prepTime: this.minutesToString(data.prepTime) ?? current.prepTime,
       performTime: this.minutesToString(data.performTime) ?? current.performTime,
       totalTime: this.minutesToString(data.totalTime) ?? current.totalTime,
+      recipeYield: data.recipeYield ?? current.recipeYield,
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c
