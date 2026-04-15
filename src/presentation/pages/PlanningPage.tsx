@@ -10,6 +10,7 @@ import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { useFamilySize } from "../hooks/useFamilySize.ts"
+import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog.tsx"
@@ -96,9 +97,10 @@ interface MobileMealSectionProps {
   meals: MealieMealPlan[]
   onAdd: () => void
   onMealTouchStart: (meal: MealieMealPlan, e: React.TouchEvent) => void
+  servingsEnabled: boolean
 }
 
-function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSectionProps) {
+function MobileMealSection({ meals, onAdd, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
@@ -135,7 +137,7 @@ function MobileMealSection({ meals, onAdd, onMealTouchStart }: MobileMealSection
               </div>
             )}
             <div className="border-t border-border/40 bg-secondary/20 px-2 py-1">
-              {mealServings && mealServings > 0 ? (
+              {servingsEnabled && mealServings && mealServings > 0 ? (
                 <span className="text-[10px] font-semibold text-muted-foreground">
                   {mealServings} pers.
                 </span>
@@ -180,11 +182,12 @@ interface MealCellProps {
   onDrop: (draggedMeal: MealieMealPlan, targetDate: string, targetType: string) => void
   onView: (meal: MealieMealPlan) => void
   onServingsChange: (meal: MealieMealPlan, servings: number) => void
+  servingsEnabled: boolean
 }
 
 function MealCell({
   meals, lastMeals, onAdd, onDelete, onSelectLeftover, onNote,
-  colorClass, date, entryType, onDrop, onView, onServingsChange,
+  colorClass, date, entryType, onDrop, onView, onServingsChange, servingsEnabled,
 }: MealCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -294,7 +297,7 @@ function MealCell({
               )}
               <div className="px-2 pb-1.5">
                 <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/40 bg-secondary/30 px-2 py-1">
-                  {mealServings && mealServings > 0 ? (
+                  {servingsEnabled && mealServings && mealServings > 0 ? (
                     <>
                       <span className="text-[10px] font-semibold text-muted-foreground">
                         {mealServings} pers.
@@ -458,6 +461,7 @@ export function PlanningPage() {
     addMeal, deleteMeal, updateMealNote,
   } = usePlanning()
   const { familySize } = useFamilySize()
+  const { flags } = useFeatureFlags()
   const {
     addRecipes: addRecipesToCart,
     loading: addingToCart,
@@ -866,10 +870,12 @@ export function PlanningPage() {
         </div>
       )}
 
-      <div className={cn(
-        "flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border/50 bg-card p-4 shadow-subtle",
-        "md:flex-row md:items-center md:justify-between",
-      )}>
+      {flags.autoPlan && (
+        <>
+          <div className={cn(
+            "flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border/50 bg-card p-4 shadow-subtle",
+            "md:flex-row md:items-center md:justify-between",
+          )}>
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -914,7 +920,9 @@ export function PlanningPage() {
         )}>
           <CheckCircle2 className="h-5 w-5 shrink-0" />
           <span className="text-sm">{autoPlanInfo}</span>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {!loading && !error && (
@@ -966,6 +974,7 @@ export function PlanningPage() {
                             meals={meals}
                             onAdd={() => handleAddMeal(dateStr, key)}
                             onMealTouchStart={handleMealTouchStart}
+                            servingsEnabled={flags.servings}
                           />
                         </div>
                       )
@@ -1048,6 +1057,7 @@ export function PlanningPage() {
                             })
                           }}
                           onServingsChange={(meal, servings) => void handleServingsChange(meal, servings)}
+                          servingsEnabled={flags.servings}
                         />
                       )
                     })}

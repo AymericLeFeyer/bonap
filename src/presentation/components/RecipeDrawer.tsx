@@ -9,6 +9,7 @@ import { X, CalendarPlus, UtensilsCrossed, ExternalLink, CookingPot, Loader2, Cl
 import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"
 import { useUpdateCategories } from "../hooks/useUpdateCategories"
+import { useFeatureFlags } from "../hooks/useFeatureFlags"
 import { useUpdateCalorieTag } from "../../presentation/hooks/useUpdateCalorieTag"
 
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season"
@@ -48,6 +49,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
     const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
     const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
     const { updateCalorieTag } = useUpdateCalorieTag()
+    const { flags } = useFeatureFlags()
     const [cookingMode, setCookingMode] = useState(false)
     const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
     const syncLock = useRef(false)
@@ -441,7 +443,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                     </div>
                                 </div>
 
-                                {recipe?.nutrition?.calories && (
+                                {recipe?.nutrition?.calories && flags.nutrition && (
                                     <div
                                         className={cn(
                                             "space-y-2.5 rounded-[var(--radius-xl)]",

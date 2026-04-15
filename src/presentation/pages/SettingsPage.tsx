@@ -348,12 +348,6 @@ export function SettingsPage() {
             enabled={flags.servings}
             onChange={(v) => setFlag("servings", v)}
           />
-          <FeatureRow
-            label="Auto-planification"
-            description="Suggère automatiquement des recettes pour compléter la semaine"
-            enabled={flags.autoPlan}
-            onChange={(v) => setFlag("autoPlan", v)}
-          />
         </div>
       </CollapsibleSection>
 
@@ -692,32 +686,40 @@ export function SettingsPage() {
         title="Planning"
         subtitle="Options d'affichage du planning"
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold">Petit-déjeuner</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Afficher et planifier le petit-déjeuner dans le planning
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showBreakfast}
-            onClick={() => setShowBreakfast(!showBreakfast)}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
-              "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              showBreakfast ? "bg-primary" : "bg-input",
-            )}
-          >
-            <span
+        <div className="divide-y divide-border">
+          <div className="flex items-center justify-between py-3 px-1">
+            <div>
+              <p className="text-sm font-semibold">Petit-déjeuner</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Afficher et planifier le petit-déjeuner dans le planning
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBreakfast}
+              onClick={() => setShowBreakfast(!showBreakfast)}
               className={cn(
-                "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg",
-                "transform transition-transform duration-200",
-                showBreakfast ? "translate-x-4" : "translate-x-0",
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+                "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                showBreakfast ? "bg-primary" : "bg-input",
               )}
-            />
-          </button>
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg",
+                  "transform transition-transform duration-200",
+                  showBreakfast ? "translate-x-4" : "translate-x-0",
+                )}
+              />
+            </button>
+          </div>
+          <FeatureRow
+            label="Auto-planification"
+            description="Suggère automatiquement des recettes pour compléter la semaine"
+            enabled={flags.autoPlan}
+            onChange={(v) => setFlag("autoPlan", v)}
+          />
         </div>
       </CollapsibleSection>
 
