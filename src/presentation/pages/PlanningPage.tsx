@@ -40,7 +40,6 @@ const MEAL_TYPES = [
   },
 ] as const
 
-type MealTypeKey = (typeof MEAL_TYPES)[number]["key"]
 
 function formatDayDate(date: Date): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
@@ -411,7 +410,7 @@ export function PlanningPage() {
   const [mobileDragOver, setMobileDragOver] = useState<{ date: string; type: string } | null>(null)
 
   useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
-  useEffect(() => { if (cartSuccess && dayPickerOpen) setDayPickerOpen(false) }, [cartSuccess])
+  useEffect(() => { if (cartSuccess && dayPickerOpen) setDayPickerOpen(false) }, [cartSuccess, dayPickerOpen])
 
   const handlePreviewOpenChange = (open: boolean) => {
     if (!open) setPreviewSlug(null)
