@@ -1107,7 +1107,7 @@ async function limitedParallel(tasks, concurrency) {
 }
 
 // GET /search?q=<query>&limit=<n>&page=<n>
-app.get('/search', async (req, res) => {
+app.get('/marmiton/search', async (req, res) => {
   try {
     const q = (req.query.q ?? '').trim()
     if (!q) return res.status(400).json({ error: 'Paramètre q manquant' })
@@ -1208,7 +1208,7 @@ app.get('/search', async (req, res) => {
 
     res.json({ results, hasMore, page })
   } catch (e) {
-    console.error('[Marmiton] Search error:', e.message)
+    console.error('[Bonap BFF] Search error:', e.message)
     res.status(500).json({ error: e.message })
   }
 })
@@ -1411,7 +1411,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
           { role: 'user', content: text },
         ],
       }),
-      // Keep this lower than nginx /api/marmiton proxy_read_timeout to avoid gateway 504.
+      // Keep this lower than nginx /api/bonap proxy_read_timeout to avoid gateway 504.
       signal: AbortSignal.timeout(45000),
     })
     if (!r.ok) {
@@ -1431,7 +1431,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
     return { data: JSON.parse(match[0]), error: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[Marmiton] Ollama server-side error:', msg)
+    console.error('[Bonap BFF] Ollama server-side error:', msg)
     return { data: null, error: msg || 'Erreur inconnue lors de l\'appel Ollama' }
   }
 }
@@ -1440,7 +1440,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
 // 1. Fetches the page, tries JSON-LD Recipe extraction (fast, no LLM needed)
 // 2. If no schema found, calls Ollama server-side (env vars or query params fallback)
 // 3. Returns { schema, text, ollamaError? }
-app.get('/fetch-recipe', async (req, res) => {
+app.get('/marmiton/fetch-recipe', async (req, res) => {
   const rawUrl = (req.query.url ?? '').trim()
   if (!rawUrl) return res.status(400).json({ error: 'Paramètre url manquant' })
 
@@ -1566,7 +1566,7 @@ app.get('/fetch-recipe', async (req, res) => {
 
     // ⑦ If no schema and Ollama is configured, call it server-side (avoids nginx timeout)
     if (!schema && effectiveOllamaUrl && effectiveOllamaModel) {
-      console.log(`[Marmiton] No JSON-LD found, calling Ollama server-side (${effectiveOllamaUrl}, ${effectiveOllamaModel})...`)
+      console.log(`[Bonap BFF] No JSON-LD found, calling Ollama server-side (${effectiveOllamaUrl}, ${effectiveOllamaModel})...`)
       const ollamaResult = await callOllamaServerSide(effectiveOllamaUrl, effectiveOllamaModel, text)
       const llmResult = ollamaResult.data
       const ollamaError = ollamaResult.error
@@ -1593,7 +1593,7 @@ app.get('/fetch-recipe', async (req, res) => {
 })
 
 // GET /image?url=<encoded_url> — proxy pour télécharger l'image sans CORS
-app.get('/image', async (req, res) => {
+app.get('/marmiton/image', async (req, res) => {
   const url = (req.query.url ?? '').trim()
   let parsedImg
   try { parsedImg = new URL(url) } catch { return res.status(400).json({ error: 'URL invalide' }) }
@@ -1634,14 +1634,14 @@ function isPrivateOrLocalUrl(rawUrl) {
   }
 }
 
-app.all('/ollama-proxy/*path', async (req, res) => {
+app.all('/ollama-proxy/*', async (req, res) => {
   const target = req.headers['x-ollama-target']
   if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
     return res
       .status(400)
       .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
   }
-  const subpath = req.params.path
+  const subpath = req.params[0] ?? ''
   const url = `${target.replace(/\/+$/, '')}/${subpath}`
   try {
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
@@ -1661,5 +1661,5 @@ app.all('/ollama-proxy/*path', async (req, res) => {
 })
 
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`[Marmiton] Proxy en écoute sur le port ${PORT}`)
+  console.log(`[Bonap BFF] En écoute sur le port ${PORT}`)
 })

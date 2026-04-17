@@ -68,7 +68,7 @@ function normalizeMarmitonImageUrl(url: string): string {
 function buildMarmitonProxyImageUrl(imageUrl: string, pageUrl?: string): string {
   const normalized = resolveRecipeImageUrl(imageUrl, pageUrl)
   if (!normalized) return ''
-  const base = `${getIngressBasename()}/api/marmiton`
+  const base = `${getIngressBasename()}/api/bonap/marmiton`
   return `${base}/image?url=${encodeURIComponent(normalized)}`
 }
 
@@ -383,7 +383,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de cette forme exacte, sans mark
 // ─── URL import (étape 1 : récupération + extraction JSON-LD ou LLM) ─────────────────────
 
 async function fetchAndParseRecipeUrl(url: string): Promise<ExternalRecipe> {
-  const base = `${getIngressBasename()}/api/marmiton`
+  const base = `${getIngressBasename()}/api/bonap/marmiton`
 
   // Pass Ollama config so proxy can call it server-side even if not set in addon options
   const llmConfig = llmConfigService.load()
@@ -575,7 +575,7 @@ function UrlImportCard() {
 // ─── API call ─────────────────────────────────────────────────────────────────
 
 async function searchMarmiton(query: string, page: number): Promise<{ results: ExternalRecipe[]; hasMore: boolean }> {
-  const base = `${getIngressBasename()}/api/marmiton`
+  const base = `${getIngressBasename()}/api/bonap/marmiton`
   const res = await fetch(`${base}/search?q=${encodeURIComponent(query)}&limit=12&page=${page}`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText })) as { error: string }

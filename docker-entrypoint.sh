@@ -35,8 +35,8 @@ export LLM_OLLAMA_URL
 envsubst '${VITE_MEALIE_URL} ${LLM_OLLAMA_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
 
 # Démarrer le proxy Marmiton en arrière-plan (hors addon HA)
-if command -v node >/dev/null 2>&1 && [ -f /proxy/marmiton-proxy.cjs ]; then
-  OLLAMA_URL="${LLM_OLLAMA_URL}" OLLAMA_MODEL="${LLM_MODEL:-}" node /proxy/marmiton-proxy.cjs &
+if command -v node >/dev/null 2>&1 && [ -f /proxy/bonap-bff.cjs ]; then
+  OLLAMA_URL="${LLM_OLLAMA_URL}" OLLAMA_MODEL="${LLM_MODEL:-}" node /proxy/bonap-bff.cjs &
 fi
 
 exec nginx -g "daemon off;"

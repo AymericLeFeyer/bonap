@@ -18,7 +18,7 @@ function getOllamaFetchConfig(
   }
   if (isDockerRuntime()) {
     return {
-      url: `${getIngressBasename()}/api/marmiton/ollama-proxy/api/chat`,
+      url: `${getIngressBasename()}/api/bonap/ollama-proxy/api/chat`,
       extraHeaders: { 'X-Ollama-Target': clean },
     }
   }

@@ -13,7 +13,7 @@ function getOllamaFetchConfig(
   if (isDockerRuntime()) {
     // Docker/HA + URL HTTP depuis Settings → proxy dynamique marmiton (mixed-content safe)
     return {
-      url: `${getIngressBasename()}/api/marmiton/ollama-proxy/api/chat`,
+      url: `${getIngressBasename()}/api/bonap/ollama-proxy/api/chat`,
       extraHeaders: { 'X-Ollama-Target': clean },
     }
   }

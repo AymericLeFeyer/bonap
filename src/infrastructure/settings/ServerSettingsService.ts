@@ -1,6 +1,6 @@
 /**
  * ServerSettingsService — synchronise les préférences utilisateur avec le serveur
- * de l'addon HA (marmiton-proxy.cjs → /data/bonap-settings.json).
+ * de l'addon HA (bonap-bff.cjs → /data/bonap-settings.json).
  *
  * Cela permet de partager les paramètres (thème, LLM) entre les différentes
  * origines d'accès (http://ip:8123 et https://mondomaine) car localStorage est
@@ -24,7 +24,7 @@ export const SERVER_SETTINGS_KEYS = [
 export type ServerSettingsKey = (typeof SERVER_SETTINGS_KEYS)[number]
 
 function getSettingsUrl(): string {
-  return `${getIngressBasename()}/api/marmiton/settings`
+  return `${getIngressBasename()}/api/bonap/settings`
 }
 
 /**

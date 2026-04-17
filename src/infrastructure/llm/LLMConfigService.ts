@@ -110,7 +110,7 @@ export class LLMConfigService {
  *
  * - DEV           → proxy Vite `/api/ollama`
  * - baseUrl = "/" → proxy nginx `/api/ollama` (options addon HA)
- * - Docker + HTTP → proxy dynamique marmiton `/api/marmiton/ollama-proxy`
+ * - Docker + HTTP → proxy dynamique BFF `/api/bonap/ollama-proxy`
  *                   avec en-tête `X-Ollama-Target` (évite mixed-content HTTPS→HTTP)
  * - Sinon         → appel direct
  */
@@ -129,7 +129,7 @@ function getOllamaProxyConfig(
   if (isDockerRuntime()) {
     // Docker/HA avec URL HTTP saisie dans Settings → proxy dynamique marmiton
     return {
-      url: `${getIngressBasename()}/api/marmiton/ollama-proxy${subpath}`,
+      url: `${getIngressBasename()}/api/bonap/ollama-proxy${subpath}`,
       fetchHeaders: { 'X-Ollama-Target': clean },
     }
   }
@@ -205,7 +205,7 @@ async function testOllama(
   // Routing :
   //   DEV           → proxy Vite /api/ollama
   //   baseUrl = "/" → proxy nginx /api/ollama (configuré dans options addon HA)
-  //   Docker + HTTP → proxy dynamique marmiton /api/marmiton/ollama-proxy (évite mixed-content)
+  //   Docker + HTTP → proxy dynamique BFF /api/bonap/ollama-proxy (évite mixed-content)
   //   Sinon         → appel direct (hors Docker, accès local)
   const { url, fetchHeaders } = getOllamaProxyConfig(baseUrl, '/api/tags')
   try {
