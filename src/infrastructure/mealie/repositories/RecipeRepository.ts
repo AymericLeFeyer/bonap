@@ -188,6 +188,8 @@ export class RecipeRepository implements IRecipeRepository {
       // Strip any leading number that may have been stored by a previous buggy save.
       recipeYield: current.recipeYield ? (current.recipeYield.replace(/^\d+\s*/, '').trim() || "") : current.recipeYield,
       recipeServings: data.recipeYield ? parseFloat(data.recipeYield) : (current.recipeServings ?? 0),
+      // recipeYieldQuantity mirrors recipeServings for Mealie UI display (yield quantity field).
+      recipeYieldQuantity: data.recipeYield ? parseFloat(data.recipeYield) : (current.recipeYieldQuantity ?? 0),
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c
