@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders, ShoppingCart } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -390,7 +390,7 @@ export function SettingsPage() {
 
       {/* ── Liste de courses ── */}
       <CollapsibleSection
-        icon={<span className="text-base leading-none">🛒</span>}
+        icon={<ShoppingCart className="h-4 w-4 text-[oklch(0.45_0.12_145)] dark:text-[oklch(0.70_0.10_145)]" />}
         iconBg="bg-[oklch(0.93_0.05_145)] dark:bg-[oklch(0.22_0.04_145)]"
         title="Liste de courses"
         subtitle="Habituels et catalogue par défaut"
