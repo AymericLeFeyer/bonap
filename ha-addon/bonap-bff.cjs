@@ -1634,14 +1634,14 @@ function isPrivateOrLocalUrl(rawUrl) {
   }
 }
 
-app.all('/ollama-proxy/*', async (req, res) => {
+app.all('/ollama-proxy/*path', async (req, res) => {
   const target = req.headers['x-ollama-target']
   if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
     return res
       .status(400)
       .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
   }
-  const subpath = req.params[0] ?? ''
+  const subpath = req.params.path ?? ''
   const url = `${target.replace(/\/+$/, '')}/${subpath}`
   try {
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
