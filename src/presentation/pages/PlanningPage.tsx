@@ -906,14 +906,22 @@ export function PlanningPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Ajouter au panier + mode sélection */}
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
+            {/* Ajouter au panier + mode sélection — groupe visuel */}
+            <div className={cn(
+              "flex items-center rounded-[var(--radius-lg)] border overflow-hidden",
+              selectionMode ? "border-primary/60 shadow-[0_0_0_1px_oklch(var(--color-primary)/0.2)]" : "border-border",
+            )}>
+              <button
+                type="button"
                 onClick={() => void handleAddToCart()}
                 disabled={addingToCart || (selectionMode && selectedMealIds.size === 0)}
-                className="gap-1.5"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  selectionMode && selectedMealIds.size > 0
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-card text-foreground hover:bg-secondary",
+                )}
               >
                 {addingToCart ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -929,10 +937,10 @@ export function PlanningPage() {
                       ? `Ajouter au panier (${selectedMealIds.size})`
                       : "Ajouter au panier"}
                 </span>
-              </Button>
-              <Button
-                variant={selectionMode ? "default" : "outline"}
-                size="icon-sm"
+              </button>
+              <div className={cn("w-px self-stretch", selectionMode ? "bg-primary/30" : "bg-border")} />
+              <button
+                type="button"
                 onClick={() => {
                   if (selectionMode) {
                     setSelectionMode(false)
@@ -942,9 +950,15 @@ export function PlanningPage() {
                   }
                 }}
                 title={selectionMode ? "Quitter la sélection" : "Sélectionner des recettes à ajouter au panier"}
+                className={cn(
+                  "flex items-center justify-center px-2 py-1.5 transition-colors",
+                  selectionMode
+                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                    : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
               >
                 <ListChecks className="h-3.5 w-3.5" />
-              </Button>
+              </button>
             </div>
 
             {/* Sélecteur nombre de jours */}
