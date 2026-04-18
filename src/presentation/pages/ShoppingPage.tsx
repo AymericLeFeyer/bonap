@@ -13,7 +13,10 @@ import {
   Tag,
   ChevronDown,
   Sparkles,
+  ChevronRight,
 } from "lucide-react"
+import { DEFAULT_HABITUELS } from "../../shared/constants/defaultHabituels.ts"
+import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { useShopping } from "../hooks/useShopping.ts"
@@ -690,6 +693,88 @@ function GroupedHabituels({ items, cartItems, labels, onAddToCart, onDelete, onU
   )
 }
 
+// ─── DefaultCatalog ───────────────────────────────────────────────────────────
+
+interface DefaultCatalogProps {
+  habituelsItems: import("../../domain/shopping/entities/ShoppingItem.ts").ShoppingItem[]
+  onAdd: (name: string) => void
+}
+
+function DefaultCatalog({ habituelsItems, onAdd }: DefaultCatalogProps) {
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
+
+  const toggle = (id: string) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const isInHabituels = (name: string) =>
+    habituelsItems.some((i) => (i.note ?? "").toLowerCase() === name.toLowerCase())
+
+  return (
+    <div className="flex flex-col">
+      <div className="px-4 py-2.5 bg-secondary/30 border-t border-border/30">
+        <p className="text-[9.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+          Catalogue par défaut
+        </p>
+      </div>
+      {DEFAULT_HABITUELS.map((category) => {
+        const isOpen = openCategories.has(category.id)
+        return (
+          <div key={category.id} className="border-t border-border/20">
+            <button
+              type="button"
+              onClick={() => toggle(category.id)}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left hover:bg-secondary/30 transition-colors"
+            >
+              <span className="text-sm leading-none">{category.emoji}</span>
+              <span className="flex-1 text-sm font-medium text-foreground/80">{category.label}</span>
+              <ChevronRight
+                className={cn(
+                  "h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-150",
+                  isOpen && "rotate-90",
+                )}
+              />
+            </button>
+
+            {isOpen && (
+              <ul className="pb-1">
+                {category.items.map((item) => {
+                  const already = isInHabituels(item)
+                  return (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 px-4 py-1.5 hover:bg-secondary/20 transition-colors"
+                    >
+                      <span className={cn("flex-1 text-sm", already && "text-muted-foreground/50")}>{item}</span>
+                      {already ? (
+                        <Check className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onAdd(item)}
+                          aria-label={`Ajouter ${item} aux habituels`}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border/60 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── ShoppingPage ──────────────────────────────────────────────────────────────
 
 export function ShoppingPage() {
@@ -716,6 +801,7 @@ export function ShoppingPage() {
   } = useShopping()
 
   const { categorize: categorizeWithAI, loading: aiLoading, error: aiError } = useCategorizeItems()
+  const { enabled: showDefaultCatalog } = useDefaultHabituels()
 
   const [newItemNote, setNewItemNote] = useState("")
   const [newItemQty, setNewItemQty] = useState(1)
@@ -1013,6 +1099,14 @@ export function ShoppingPage() {
                 onUpdateNote={(i, note) => void updateHabituelNote(i, note)}
                 onUpdateLabel={(i, labelId) => void updateHabituelLabel(i, labelId)}
               />
+
+              {/* Catalogue par défaut */}
+              {showDefaultCatalog && (
+                <DefaultCatalog
+                  habituelsItems={habituelsItems}
+                  onAdd={(name) => void addHabituel(name)}
+                />
+              )}
 
               {/* Formulaire d'ajout habituel */}
               <div className="border-t border-border/40 bg-secondary/20 p-3 rounded-b-[var(--radius-2xl)]">

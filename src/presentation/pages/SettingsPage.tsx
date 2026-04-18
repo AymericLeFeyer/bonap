@@ -12,6 +12,7 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
+import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
@@ -122,6 +123,7 @@ export function SettingsPage() {
   const { showBreakfast, setShowBreakfast } = usePlanningPreferences()
   const { familySize, setFamilySize } = useFamilySize()
   const { flags, setFlag } = useFeatureFlags()
+  const { enabled: defaultHabituelsEnabled, toggle: toggleDefaultHabituels } = useDefaultHabituels()
   const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
@@ -382,6 +384,23 @@ export function SettingsPage() {
             description="Affiche les calories et protéines sur les recettes"
             enabled={flags.nutrition}
             onChange={(v) => setFlag("nutrition", v)}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Liste de courses ── */}
+      <CollapsibleSection
+        icon={<span className="text-base leading-none">🛒</span>}
+        iconBg="bg-[oklch(0.93_0.05_145)] dark:bg-[oklch(0.22_0.04_145)]"
+        title="Liste de courses"
+        subtitle="Habituels et catalogue par défaut"
+      >
+        <div className="divide-y divide-border">
+          <FeatureRow
+            label="Catalogue par défaut"
+            description="Affiche un catalogue d'articles suggérés dans la section Habituels"
+            enabled={defaultHabituelsEnabled}
+            onChange={toggleDefaultHabituels}
           />
         </div>
       </CollapsibleSection>
