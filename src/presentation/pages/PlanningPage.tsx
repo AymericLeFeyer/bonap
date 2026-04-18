@@ -607,7 +607,7 @@ export function PlanningPage() {
         const selected = getMealServings(m)
         const base = parseServings(m.recipe?.recipeYield)
         const servingsRatio = selected && base && base > 0 ? selected / base : 1
-        return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio }
+        return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio, date: m.date }
       })
     await addRecipesToCart(meals)
   }
@@ -637,7 +637,7 @@ export function PlanningPage() {
   const handleAddToCartWithDays = async () => {
     const meals = mealPlans
       .filter((m) => selectedDays.has(m.date) && m.recipe?.slug && m.recipe?.name)
-      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
+      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name, date: m.date }))
     await addRecipesToCart(meals)
   }
 
