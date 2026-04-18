@@ -8,6 +8,8 @@ import {
 interface MealEntry {
   slug: string
   recipeName: string
+  date?: string
+  servingsRatio?: number
 }
 
 export function useAddRecipesToCart() {
@@ -24,10 +26,10 @@ export function useAddRecipesToCart() {
       const { list } = await getShoppingItemsUseCase.execute()
       const recipes = await getRecipesByIdsUseCase.execute(meals.map((m) => m.slug))
       const entries = meals
-        .map(({ slug, recipeName }) => {
+        .map(({ slug, recipeName, date }) => {
           const recipe = recipes.find((r) => r.slug === slug)
           if (!recipe) return null
-          return { recipeName, recipeSlug: slug, ingredients: recipe.recipeIngredient ?? [] }
+          return { recipeName, recipeSlug: slug, ingredients: recipe.recipeIngredient ?? [], date }
         })
         .filter((e): e is NonNullable<typeof e> => e !== null)
       await addRecipesToListUseCase.execute(list.id, entries)

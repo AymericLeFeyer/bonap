@@ -8,6 +8,7 @@ interface RecipeEntry {
   recipeName: string
   recipeSlug: string
   ingredients: MealieIngredient[]
+  date?: string
 }
 
 export class AddRecipesToListUseCase {
@@ -29,8 +30,12 @@ export class AddRecipesToListUseCase {
       recipeSlugStore.set(recipeName, recipeSlug)
     }
 
-    const items = entries.flatMap(({ recipeName, ingredients }) =>
-      ingredients
+    const items = entries.flatMap(({ recipeName, ingredients, date }) => {
+      const dayLabel = date
+        ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long" })
+        : undefined
+      const recipeSuffix = dayLabel ? `${recipeName} (${dayLabel})` : recipeName
+      return ingredients
         .map((ing) => ing.food?.name ?? ing.note ?? ing.originalText)
         .filter((display): display is string => Boolean(display?.trim()))
         .map((display) => {
@@ -39,11 +44,11 @@ export class AddRecipesToListUseCase {
           return {
             shoppingListId: listId,
             isFood: false,
-            note: `${display} — ${recipeName}`,
+            note: `${display} — ${recipeSuffix}`,
             labelId,
           }
         })
-    )
+    })
     await this.repository.addItems(listId, items)
   }
 }

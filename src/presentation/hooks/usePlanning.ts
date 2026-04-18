@@ -107,7 +107,7 @@ export function usePlanning() {
   const goToNextDay = () => setCenterDate((prev) => addDays(prev, 1))
   const goToPrevPeriod = () => setCenterDate((prev) => addDays(prev, -nbDays))
   const goToNextPeriod = () => setCenterDate((prev) => addDays(prev, nbDays))
-  const goToToday = () => setCenterDate(currentWeekTuesday())
+  const goToToday = () => setCenterDate(nbDays === 7 ? currentWeekTuesday() : today())
   const goToTodayMobile = () => setCenterDate(today())
 
   const addMeal = useCallback(async (date: string, entryType: string, recipeId?: string, title?: string) => {

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import {
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListChecks, Check,
   Plus, Minus, Loader2, AlertCircle, Copy, Eye, Trash2, ShoppingCart, CheckCircle2,
   MessageSquarePlus, MessageSquare, Sparkles,
 } from "lucide-react"
@@ -13,7 +13,7 @@ import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
 import { RecipePickerDialog } from "../components/RecipePickerDialog.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog.tsx"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
@@ -100,9 +100,12 @@ interface MobileMealSectionProps {
   onSelectLeftover: (meal: MealieMealPlan) => void
   onMealTouchStart: (meal: MealieMealPlan, e: React.TouchEvent) => void
   servingsEnabled: boolean
+  selectionMode?: boolean
+  selectedMealIds?: Set<number>
+  onToggleSelect?: (id: number) => void
 }
 
-function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled }: MobileMealSectionProps) {
+function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled, selectionMode, selectedMealIds, onToggleSelect }: MobileMealSectionProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const copyBtnRef = useRef<HTMLButtonElement>(null)
@@ -125,16 +128,36 @@ function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTo
     <div className="flex flex-col gap-2 px-3 pb-3">
       {meals.map((meal) => {
         const mealServings = getMealServings(meal)
+        const isSelected = selectionMode && (selectedMealIds?.has(meal.id) ?? false)
         return (
           <div
             key={meal.id}
-            onTouchStart={(e) => onMealTouchStart(meal, e)}
+            onTouchStart={(e) => !selectionMode && onMealTouchStart(meal, e)}
+            onClick={() => selectionMode && onToggleSelect?.(meal.id)}
             className={cn(
-              "rounded-[var(--radius-lg)]",
-              "bg-card border border-border/40 shadow-subtle overflow-hidden",
+              "relative rounded-[var(--radius-lg)]",
+              "bg-card border shadow-subtle overflow-hidden",
               "touch-none select-none",
+              selectionMode ? "cursor-pointer" : "",
+              isSelected
+                ? "border-primary ring-2 ring-primary ring-offset-1"
+                : "border-border/40",
             )}
           >
+            {selectionMode && (
+              <div
+                className={cn(
+                  "absolute top-1.5 right-1.5 z-10",
+                  "h-5 w-5 rounded-[var(--radius-sm)] border-2 flex items-center justify-center",
+                  "transition-all",
+                  isSelected
+                    ? "bg-primary border-primary"
+                    : "bg-black/20 border-white/80",
+                )}
+              >
+                {isSelected && <Check className="h-3 w-3 text-primary-foreground stroke-[3]" />}
+              </div>
+            )}
             {meal.recipe ? (
               <div className="relative w-full aspect-square">
                 <img
@@ -273,11 +296,15 @@ interface MealCellProps {
   onView: (meal: MealieMealPlan) => void
   onServingsChange: (meal: MealieMealPlan, servings: number) => void
   servingsEnabled: boolean
+  selectionMode?: boolean
+  selectedMealIds?: Set<number>
+  onToggleSelect?: (id: number) => void
 }
 
 function MealCell({
   meals, lastMeals, onAdd, onDelete, onSelectLeftover, onNote,
   colorClass, date, entryType, onDrop, onView, onServingsChange, servingsEnabled,
+  selectionMode, selectedMealIds, onToggleSelect,
 }: MealCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -349,22 +376,43 @@ function MealCell({
           const name = meal.recipe?.name ?? meal.title ?? "Sans titre"
           const mealServings = getMealServings(meal)
           const baseServings = parseServings(meal.recipe?.recipeYield)
+          const isSelected = selectionMode && (selectedMealIds?.has(meal.id) ?? false)
           return (
             <div
               key={meal.id}
-              draggable
+              draggable={!selectionMode}
               onDragStart={(e) => {
+                if (selectionMode) return
                 e.dataTransfer.setData("application/json", JSON.stringify(meal))
                 e.dataTransfer.effectAllowed = "move"
               }}
+              onClick={() => selectionMode && onToggleSelect?.(meal.id)}
               className={cn(
-                "flex flex-col rounded-[var(--radius-lg)]",
-                "bg-card border border-border/40 shadow-subtle",
-                "cursor-grab active:cursor-grabbing",
-                "hover:border-primary/30 hover:shadow-warm",
+                "relative flex flex-col rounded-[var(--radius-lg)]",
+                "bg-card border shadow-subtle",
                 "transition-all duration-150 overflow-hidden",
+                selectionMode
+                  ? "cursor-pointer"
+                  : "cursor-grab active:cursor-grabbing hover:border-primary/30 hover:shadow-warm",
+                isSelected
+                  ? "border-primary ring-2 ring-primary ring-offset-1"
+                  : "border-border/40",
               )}
             >
+              {selectionMode && (
+                <div
+                  className={cn(
+                    "absolute top-1.5 right-1.5 z-10",
+                    "h-5 w-5 rounded-[var(--radius-sm)] border-2 flex items-center justify-center",
+                    "transition-all pointer-events-none",
+                    isSelected
+                      ? "bg-primary border-primary"
+                      : "bg-black/20 border-white/80",
+                  )}
+                >
+                  {isSelected && <Check className="h-3 w-3 text-primary-foreground stroke-[3]" />}
+                </div>
+              )}
               <div className="flex items-center gap-2 p-2">
                 {meal.recipe && (
                   <img
@@ -569,8 +617,8 @@ export function PlanningPage() {
   const [previewRecipe, setPreviewRecipe] = useState<{ slug: string; targetServings?: number } | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
   const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
-  const [dayPickerOpen, setDayPickerOpen] = useState(false)
-  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedMealIds, setSelectedMealIds] = useState<Set<number>>(new Set())
   const [autoPlanning, setAutoPlanning] = useState(false)
   const [autoPlanError, setAutoPlanError] = useState<string | null>(null)
   const [autoPlanInfo, setAutoPlanInfo] = useState<string | null>(null)
@@ -589,7 +637,12 @@ export function PlanningPage() {
   const [mobileDragOver, setMobileDragOver] = useState<{ date: string; type: string } | null>(null)
 
   useEffect(() => { mobileMenuMealRef.current = setMobileMenuMeal }, [])
-  useEffect(() => { if (cartSuccess && dayPickerOpen) setDayPickerOpen(false) }, [cartSuccess, dayPickerOpen])
+  useEffect(() => {
+    if (cartSuccess && selectionMode) {
+      setSelectionMode(false)
+      setSelectedMealIds(new Set())
+    }
+  }, [cartSuccess, selectionMode])
 
   const handlePreviewOpenChange = (open: boolean) => {
     if (!open) setPreviewRecipe(null)
@@ -597,48 +650,30 @@ export function PlanningPage() {
 
   const days = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i - 1))
   const mobileDays = Array.from({ length: nbDays }, (_, i) => addDays(centerDate, i))
-  const pickerDays = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i))
-
   const handleAddToCart = async () => {
-    const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
-    const meals = mealPlans
-      .filter((m) => visibleDateStrs.has(m.date) && m.recipe?.slug && m.recipe?.name)
-      .map((m) => {
-        const selected = getMealServings(m)
-        const base = parseServings(m.recipe?.recipeYield)
-        const servingsRatio = selected && base && base > 0 ? selected / base : 1
-        return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio }
-      })
+    let filtered: typeof mealPlans
+    if (selectionMode && selectedMealIds.size > 0) {
+      filtered = mealPlans.filter((m) => selectedMealIds.has(m.id) && m.recipe?.slug && m.recipe?.name)
+    } else {
+      const visibleDateStrs = new Set(days.map((d) => formatDate(d)))
+      filtered = mealPlans.filter((m) => visibleDateStrs.has(m.date) && m.recipe?.slug && m.recipe?.name)
+    }
+    const meals = filtered.map((m) => {
+      const selected = getMealServings(m)
+      const base = parseServings(m.recipe?.recipeYield)
+      const servingsRatio = selected && base && base > 0 ? selected / base : 1
+      return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio, date: m.date }
+    })
     await addRecipesToCart(meals)
   }
 
-  const openDayPicker = () => {
-    const daysWithMeals = pickerDays
-      .map((d) => formatDate(d))
-      .filter((dateStr) => mealPlans.some((m) => m.date === dateStr && m.recipe))
-    setSelectedDays(new Set(daysWithMeals))
-    setDayPickerOpen(true)
-  }
-
-  const toggleDay = (dateStr: string) => {
-    setSelectedDays((prev) => {
+  const toggleMealSelection = (id: number) => {
+    setSelectedMealIds((prev) => {
       const next = new Set(prev)
-      if (next.has(dateStr)) next.delete(dateStr)
-      else next.add(dateStr)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
-  }
-
-  const toggleAllDays = () => {
-    const allDays = new Set(pickerDays.map((d) => formatDate(d)))
-    setSelectedDays(selectedDays.size === allDays.size ? new Set() : allDays)
-  }
-
-  const handleAddToCartWithDays = async () => {
-    const meals = mealPlans
-      .filter((m) => selectedDays.has(m.date) && m.recipe?.slug && m.recipe?.name)
-      .map((m) => ({ slug: m.recipe!.slug, recipeName: m.recipe!.name }))
-    await addRecipesToCart(meals)
   }
 
   const getMeals = (date: Date, type: string): MealieMealPlan[] => {
@@ -871,14 +906,22 @@ export function PlanningPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Ajouter au panier — split button */}
-            <div className="flex items-center">
-              <Button
-                variant="outline"
-                size="sm"
+            {/* Ajouter au panier + mode sélection — groupe visuel */}
+            <div className={cn(
+              "flex items-center rounded-[var(--radius-lg)] border overflow-hidden",
+              selectionMode ? "border-primary/60 shadow-[0_0_0_1px_oklch(var(--color-primary)/0.2)]" : "border-border",
+            )}>
+              <button
+                type="button"
                 onClick={() => void handleAddToCart()}
-                disabled={addingToCart}
-                className="gap-1.5 rounded-r-none border-r-0"
+                disabled={addingToCart || (selectionMode && selectedMealIds.size === 0)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  selectionMode && selectedMealIds.size > 0
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-card text-foreground hover:bg-secondary",
+                )}
               >
                 {addingToCart ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -888,19 +931,34 @@ export function PlanningPage() {
                   <ShoppingCart className="h-3.5 w-3.5" />
                 )}
                 <span className="hidden sm:inline">
-                  {cartSuccess ? "Ajouté !" : "Ajouter au panier"}
+                  {cartSuccess
+                    ? "Ajouté !"
+                    : selectionMode && selectedMealIds.size > 0
+                      ? `Ajouter au panier (${selectedMealIds.size})`
+                      : "Ajouter au panier"}
                 </span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openDayPicker}
-                disabled={addingToCart}
-                className="rounded-l-none px-2 border-l border-border/60"
-                title="Sélectionner les jours"
+              </button>
+              <div className={cn("w-px self-stretch", selectionMode ? "bg-primary/30" : "bg-border")} />
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectionMode) {
+                    setSelectionMode(false)
+                    setSelectedMealIds(new Set())
+                  } else {
+                    setSelectionMode(true)
+                  }
+                }}
+                title={selectionMode ? "Quitter la sélection" : "Sélectionner des recettes à ajouter au panier"}
+                className={cn(
+                  "flex items-center justify-center px-2 py-1.5 transition-colors",
+                  selectionMode
+                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                    : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
               >
-                <ChevronDown className="h-3.5 w-3.5" />
-              </Button>
+                <ListChecks className="h-3.5 w-3.5" />
+              </button>
             </div>
 
             {/* Sélecteur nombre de jours */}
@@ -1071,6 +1129,9 @@ export function PlanningPage() {
                             onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                             onMealTouchStart={handleMealTouchStart}
                             servingsEnabled={flags.servings}
+                            selectionMode={selectionMode}
+                            selectedMealIds={selectedMealIds}
+                            onToggleSelect={toggleMealSelection}
                           />
                         </div>
                       )
@@ -1154,6 +1215,9 @@ export function PlanningPage() {
                           }}
                           onServingsChange={(meal, servings) => void handleServingsChange(meal, servings)}
                           servingsEnabled={flags.servings}
+                          selectionMode={selectionMode}
+                          selectedMealIds={selectedMealIds}
+                          onToggleSelect={toggleMealSelection}
                         />
                       )
                     })}
@@ -1301,88 +1365,6 @@ export function PlanningPage() {
             </Button>
             <Button size="sm" onClick={() => void handleSaveNote()}>
               Enregistrer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Dialog sélection des jours pour la liste de courses ── */}
-      <Dialog open={dayPickerOpen} onOpenChange={setDayPickerOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ajouter au panier</DialogTitle>
-            <DialogDescription>Sélectionnez les jours à inclure dans la liste de courses.</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-2">
-            {/* Toggle tout */}
-            <button
-              type="button"
-              onClick={toggleAllDays}
-              className="self-start text-xs font-medium text-primary hover:underline"
-            >
-              {selectedDays.size === pickerDays.length ? "Tout désélectionner" : "Tout sélectionner"}
-            </button>
-
-            {/* Grille 2 colonnes × 7 lignes */}
-            <div className="grid grid-cols-2 gap-1.5">
-              {pickerDays.map((day) => {
-                const dateStr = formatDate(day)
-                const dayMeals = mealPlans.filter((m) => m.date === dateStr && m.recipe)
-                const checked = selectedDays.has(dateStr)
-                const dayLabel = day.toLocaleDateString("fr-FR", { weekday: "short" })
-                const dateLabel = formatDayDate(day)
-                return (
-                  <label
-                    key={dateStr}
-                    className={cn(
-                      "flex items-center gap-2 cursor-pointer select-none",
-                      "rounded-[var(--radius-lg)] border px-2.5 py-2 transition-colors",
-                      checked
-                        ? "border-primary/40 bg-primary/5"
-                        : "border-border/40 bg-card hover:bg-secondary/50",
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleDay(dateStr)}
-                      className="h-3.5 w-3.5 shrink-0 accent-[oklch(var(--color-primary))] cursor-pointer"
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold capitalize leading-tight">
-                        {dayLabel} <span className="font-normal text-muted-foreground">{dateLabel}</span>
-                      </span>
-                      {dayMeals.length === 0 ? (
-                        <span className="text-[10px] text-muted-foreground/50 italic">Aucun repas</span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground truncate">
-                          {dayMeals.map((m) => m.recipe!.name).join(" · ")}
-                        </span>
-                      )}
-                    </div>
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" size="sm" onClick={() => setDayPickerOpen(false)}>
-              Annuler
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => void handleAddToCartWithDays()}
-              disabled={selectedDays.size === 0 || addingToCart}
-              className="gap-1.5"
-            >
-              {addingToCart ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ShoppingCart className="h-3.5 w-3.5" />
-              )}
-              Ajouter {selectedDays.size > 0 ? `${selectedDays.size} jour${selectedDays.size > 1 ? "s" : ""}` : ""}
             </Button>
           </div>
         </DialogContent>

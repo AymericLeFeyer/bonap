@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Github, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders, ShoppingCart } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -12,6 +12,7 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
+import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
@@ -122,6 +123,7 @@ export function SettingsPage() {
   const { showBreakfast, setShowBreakfast } = usePlanningPreferences()
   const { familySize, setFamilySize } = useFamilySize()
   const { flags, setFlag } = useFeatureFlags()
+  const { enabled: defaultHabituelsEnabled, toggle: toggleDefaultHabituels } = useDefaultHabituels()
   const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
@@ -382,6 +384,23 @@ export function SettingsPage() {
             description="Affiche les calories et protéines sur les recettes"
             enabled={flags.nutrition}
             onChange={(v) => setFlag("nutrition", v)}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Liste de courses ── */}
+      <CollapsibleSection
+        icon={<ShoppingCart className="h-4 w-4 text-[oklch(0.45_0.12_145)] dark:text-[oklch(0.70_0.10_145)]" />}
+        iconBg="bg-[oklch(0.93_0.05_145)] dark:bg-[oklch(0.22_0.04_145)]"
+        title="Liste de courses"
+        subtitle="Habituels et catalogue par défaut"
+      >
+        <div className="divide-y divide-border">
+          <FeatureRow
+            label="Catalogue par défaut"
+            description="Affiche un catalogue d'articles suggérés dans la section Habituels"
+            enabled={defaultHabituelsEnabled}
+            onChange={toggleDefaultHabituels}
           />
         </div>
       </CollapsibleSection>

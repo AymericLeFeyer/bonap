@@ -1,0 +1,36 @@
+{
+  "name": "Bonap",
+  "short_name": "Bonap",
+  "description": "Gestion de recettes et planning de repas",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#d9621e",
+  "icons": [
+    {
+      "src": "./bonap.png",
+      "sizes": "200x200",
+      "type": "image/png"
+    },
+    {
+      "src": "./bonap.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./bonap.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "./bonap.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle"],
+  "lang": "fr"
+}

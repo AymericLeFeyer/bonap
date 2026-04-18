@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
           target: 'http://127.0.0.1:3001',
           changeOrigin: true,
           secure: false,
-          rewrite: (path: string) => path.replace(/^\/api\/marmiton/, ''),
+          rewrite: (path: string) => path.replace(/^\/api\/bonap/, ''),
         },
         '/api/ollama': {
           target: env.LLM_OLLAMA_URL || 'http://127.0.0.1:11434',

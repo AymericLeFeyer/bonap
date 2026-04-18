@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown"
+import rehypeRaw from "rehype-raw"
 import { cn } from "../../lib/utils.ts"
 
 interface MarkdownContentProps {
@@ -14,6 +15,7 @@ export function MarkdownContent({ children, className }: MarkdownContentProps) {
   return (
     <div className={cn("text-sm text-muted-foreground", className)}>
       <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
         components={{
           p: ({ children }) => (
             <p className="leading-relaxed [&:not(:last-child)]:mb-2">{children}</p>
@@ -42,6 +44,14 @@ export function MarkdownContent({ children, className }: MarkdownContentProps) {
             <blockquote className="my-2 border-l-2 border-primary/40 pl-3 text-muted-foreground italic">
               {children}
             </blockquote>
+          ),
+          img: ({ src, alt }) => (
+            <img
+              src={src}
+              alt={alt ?? ""}
+              className="my-3 max-w-full rounded-[var(--radius-lg)] object-contain"
+              loading="lazy"
+            />
           ),
         }}
       >
