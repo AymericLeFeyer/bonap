@@ -43,6 +43,14 @@ export function MarkdownContent({ children, className }: MarkdownContentProps) {
               {children}
             </blockquote>
           ),
+          img: ({ src, alt }) => (
+            <img
+              src={src}
+              alt={alt ?? ""}
+              className="my-3 max-w-full rounded-[var(--radius-lg)] object-contain"
+              loading="lazy"
+            />
+          ),
         }}
       >
         {children}
