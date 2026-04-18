@@ -1,15 +1,17 @@
 services:
   bonap:
-    image: ghcr.io/aymericlefeyer/bonap:latest
+    #image: ghcr.io/aymericlefeyer/bonap:latest
     # Pour builder localement : remplacer la ligne image par :
-    # build: .
+    build: .
     ports:
       - "3000:80"
     environment:
       # URL de Mealie accessible depuis le navigateur (ou nom de service Docker)
-      - VITE_MEALIE_URL=http://mon-mealie:9000
+      - VITE_MEALIE_URL=${VITE_MEALIE_URL:-http://mon-mealie:9000}
       # Token API Mealie (Mealie → Profil → API Tokens)
-      - VITE_MEALIE_TOKEN=mon_token_api
+      - VITE_MEALIE_TOKEN=${VITE_MEALIE_TOKEN:-mon_token_api}
       # - VITE_THEME =  light | dark | system ( optional )
+      - VITE_THEME=${VITE_THEME:-}
       # - VITE_ACCENT_COLORS = orange | blue | violet | green | rose | teal | amber | indigo ( optional )
+      - VITE_ACCENT_COLORS=${VITE_ACCENT_COLORS:-}
     restart: unless-stopped

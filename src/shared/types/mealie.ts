@@ -112,6 +112,8 @@ export interface MealieRecipe {
   prepTime?: string
   performTime?: string
   totalTime?: string
+  recipeServings?: number
+  recipeYieldQuantity?: number
   recipeYield?: string
   recipeIngredient?: MealieIngredient[]
   recipeInstructions?: MealieInstruction[]

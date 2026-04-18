@@ -1107,7 +1107,7 @@ async function limitedParallel(tasks, concurrency) {
 }
 
 // GET /search?q=<query>&limit=<n>&page=<n>
-app.get('/search', async (req, res) => {
+app.get('/marmiton/search', async (req, res) => {
   try {
     const q = (req.query.q ?? '').trim()
     if (!q) return res.status(400).json({ error: 'Paramètre q manquant' })
@@ -1208,7 +1208,7 @@ app.get('/search', async (req, res) => {
 
     res.json({ results, hasMore, page })
   } catch (e) {
-    console.error('[Marmiton] Search error:', e.message)
+    console.error('[Bonap BFF] Search error:', e.message)
     res.status(500).json({ error: e.message })
   }
 })
@@ -1217,6 +1217,39 @@ app.get('/health', (_req, res) => res.json({
   ok: true,
   ollamaConfigured: !!(OLLAMA_URL && OLLAMA_MODEL),
 }))
+
+// ─── Shared settings (cross-origin persistent storage) ────────────────────────
+// Stored in /data/bonap-settings.json so they survive container restarts and
+// are shared between http://ip:8123 and https://domain access.
+const SETTINGS_FILE = '/data/bonap-settings.json'
+
+function readSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))
+    }
+  } catch { /* ignore */ }
+  return {}
+}
+
+function writeSettings(data) {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8')
+  } catch (e) {
+    console.error('[Bonap] Failed to write settings:', e.message)
+  }
+}
+
+app.get('/settings', (_req, res) => {
+  res.json(readSettings())
+})
+
+app.patch('/settings', (req, res) => {
+  const current = readSettings()
+  const updated = { ...current, ...req.body }
+  writeSettings(updated)
+  res.json(updated)
+})
 
 app.get('/ciqual/search', async (req, res) => {
   try {
@@ -1378,7 +1411,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
           { role: 'user', content: text },
         ],
       }),
-      // Keep this lower than nginx /api/marmiton proxy_read_timeout to avoid gateway 504.
+      // Keep this lower than nginx /api/bonap proxy_read_timeout to avoid gateway 504.
       signal: AbortSignal.timeout(45000),
     })
     if (!r.ok) {
@@ -1398,7 +1431,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
     return { data: JSON.parse(match[0]), error: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[Marmiton] Ollama server-side error:', msg)
+    console.error('[Bonap BFF] Ollama server-side error:', msg)
     return { data: null, error: msg || 'Erreur inconnue lors de l\'appel Ollama' }
   }
 }
@@ -1407,7 +1440,7 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
 // 1. Fetches the page, tries JSON-LD Recipe extraction (fast, no LLM needed)
 // 2. If no schema found, calls Ollama server-side (env vars or query params fallback)
 // 3. Returns { schema, text, ollamaError? }
-app.get('/fetch-recipe', async (req, res) => {
+app.get('/marmiton/fetch-recipe', async (req, res) => {
   const rawUrl = (req.query.url ?? '').trim()
   if (!rawUrl) return res.status(400).json({ error: 'Paramètre url manquant' })
 
@@ -1533,7 +1566,7 @@ app.get('/fetch-recipe', async (req, res) => {
 
     // ⑦ If no schema and Ollama is configured, call it server-side (avoids nginx timeout)
     if (!schema && effectiveOllamaUrl && effectiveOllamaModel) {
-      console.log(`[Marmiton] No JSON-LD found, calling Ollama server-side (${effectiveOllamaUrl}, ${effectiveOllamaModel})...`)
+      console.log(`[Bonap BFF] No JSON-LD found, calling Ollama server-side (${effectiveOllamaUrl}, ${effectiveOllamaModel})...`)
       const ollamaResult = await callOllamaServerSide(effectiveOllamaUrl, effectiveOllamaModel, text)
       const llmResult = ollamaResult.data
       const ollamaError = ollamaResult.error
@@ -1560,7 +1593,7 @@ app.get('/fetch-recipe', async (req, res) => {
 })
 
 // GET /image?url=<encoded_url> — proxy pour télécharger l'image sans CORS
-app.get('/image', async (req, res) => {
+app.get('/marmiton/image', async (req, res) => {
   const url = (req.query.url ?? '').trim()
   let parsedImg
   try { parsedImg = new URL(url) } catch { return res.status(400).json({ error: 'URL invalide' }) }
@@ -1579,6 +1612,54 @@ app.get('/image', async (req, res) => {
   }
 })
 
+// ─── Dynamic Ollama proxy ─────────────────────────────────────────────────────
+// Allows the browser to reach a local Ollama instance via server-side forwarding,
+// avoiding mixed-content errors (HTTPS page → HTTP Ollama).
+// Restricted to private/local network addresses only (no SSRF to public internet).
+
+function isPrivateOrLocalUrl(rawUrl) {
+  try {
+    const u = new URL(rawUrl)
+    const h = u.hostname
+    return (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      /^10\./.test(h) ||
+      /^192\.168\./.test(h) ||
+      /^172\.(1[6-9]|2[0-9]|3[01])\./.test(h) ||
+      h.endsWith('.local')
+    )
+  } catch {
+    return false
+  }
+}
+
+app.all('/ollama-proxy/*', async (req, res) => {
+  const target = req.headers['x-ollama-target']
+  if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
+    return res
+      .status(400)
+      .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
+  }
+  const subpath = req.params[0] ?? ''
+  const url = `${target.replace(/\/+$/, '')}/${subpath}`
+  try {
+    const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
+    const upstreamRes = await fetch(url, {
+      method: req.method,
+      headers: { 'content-type': 'application/json' },
+      body: hasBody ? JSON.stringify(req.body) : undefined,
+    })
+    res.status(upstreamRes.status)
+    const ct = upstreamRes.headers.get('content-type')
+    if (ct) res.set('content-type', ct)
+    const body = await upstreamRes.text()
+    res.send(body)
+  } catch (e) {
+    res.status(502).json({ error: `Proxy Ollama dynamique : ${e.message}` })
+  }
+})
+
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`[Marmiton] Proxy en écoute sur le port ${PORT}`)
+  console.log(`[Bonap BFF] En écoute sur le port ${PORT}`)
 })

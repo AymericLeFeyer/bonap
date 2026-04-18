@@ -31,7 +31,7 @@ export async function estimateRecipeNutrition(
   ingredients: RecipeFormIngredient[],
   matchHints?: Record<string, string>,
 ): Promise<NutritionEstimateResult> {
-  const response = await fetch(`${getIngressBasename()}/api/marmiton/nutrition-estimate`, {
+  const response = await fetch(`${getIngressBasename()}/api/bonap/nutrition-estimate`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ ingredients, matchHints }),
@@ -49,7 +49,7 @@ export async function searchCiqualFoods(query: string, limit = 20): Promise<Ciqu
   const q = query.trim()
   if (!q) return []
 
-  const url = new URL(`${getIngressBasename()}/api/marmiton/ciqual/search`, window.location.origin)
+  const url = new URL(`${getIngressBasename()}/api/bonap/ciqual/search`, window.location.origin)
   url.searchParams.set("q", q)
   url.searchParams.set("limit", String(limit))
 

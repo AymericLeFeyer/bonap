@@ -54,7 +54,7 @@ else
   printf '    location ^~ /api/ollama/ { return 503; }\n' > /tmp/ollama_block.conf
 fi
 
-# Build nginx config explicitly so HA ingress and Marmiton route stay consistent
+# Build nginx config explicitly so HA ingress and BFF route stay consistent
 cat > /tmp/nginx_header.conf << 'NGINXEOF'
 server {
     listen 3000;
@@ -68,7 +68,7 @@ cat /tmp/ollama_block.conf >> /tmp/nginx_header.conf
 
 cat >> /tmp/nginx_header.conf << 'NGINXEOF'
 
-    location ^~ /api/marmiton/ {
+    location ^~ /api/bonap/ {
         proxy_pass http://127.0.0.1:3001/;
         proxy_http_version 1.1;
         proxy_set_header Host localhost;
@@ -95,6 +95,13 @@ cat >> /tmp/nginx_header.conf << 'NGINXEOF'
         proxy_read_timeout 300s;
     }
 
+    location ~ ^/[^/]+/(assets/.+)$ {
+        rewrite ^/[^/]+/(assets/.+)$ /$1 last;
+    }
+    location ~ ^/[^/]+/env-config\.js$ {
+        rewrite ^.*/env-config\.js$ /env-config.js last;
+    }
+
     location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|ico|webp)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -119,12 +126,12 @@ cat /etc/nginx/http.d/default.conf
 
 nginx -t
 
-# Start Marmiton proxy in background when available
-if command -v node >/dev/null 2>&1 && [ -f /proxy/marmiton-proxy.cjs ]; then
-  echo "[Bonap] Démarrage du proxy Marmiton..."
-  OLLAMA_URL="${OLLAMA_URL_CLEAN}" OLLAMA_MODEL="${LLM_MODEL}" node /proxy/marmiton-proxy.cjs &
+# Start Bonap BFF in background when available
+if command -v node >/dev/null 2>&1 && [ -f /proxy/bonap-bff.cjs ]; then
+  echo "[Bonap] Démarrage du BFF..."
+  OLLAMA_URL="${OLLAMA_URL_CLEAN}" OLLAMA_MODEL="${LLM_MODEL}" node /proxy/bonap-bff.cjs &
 else
-  echo "[Bonap] Proxy Marmiton non disponible (node absent ou fichier manquant)"
+  echo "[Bonap] BFF non disponible (node absent ou fichier manquant)"
 fi
 
 echo "[Bonap] Available on port 3000."

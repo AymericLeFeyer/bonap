@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     configureServer() {
       const child = spawn(
         process.platform === 'win32' ? 'node.exe' : 'node',
-        ['ha-addon/marmiton-proxy.cjs'],
+        ['ha-addon/bonap-bff.cjs'],
         {
           stdio: 'inherit',
           env: {
@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
     base: './',
     server: {
       proxy: {
-        '/api/marmiton': {
+        '/api/bonap': {
           target: 'http://127.0.0.1:3001',
           changeOrigin: true,
           secure: false,

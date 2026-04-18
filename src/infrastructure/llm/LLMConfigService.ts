@@ -1,5 +1,7 @@
-import type { LLMConfig, LLMProvider } from '../../shared/types/llm.ts'
+﻿import type { LLMConfig, LLMProvider } from '../../shared/types/llm.ts'
 import { DEFAULT_LLM_CONFIG, LLM_PROVIDERS } from '../../shared/types/llm.ts'
+import { getIngressBasename, isDockerRuntime } from '../../shared/utils/env.ts'
+import { saveSettingToServer } from '../settings/ServerSettingsService.ts'
 
 const STORAGE_KEY = 'bonap_llm_config'
 
@@ -44,7 +46,9 @@ export class LLMConfigService {
     const envFields = getLLMEnvFields()
     const toSave = { ...config }
     for (const field of envFields) delete toSave[field]
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+    const serialized = JSON.stringify(toSave)
+    localStorage.setItem(STORAGE_KEY, serialized)
+    saveSettingToServer('bonap_llm_config', serialized)
   }
 
   isConfigured(): boolean {
@@ -99,6 +103,38 @@ export class LLMConfigService {
       }
     }
   }
+}
+
+/**
+ * Retourne l'URL et les en-têtes à utiliser pour contacter Ollama.
+ *
+ * - DEV           → proxy Vite `/api/ollama`
+ * - baseUrl = "/" → proxy nginx `/api/ollama` (options addon HA)
+ * - Docker + HTTP → proxy dynamique BFF `/api/bonap/ollama-proxy`
+ *                   avec en-tête `X-Ollama-Target` (évite mixed-content HTTPS→HTTP)
+ * - Sinon         → appel direct
+ */
+function getOllamaProxyConfig(
+  baseUrl: string,
+  subpath: string,
+): { url: string; fetchHeaders: Record<string, string> } {
+  const clean = baseUrl.replace(/\/+$/, '')
+  if (import.meta.env.DEV) {
+    return { url: `/api/ollama${subpath}`, fetchHeaders: {} }
+  }
+  if (clean.startsWith('/')) {
+    // URL relative = configurée via les options addon HA → proxy nginx
+    return { url: `${getIngressBasename()}${clean}${subpath}`, fetchHeaders: {} }
+  }
+  if (isDockerRuntime()) {
+    // Docker/HA avec URL HTTP saisie dans Settings → proxy dynamique marmiton
+    return {
+      url: `${getIngressBasename()}/api/bonap/ollama-proxy${subpath}`,
+      fetchHeaders: { 'X-Ollama-Target': clean },
+    }
+  }
+  // Hors Docker : appel direct (localhost, dev hors container…)
+  return { url: `${clean}${subpath}`, fetchHeaders: {} }
 }
 
 async function testAnthropic(
@@ -166,15 +202,33 @@ async function testGoogle(
 async function testOllama(
   baseUrl: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const url = baseUrl.replace(/\/+$/, '')
-  const res = await fetch(`${url}/api/version`)
-  if (res.ok) {
-    const data = (await res.json()) as { version?: string }
-    return { ok: true, message: `Ollama ${data.version ?? ''}` }
+  // Routing :
+  //   DEV           → proxy Vite /api/ollama
+  //   baseUrl = "/" → proxy nginx /api/ollama (configuré dans options addon HA)
+  //   Docker + HTTP → proxy dynamique BFF /api/bonap/ollama-proxy (évite mixed-content)
+  //   Sinon         → appel direct (hors Docker, accès local)
+  const { url, fetchHeaders } = getOllamaProxyConfig(baseUrl, '/api/tags')
+  try {
+    const res = await fetch(url, { headers: fetchHeaders })
+    if (res.ok) {
+      const data = (await res.json()) as { models?: { name: string }[] }
+      const count = data.models?.length ?? 0
+      return { ok: true, message: `Ollama connecté (${count} modèle${count !== 1 ? 's' : ''})` }
+    }
+    if (res.status === 503) {
+      return {
+        ok: false,
+        message: `Proxy Ollama non configuré (503) : renseignez llm_ollama_url dans les options de l'addon HA`,
+      }
+    }
+    return { ok: false, message: `Impossible de joindre Ollama (${res.status})` }
+  } catch {
+    return {
+      ok: false,
+      message: `Ollama non joignable — vérifiez l'URL ou configurez llm_ollama_url dans les options de l'addon HA`,
+    }
   }
-  return { ok: false, message: `Impossible de joindre Ollama (${res.status})` }
 }
-
 async function testOpenRouter(
   apiKey: string,
   model: string,
@@ -231,8 +285,8 @@ async function fetchMistralModels(apiKey: string): Promise<string[]> {
 }
 
 async function fetchOllamaModels(baseUrl: string): Promise<string[]> {
-  const url = baseUrl.replace(/\/+$/, '')
-  const res = await fetch(`${url}/api/tags`)
+  const { url, fetchHeaders } = getOllamaProxyConfig(baseUrl, '/api/tags')
+  const res = await fetch(url, { headers: fetchHeaders })
   if (!res.ok) throw new Error(`${res.status}`)
   const data = (await res.json()) as { models: { name: string }[] }
   return data.models.map((m) => m.name)

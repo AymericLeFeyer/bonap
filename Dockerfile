@@ -24,7 +24,7 @@ FROM node:24-alpine AS marmiton-builder
 
 WORKDIR /proxy
 
-COPY ha-addon/marmiton-package.json package.json
+COPY ha-addon/bff-package.json package.json
 RUN npm install --production
 
 # =============================================================================
@@ -43,7 +43,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Proxy Marmiton (hors addon HA)
 COPY --from=marmiton-builder /proxy/node_modules /proxy/node_modules
-COPY ha-addon/marmiton-proxy.cjs /proxy/marmiton-proxy.cjs
+COPY ha-addon/bonap-bff.cjs /proxy/bonap-bff.cjs
 
 # Script d'entrypoint : génère env-config.js et lance nginx
 COPY docker-entrypoint.sh /docker-entrypoint.sh

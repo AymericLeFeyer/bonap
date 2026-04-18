@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { saveSettingToServer } from "../../infrastructure/settings/ServerSettingsService.ts"
 
 const STORAGE_KEY = "bonap.featureFlags"
 
@@ -30,7 +31,9 @@ export function useFeatureFlags() {
   const setFlag = useCallback((key: keyof FeatureFlags, value: boolean) => {
     setFlagsState((prev) => {
       const next = { ...prev, [key]: value }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      const serialized = JSON.stringify(next)
+      localStorage.setItem(STORAGE_KEY, serialized)
+      saveSettingToServer('bonap.featureFlags', serialized)
       return next
     })
   }, [])

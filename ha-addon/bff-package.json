@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Proxy serveur pour la recherche et l'import Marmiton",
-  "main": "marmiton-proxy.cjs",
+  "main": "bonap-bff.cjs",
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2"
