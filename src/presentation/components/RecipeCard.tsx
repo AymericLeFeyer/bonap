@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import { SeasonBadge } from "./SeasonBadge.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
@@ -12,7 +13,8 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
-  const imageUrl = recipe.image ? recipeImageUrl(recipe, "min-original") : null
+  const [imgError, setImgError] = useState(false)
+  const imageUrl = recipeImageUrl(recipe, "min-original")
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
   const categories = recipe.recipeCategory ?? []
 
@@ -33,10 +35,11 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
       >
         {/* Image carrée */}
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          {imageUrl ? (
+          {!imgError ? (
             <img
               src={imageUrl}
               alt={recipe.name}
+              onError={() => setImgError(true)}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             />
           ) : (

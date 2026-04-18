@@ -167,7 +167,7 @@ export function RecipeDetailPage() {
   // Initialise formData once recipe is loaded
   if (recipe && !formData) {
     setFormData(buildFormData(recipe))
-    if (recipe.image) setImagePreview(recipeImageUrl(recipe, "original"))
+    setImagePreview(recipeImageUrl(recipe, "original"))
   }
 
   // Take Favorite
@@ -537,6 +537,7 @@ export function RecipeDetailPage() {
                     <img
                       src={imagePreview}
                       alt={recipe.name}
+                      onError={() => setImagePreview(null)}
                       className="aspect-video w-full object-cover"
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
