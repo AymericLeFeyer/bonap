@@ -94,7 +94,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
     tags: (recipe.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
-    recipeYield: recipe.recipeYield ?? "",
+    recipeYield: recipe.recipeServings ? String(recipe.recipeServings) : "",
   }
 }
 
@@ -167,7 +167,7 @@ export function RecipeDetailPage() {
   // Initialise formData once recipe is loaded
   if (recipe && !formData) {
     setFormData(buildFormData(recipe))
-    setImagePreview(recipeImageUrl(recipe, "original"))
+    if (recipe.image) setImagePreview(recipeImageUrl(recipe, "original"))
   }
 
   // Take Favorite
@@ -404,7 +404,7 @@ export function RecipeDetailPage() {
     if (updated) {
       setRecipe(updated)
       setFormData(buildFormData(updated))
-      setImagePreview(recipeImageUrl(updated, "original"))
+      if (updated.image) setImagePreview(recipeImageUrl(updated, "original"))
       setIsDirty(false)
     }
   }
@@ -677,11 +677,11 @@ export function RecipeDetailPage() {
                   value={formData.recipeYield ?? ""}
                   displayValue={
                     <span className="text-sm text-muted-foreground">
-                      Portions : {formData.recipeYield || "—"}
+                      Portions : {formData.recipeYield ? `${formData.recipeYield} pers.` : "—"}
                     </span>
                   }
                   onChange={(v) => patch({ recipeYield: v || undefined })}
-                  placeholder="ex : 4 personnes"
+                  placeholder="ex : 4"
                   disabled={saving}
                 />
               </div>

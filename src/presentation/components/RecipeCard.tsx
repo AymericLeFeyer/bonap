@@ -12,7 +12,7 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
-  const imageUrl = recipeImageUrl(recipe, "min-original")
+  const imageUrl = recipe.image ? recipeImageUrl(recipe, "min-original") : null
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
   const categories = recipe.recipeCategory ?? []
 
@@ -33,11 +33,17 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
       >
         {/* Image carrée */}
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          <img
-            src={imageUrl}
-            alt={recipe.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={recipe.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-4xl opacity-20">🍽️</span>
+            </div>
+          )}
 
           {/* Dégradé bas — toujours visible, plus sophistiqué */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-transparent" />

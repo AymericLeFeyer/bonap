@@ -1,0 +1,8 @@
+﻿{
+  "mealie_url": "https://example.com",
+  "mealie_token": "dummy",
+  "llm_provider": "",
+  "llm_api_key": "",
+  "llm_model": "",
+  "llm_ollama_url": ""
+}

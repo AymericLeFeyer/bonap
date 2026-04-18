@@ -56,13 +56,28 @@ function buildInitialInstructions(recipe?: MealieRecipe): RecipeFormInstruction[
 
 function parsePrepTimeToMinutes(value?: string): string {
   if (!value) return ""
+  const trimmed = value.trim()
   // Entier ou string numérique → déjà en minutes
-  if (/^\d+$/.test(value.trim())) {
-    const n = parseInt(value.trim(), 10)
+  if (/^\d+$/.test(trimmed)) {
+    const n = parseInt(trimmed, 10)
     return n > 0 ? String(n) : ""
   }
+  // Format texte Mealie : "10 minutes", "1 minute", "30 min"
+  const textMatch = trimmed.match(/^(\d+)\s*(?:minutes?|mins?)$/i)
+  if (textMatch) {
+    const n = parseInt(textMatch[1], 10)
+    return n > 0 ? String(n) : ""
+  }
+  // Format compact : "1h30", "1h 30m", "2h"
+  const compactMatch = trimmed.match(/^(\d+)\s*h\s*(\d*)\s*m?$/i)
+  if (compactMatch) {
+    const h = parseInt(compactMatch[1], 10)
+    const m = parseInt(compactMatch[2] || "0", 10)
+    const total = h * 60 + m
+    return total > 0 ? String(total) : ""
+  }
   // Format ISO 8601
-  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+  const match = trimmed.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
   if (!match) return ""
   const hours = parseInt(match[1] ?? "0")
   const minutes = parseInt(match[2] ?? "0")
@@ -77,6 +92,7 @@ function buildInitialFormData(recipe?: MealieRecipe): RecipeFormData {
     prepTime: parsePrepTimeToMinutes(recipe?.prepTime),
     performTime: parsePrepTimeToMinutes(recipe?.performTime),
     totalTime: parsePrepTimeToMinutes(recipe?.totalTime),
+    recipeYield: recipe?.recipeServings ? String(recipe.recipeServings) : "",
     recipeIngredient: buildInitialIngredients(recipe),
     recipeInstructions: buildInitialInstructions(recipe),
     seasons: getRecipeSeasonsFromTags(recipe?.tags),
@@ -236,6 +252,29 @@ function RecipeFormContent({ recipe, onClose, onSuccess }: RecipeFormContentProp
               {Number(formData.prepTime) >= 60
                 ? `${Math.floor(Number(formData.prepTime) / 60)}h${Number(formData.prepTime) % 60 > 0 ? `${Number(formData.prepTime) % 60}min` : ""}`
                 : `${formData.prepTime} min`}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Portions */}
+      <div className="space-y-2">
+        <Label htmlFor="recipe-yield">Nombre de portions</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="recipe-yield"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="4"
+            value={formData.recipeYield ?? ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, recipeYield: e.target.value }))}
+            disabled={loading}
+            className="w-32"
+          />
+          {formData.recipeYield && Number(formData.recipeYield) > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {Number(formData.recipeYield) === 1 ? "1 portion" : `${formData.recipeYield} portions`}
             </span>
           )}
         </div>

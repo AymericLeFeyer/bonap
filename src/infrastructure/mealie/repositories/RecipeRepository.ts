@@ -184,7 +184,10 @@ export class RecipeRepository implements IRecipeRepository {
       prepTime: this.minutesToString(data.prepTime) ?? current.prepTime,
       performTime: this.minutesToString(data.performTime) ?? current.performTime,
       totalTime: this.minutesToString(data.totalTime) ?? current.totalTime,
-      recipeYield: data.recipeYield ?? current.recipeYield,
+      // recipeYield is the unit label in Mealie ("portions", "personnes"…).
+      // Strip any leading number that may have been stored by a previous buggy save.
+      recipeYield: current.recipeYield ? (current.recipeYield.replace(/^\d+\s*/, '').trim() || "") : current.recipeYield,
+      recipeServings: data.recipeYield ? parseFloat(data.recipeYield) : (current.recipeServings ?? 0),
       recipeCategory: data.categories.map((c) => {
         const orig = current.recipeCategory?.find((rc) => rc.id === c.id)
         return orig ? { ...orig, ...c } : c
@@ -205,12 +208,31 @@ export class RecipeRepository implements IRecipeRepository {
     return mealieApiClient.uploadImage(slug, file)
   }
 
+  private simplifyRecipeForPut(current: MealieRecipe): Partial<MealieRecipe> {
+    return {
+      ...current,
+      recipeIngredient: (current.recipeIngredient ?? []).map((ing) => ({
+        ...ing,
+        unit: ing.unit ? { id: ing.unit.id, name: ing.unit.name } : undefined,
+        food: ing.food ? { id: ing.food.id, name: ing.food.name } : undefined,
+      })),
+      recipeCategory: (current.recipeCategory ?? []).map((c) => ({
+        ...c, id: c.id, name: c.name, slug: c.slug,
+      })),
+    }
+  }
+
   async updateCategories(slug: string, categories: MealieCategory[]): Promise<MealieRecipe> {
-    const current = await this.getBySlug(slug)
-    return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
-      name: current.name,
-      recipeCategory: categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
-    })
+    const simplified = categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { recipeCategory: simplified })
+    } catch {
+      const current = await this.getBySlug(slug)
+      return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+        ...this.simplifyRecipeForPut(current),
+        recipeCategory: simplified,
+      })
+    }
   }
 
   async updateSeasons(slug: string, seasons: Season[]): Promise<MealieRecipe> {
@@ -221,10 +243,15 @@ export class RecipeRepository implements IRecipeRepository {
     const nonSeasonTags = (current.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
-    return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
-      name: current.name,
-      tags: [...nonSeasonTags, ...seasonTags],
-    })
+    const newTags = [...nonSeasonTags, ...seasonTags]
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { tags: newTags })
+    } catch {
+      return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+        ...this.simplifyRecipeForPut(current),
+        tags: newTags,
+      })
+    }
   }
 
   async updateNutrition(
@@ -275,25 +302,47 @@ export class RecipeRepository implements IRecipeRepository {
   }
 
   async updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe> {
-    const current = await this.getBySlug(slug)
+    const roundedCalories = Math.round(calories)
+    const calorieTagName = buildCalorieTag(roundedCalories)
+    const calorieTagSlug = calorieTagName
 
-    const calorieTag = {
-      name: buildCalorieTag(calories),
-      slug: buildCalorieTag(calories),
+    // Fetch current recipe and global tags in parallel
+    const [current, allTagsResponse] = await Promise.all([
+      this.getBySlug(slug),
+      mealieApiClient.get<{ items: MealieTag[] }>('/api/organizers/tags?page=1&perPage=-1'),
+    ])
+
+    // Short-circuit: if the calorie tag is already correct, skip the update entirely.
+    // Re-posting the same tag without its DB id causes an IntegrityError in Mealie.
+    const existingCalorieTag = (current.tags ?? []).find(isCalorieTag)
+    if (existingCalorieTag?.name === calorieTagName && existingCalorieTag?.slug === calorieTagSlug) {
+      return current
     }
+
+    // Look up the tag globally by slug, then by name as fallback (slug format may differ)
+    const globalTag = allTagsResponse.items.find(t => t.slug === calorieTagSlug)
+      ?? allTagsResponse.items.find(t => t.name === calorieTagName)
+    const calorieTag: MealieTagObject = globalTag
+      ? { id: globalTag.id, name: globalTag.name, slug: globalTag.slug }
+      : { name: calorieTagName, slug: calorieTagSlug }
 
     const nonCalorieTags = (current.tags ?? [])
       .filter(t => !isCalorieTag(t))
-      .map(t => ({
-        id: t.id,
-        name: t.name,
-        slug: t.slug,
-      }))
+      .map(t => ({ id: t.id, name: t.name, slug: t.slug }))
 
-    return mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {
-      name: current.name,
-      tags: [...nonCalorieTags, calorieTag],
-    })
+    const newTags = [...nonCalorieTags, calorieTag]
+
+    // Use PATCH with tags only — avoids sending the full recipe body which triggers
+    // slug uniqueness checks and food/unit IntegrityErrors in Mealie.
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { tags: newTags })
+    } catch {
+      // Fallback: full PUT with simplified nested objects
+      return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+        ...this.simplifyRecipeForPut(current),
+        tags: newTags,
+      })
+    }
   }
 
   async updateRating(slug: string, rating: number): Promise<void> {

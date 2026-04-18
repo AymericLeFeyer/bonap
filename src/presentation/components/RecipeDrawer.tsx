@@ -53,8 +53,14 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
     const [cookingMode, setCookingMode] = useState(false)
     const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
     const syncLock = useRef(false)
+    const calorieTagSyncedRef = useRef<number | null>(null)
     const { getFavorites } = useGetFavorites()
     const [ratings, setRatings] = useState<MealieRatings[]>([])
+
+    // Reset calorie sync tracking when the recipe slug changes
+    useEffect(() => {
+        calorieTagSyncedRef.current = null
+    }, [slug])
 
     useEffect(() => {
         if (!recipe) return
@@ -72,19 +78,25 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
         const match = caloriesString.match(/[\d.]+/)
         if (!match) return
 
-        const calories = Number(match[0])
+        const calories = Math.round(Number(match[0]))
         if (isNaN(calories)) return
+
+        // Already synced this calorie value for this recipe → stop
+        if (calorieTagSyncedRef.current === calories) return
 
         const existingTag = recipe.tags?.find(t =>
             t.slug.startsWith("calorie-")
         )
 
         const existingCalories = existingTag
-            ? Number(existingTag.slug.replace("calorie-", ""))
+            ? Math.round(Number(existingTag.slug.replace("calorie-", "")))
             : null
 
-        // déjà OK → stop
-        if (existingCalories === calories) return
+        // Tag already correct in recipe data → mark synced and stop
+        if (existingCalories === calories) {
+            calorieTagSyncedRef.current = calories
+            return
+        }
 
         const run = async () => {
             try {
@@ -93,6 +105,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                 const updated = await updateCalorieTag(recipe.slug, calories)
 
                 if (updated) {
+                    calorieTagSyncedRef.current = calories
                     setRecipe(updated)
                 }
 
@@ -102,7 +115,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
         }
 
         run()
-    }, [recipe, updateCalorieTag, setRecipe, getFavorites])
+    }, [recipe, updateCalorieTag, setRecipe, getFavorites, slug])
 
     const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
         if (!recipe) return
