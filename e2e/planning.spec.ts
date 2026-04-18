@@ -49,7 +49,7 @@ test.describe("Planning", () => {
 
     test("le bouton 'Ajouter au panier' est présent", async ({ page }) => {
       await page.goto("/planning")
-      await expect(page.getByRole("button", { name: /ajouter au panier/i })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Ajouter au panier", exact: true })).toBeVisible()
     })
   })
 
