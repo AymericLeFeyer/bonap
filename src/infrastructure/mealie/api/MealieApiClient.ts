@@ -6,6 +6,7 @@ import {
   MealieUnauthorizedError,
 } from "../../../shared/types/errors.ts"
 import { getEnv, getIngressBasename, isDockerRuntime } from "../../../shared/utils/env.ts"
+import { compressImage } from "../../../shared/utils/imageCompression.ts"
 
 // En dev : /api est proxié par Vite → VITE_MEALIE_URL (pas de CORS).
 // En prod Docker standard : /api est proxié par nginx → VITE_MEALIE_URL.
@@ -128,9 +129,10 @@ export class MealieApiClient implements IMealieApiClient {
   }
 
   async uploadImage(slug: string, file: File): Promise<void> {
+    const compressed = await compressImage(file)
     const formData = new FormData()
-    formData.append("image", file)
-    formData.append("extension", file.name.split(".").pop() ?? "jpg")
+    formData.append("image", compressed)
+    formData.append("extension", compressed.name.split(".").pop() ?? "jpg")
     const url = `${getBaseUrl()}/api/recipes/${slug}/image`
     const response = await fetch(url, {
       method: "PUT",
