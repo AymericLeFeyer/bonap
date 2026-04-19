@@ -1266,7 +1266,7 @@ app.get('/ciqual/search', async (req, res) => {
   }
 })
 
-app.post('/nutrition-estimate', async (req, res) => {
+async function handleNutritionEstimate(req, res) {
   try {
     const ingredients = Array.isArray(req.body?.ingredients) ? req.body.ingredients : []
     const rawMatchHints = (req.body?.matchHints && typeof req.body.matchHints === 'object') ? req.body.matchHints : {}
@@ -1381,7 +1381,12 @@ app.post('/nutrition-estimate', async (req, res) => {
     console.error('[Nutrition] Estimate error:', e.message)
     res.status(500).json({ error: e.message })
   }
-})
+}
+
+// Current path used by the frontend
+app.post('/nutrition-estimate', handleNutritionEstimate)
+// Backwards-compatible alias: old frontend builds used /marmiton/nutrition-estimate
+app.post('/marmiton/nutrition-estimate', handleNutritionEstimate)
 
 // Call Ollama server-side to extract a recipe from text
 // Returns { data, error } to provide explicit diagnostics back to the UI.
@@ -1634,14 +1639,14 @@ function isPrivateOrLocalUrl(rawUrl) {
   }
 }
 
-app.all('/ollama-proxy/*path', async (req, res) => {
+app.all('/ollama-proxy/*', async (req, res) => {
   const target = req.headers['x-ollama-target']
   if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
     return res
       .status(400)
       .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
   }
-  const subpath = req.params.path ?? ''
+  const subpath = req.params[0] ?? ''
   const url = `${target.replace(/\/+$/, '')}/${subpath}`
   try {
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
