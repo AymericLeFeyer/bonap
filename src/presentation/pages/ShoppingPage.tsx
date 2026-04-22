@@ -350,7 +350,7 @@ function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuantity, onU
             type="button"
             onClick={() => onDelete(item.id)}
             aria-label="Supprimer"
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+            className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all sm:opacity-0 sm:group-hover:opacity-100"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -373,9 +373,15 @@ interface HabituelItemRowProps {
 }
 
 function HabituelItemRow({ item, labels, cartItems, onAddToCart, onDelete, onUpdateNote, onUpdateLabel }: HabituelItemRowProps) {
-  const alreadyInCart = cartItems.some(
-    (i) => i.note?.toLowerCase() === item.note?.toLowerCase() && !i.checked,
-  )
+  const itemKey = extractFoodKey(item.foodName ?? item.note ?? "")
+  const alreadyInCart = cartItems.some((i) => {
+    if (i.checked) return false
+    if (itemKey) {
+      const cartKey = extractFoodKey(i.foodName ?? i.note ?? "")
+      return cartKey === itemKey
+    }
+    return i.note?.toLowerCase() === item.note?.toLowerCase()
+  })
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(item.note ?? "")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -453,7 +459,7 @@ function HabituelItemRow({ item, labels, cartItems, onAddToCart, onDelete, onUpd
         <>
           <span className="flex-1 text-sm font-medium leading-tight">{name}</span>
 
-          <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+          <div className="flex shrink-0 items-center gap-1 transition-all sm:opacity-0 sm:group-hover:opacity-100">
             {labels.length > 0 && (
               <LabelDropdown
                 labels={labels}

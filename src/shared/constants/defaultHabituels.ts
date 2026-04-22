@@ -7,6 +7,41 @@ export interface DefaultHabituelCategory {
 
 export const DEFAULT_HABITUELS: DefaultHabituelCategory[] = [
   {
+    id: "fruits",
+    emoji: "🥝",
+    label: "Fruits",
+    items: [
+      "Pomme", "Banane", "Orange", "Poire", "Kiwi",
+      "Fraise", "Framboise", "Myrtille",
+      "Raisin", "Cerise",
+      "Mangue", "Ananas", "Papaye",
+      "Pêche", "Nectarine", "Abricot",
+      "Melon", "Pastèque",
+      "Citron", "Citron vert", "Clémentine", "Mandarine",
+      "Grenade", "Figue", "Datte",
+      "Fruit de la passion", "Litchi",
+    ],
+  },
+  {
+    id: "legumes",
+    emoji: "🥕",
+    label: "Légumes",
+    items: [
+      "Carotte", "Tomate", "Courgette", "Aubergine", "Poivron",
+      "Concombre", "Salade", "Épinard", "Roquette",
+      "Brocoli", "Chou-fleur", "Chou", "Chou rouge",
+      "Haricots verts", "Petits pois",
+      "Pomme de terre", "Patate douce",
+      "Oignon", "Ail", "Échalote",
+      "Champignon",
+      "Maïs",
+      "Lentilles", "Pois chiches",
+      "Poireau", "Navet", "Betterave",
+      "Radis", "Fenouil", "Céleri",
+      "Courge", "Butternut",
+    ],
+  },
+  {
     id: "pain",
     emoji: "🥖",
     label: "Pain & accompagnements",
