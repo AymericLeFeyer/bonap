@@ -833,45 +833,49 @@ function PrintView({ items, labels, date }: PrintViewProps) {
         <p style={{ fontSize: "9pt", color: "#888", margin: "4px 0 0" }}>{date}</p>
       </div>
 
-      {allGroups.map(([key, group]) => (
-        <div key={key} className="print-group">
-          {allGroups.length > 1 && (
-            <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px" }}>
-              {group.label}
-            </p>
-          )}
-          {group.items.map((item) => {
-            const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
-            const qty = item.quantity && item.quantity > 1 ? `×${item.quantity}` : ""
-            return (
-              <div key={item.id} className="print-item">
-                <span className="print-checkbox" />
-                <span style={{ flex: 1 }}>{name}</span>
-                {qty && <span style={{ fontSize: "9pt", color: "#888", marginLeft: "8px" }}>{qty}</span>}
-              </div>
-            )
-          })}
-        </div>
-      ))}
+      <div style={{ columns: 3, columnGap: "1.5rem" }}>
+        {allGroups.map(([key, group]) => (
+          <div key={key} className="print-group">
+            {allGroups.length > 1 && (
+              <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px", columnSpan: "none" }}>
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
+              const qty = item.quantity && item.quantity > 1 ? `×${item.quantity}` : ""
+              return (
+                <div key={item.id} className="print-item">
+                  <span className="print-checkbox" />
+                  <span style={{ flex: 1 }}>{name}</span>
+                  {qty && <span style={{ fontSize: "9pt", color: "#888", marginLeft: "8px" }}>{qty}</span>}
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
 
       {checked.length > 0 && (
         <>
           <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", margin: "1.5rem 0 4px", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
             Déjà achetés
           </p>
-          {checkedGroups.map(([key, group]) => (
-            <div key={key} className="print-group">
-              {group.items.map((item) => {
-                const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
-                return (
-                  <div key={item.id} className="print-item print-item-checked">
-                    <span className="print-checkbox" style={{ borderColor: "#bbb" }} />
-                    <span style={{ flex: 1, textDecoration: "line-through", color: "#aaa" }}>{name}</span>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+          <div style={{ columns: 3, columnGap: "1.5rem" }}>
+            {checkedGroups.map(([key, group]) => (
+              <div key={key} className="print-group">
+                {group.items.map((item) => {
+                  const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
+                  return (
+                    <div key={item.id} className="print-item print-item-checked">
+                      <span className="print-checkbox" style={{ borderColor: "#bbb" }} />
+                      <span style={{ flex: 1, textDecoration: "line-through", color: "#aaa" }}>{name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>
