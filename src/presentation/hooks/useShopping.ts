@@ -263,15 +263,31 @@ export function useShopping() {
 
   const addHabituel = useCallback(async (note: string, labelId?: string) => {
     if (!habituelsListId) return
-    await shoppingRepository.addItem(habituelsListId, {
+    const tempId = `tmp-${Date.now()}`
+    const tempItem: ShoppingItem = {
+      id: tempId,
       shoppingListId: habituelsListId,
-      note,
+      checked: false,
+      position: 0,
       isFood: false,
-      labelId,
-    })
-    const result = await getShoppingItemsUseCase.execute()
-    setHabituelsListId(result.habituelsListId)
-    setHabituelsItems(result.habituelsItems)
+      note,
+      source: "mealie",
+    }
+    setHabituelsItems((prev) => [...prev, tempItem])
+    try {
+      await shoppingRepository.addItem(habituelsListId, {
+        shoppingListId: habituelsListId,
+        note,
+        isFood: false,
+        labelId,
+      })
+      const result = await getShoppingItemsUseCase.execute()
+      setHabituelsListId(result.habituelsListId)
+      setHabituelsItems(result.habituelsItems)
+    } catch (err) {
+      setHabituelsItems((prev) => prev.filter((i) => i.id !== tempId))
+      setError(err instanceof Error ? err.message : "Erreur lors de l'ajout")
+    }
   }, [habituelsListId])
 
   const deleteHabituel = useCallback(async (itemId: string) => {
@@ -332,32 +348,61 @@ export function useShopping() {
     if (!list) return
     const key = extractFoodKey(item.foodName ?? item.note ?? "")
     const existing = key ? findExisting(items, key) : undefined
+    const cleanNote = item.foodName ?? item.note ?? ""
+    const tempId = `tmp-${Date.now()}`
+
+    // Optimistic update
     if (existing) {
-      await shoppingRepository.updateItem(list.id, {
-        id: existing.id,
-        shoppingListId: list.id,
-        checked: existing.checked,
-        position: existing.position,
-        isFood: existing.isFood,
-        note: existing.note,
-        quantity: (existing.quantity ?? 1) + 1,
-        labelId: existing.label?.id,
-        display: existing.display,
-      })
+      setItems((prev) => prev.map((i) => i.id === existing.id ? { ...i, quantity: (i.quantity ?? 1) + 1 } : i))
     } else {
-      const cleanNote = key || item.foodName || item.note
-      await shoppingRepository.addItem(list.id, {
+      setItems((prev) => [...prev, {
+        id: tempId,
         shoppingListId: list.id,
-        note: cleanNote,
+        checked: false,
+        position: 0,
         isFood: item.isFood,
+        note: cleanNote,
         quantity: 1,
-        labelId: item.label?.id,
-      })
+        label: item.label,
+        source: "mealie" as const,
+      }])
     }
-    const result = await getShoppingItemsUseCase.execute()
-    setList(result.list)
-    setItems(result.items)
-    setLabels(result.labels)
+
+    try {
+      if (existing) {
+        await shoppingRepository.updateItem(list.id, {
+          id: existing.id,
+          shoppingListId: list.id,
+          checked: existing.checked,
+          position: existing.position,
+          isFood: existing.isFood,
+          note: existing.note,
+          quantity: (existing.quantity ?? 1) + 1,
+          labelId: existing.label?.id,
+          display: existing.display,
+        })
+      } else {
+        await shoppingRepository.addItem(list.id, {
+          shoppingListId: list.id,
+          note: cleanNote,
+          isFood: item.isFood,
+          quantity: 1,
+          labelId: item.label?.id,
+        })
+      }
+      const result = await getShoppingItemsUseCase.execute()
+      setList(result.list)
+      setItems(result.items)
+      setLabels(result.labels)
+    } catch (err) {
+      // Rollback
+      if (existing) {
+        setItems((prev) => prev.map((i) => i.id === existing.id ? existing : i))
+      } else {
+        setItems((prev) => prev.filter((i) => i.id !== tempId))
+      }
+      setError(err instanceof Error ? err.message : "Erreur lors de l'ajout")
+    }
   }, [list, items, findExisting])
 
   const deleteAllHabituels = useCallback(async () => {
