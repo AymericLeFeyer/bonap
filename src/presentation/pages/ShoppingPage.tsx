@@ -833,14 +833,14 @@ function PrintView({ items, labels, date }: PrintViewProps) {
         <p style={{ fontSize: "9pt", color: "#888", margin: "4px 0 0" }}>{date}</p>
       </div>
 
-      <div style={{ columns: 3, columnGap: "1.5rem" }}>
-        {allGroups.map(([key, group]) => (
-          <div key={key} className="print-group">
-            {allGroups.length > 1 && (
-              <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px", columnSpan: "none" }}>
-                {group.label}
-              </p>
-            )}
+      {allGroups.map(([key, group]) => (
+        <div key={key} className="print-group">
+          {allGroups.length > 1 && (
+            <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px" }}>
+              {group.label}
+            </p>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0 1.5rem" }}>
             {group.items.map((item) => {
               const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
               const qty = item.quantity && item.quantity > 1 ? `×${item.quantity}` : ""
@@ -853,17 +853,17 @@ function PrintView({ items, labels, date }: PrintViewProps) {
               )
             })}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
       {checked.length > 0 && (
         <>
           <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", margin: "1.5rem 0 4px", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
             Déjà achetés
           </p>
-          <div style={{ columns: 3, columnGap: "1.5rem" }}>
-            {checkedGroups.map(([key, group]) => (
-              <div key={key} className="print-group">
+          {checkedGroups.map(([key, group]) => (
+            <div key={key} className="print-group">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0 1.5rem" }}>
                 {group.items.map((item) => {
                   const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
                   return (
@@ -874,8 +874,8 @@ function PrintView({ items, labels, date }: PrintViewProps) {
                   )
                 })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </>
       )}
     </div>
