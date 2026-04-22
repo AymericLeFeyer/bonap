@@ -23,6 +23,32 @@ function getToken(): string {
   return getEnv("VITE_MEALIE_TOKEN")
 }
 
+const TIMEOUTS = { GET: 15_000, POST: 30_000, PATCH: 30_000, PUT: 30_000, DELETE: 15_000 } as const
+const MAX_RETRIES = 3
+const RETRY_DELAY_MS = 500
+
+function isRetryable(error: unknown): boolean {
+  // Retry on network errors (fetch rejects) but not on AbortError (timeout)
+  if (error instanceof DOMException && error.name === "AbortError") return false
+  if (error instanceof MealieServerError) return true
+  if (error instanceof MealieApiError) return false
+  return true // TypeError: Failed to fetch, etc.
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries: number): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (!isRetryable(err) || attempt === maxRetries) throw err
+      await new Promise(res => setTimeout(res, RETRY_DELAY_MS * 2 ** attempt))
+    }
+  }
+  throw lastError
+}
+
 export class MealieApiClient implements IMealieApiClient {
   private extractErrorMessage(payload: unknown, status: number, statusText: string): string {
     if (typeof payload === "string") {
@@ -67,45 +93,42 @@ export class MealieApiClient implements IMealieApiClient {
     return `HTTP ${status}${statusText ? ` ${statusText}` : ""}`
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-  ): Promise<T> {
+  private async fetchOnce<T>(method: string, path: string, body?: unknown): Promise<T> {
     const url = `${getBaseUrl()}${path}`
+    const timeout = TIMEOUTS[method as keyof typeof TIMEOUTS] ?? 15_000
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeout)
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${getToken()}`,
-      "Content-Type": "application/json",
-    }
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      })
 
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    })
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "")
+        const message = this.extractErrorMessage(raw, response.status, response.statusText)
 
-    if (!response.ok) {
-      const raw = await response.text().catch(() => "")
-      const message = this.extractErrorMessage(raw, response.status, response.statusText)
-
-      if (response.status === 401) {
-        throw new MealieUnauthorizedError(message)
+        if (response.status === 401) throw new MealieUnauthorizedError(message)
+        if (response.status === 404) throw new MealieNotFoundError(message)
+        if (response.status >= 500) throw new MealieServerError(message, response.status)
+        throw new MealieApiError(message, response.status)
       }
-      if (response.status === 404) {
-        throw new MealieNotFoundError(message)
-      }
-      if (response.status >= 500) {
-        throw new MealieServerError(message, response.status)
-      }
-      throw new MealieApiError(message, response.status)
-    }
 
-    if (response.status === 204) {
-      return undefined as T
+      if (response.status === 204) return undefined as T
+      return (await response.json()) as T
+    } finally {
+      clearTimeout(timer)
     }
+  }
 
-    return (await response.json()) as T
+  private request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    return withRetry(() => this.fetchOnce<T>(method, path, body), MAX_RETRIES)
   }
 
   async get<T>(path: string): Promise<T> {
@@ -134,14 +157,21 @@ export class MealieApiClient implements IMealieApiClient {
     formData.append("image", compressed)
     formData.append("extension", compressed.name.split(".").pop() ?? "jpg")
     const url = `${getBaseUrl()}/api/recipes/${slug}/image`
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body: formData,
-    })
-    if (!response.ok) {
-      const message = await response.text().catch(() => response.statusText)
-      throw new MealieApiError(message, response.status)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 60_000)
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: formData,
+        signal: controller.signal,
+      })
+      if (!response.ok) {
+        const message = await response.text().catch(() => response.statusText)
+        throw new MealieApiError(message, response.status)
+      }
+    } finally {
+      clearTimeout(timer)
     }
   }
 
