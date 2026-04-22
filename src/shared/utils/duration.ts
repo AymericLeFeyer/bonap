@@ -133,8 +133,8 @@ export function formatDurationToNumber(value?: string): number {
     return h * 60 + m
   }
 
-  // "PT1H30M" (ISO)
-  const isoMatch = v.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+  // "PT1H30M" (ISO) — v is lowercased, so match lowercase
+  const isoMatch = v.match(/pt(?:(\d+)h)?(?:(\d+)m)?/)
   if (isoMatch) {
     const h = parseInt(isoMatch[1] ?? "0", 10)
     const m = parseInt(isoMatch[2] ?? "0", 10)
