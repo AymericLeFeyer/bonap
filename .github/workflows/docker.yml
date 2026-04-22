@@ -19,7 +19,7 @@ jobs:
           node-version: 'lts/*'
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -37,7 +37,7 @@ jobs:
           node-version: 'lts/*'
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Run unit tests
         run: npm test
 
@@ -51,7 +51,7 @@ jobs:
           node-version: 'lts/*'
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
