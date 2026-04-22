@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { BrowserRouter } from "react-router-dom"
 import "./index.css"
 import App from "./App.tsx"
+import { ErrorBoundary } from "./presentation/components/ErrorBoundary.tsx"
 import { themeService } from "./infrastructure/theme/ThemeService.ts"
 import { syncSettingsFromServer } from "./infrastructure/settings/ServerSettingsService.ts"
 
@@ -23,8 +24,10 @@ const root = createRoot(document.getElementById("root")!)
 
 root.render(
   <StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter basename={basename}>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )
