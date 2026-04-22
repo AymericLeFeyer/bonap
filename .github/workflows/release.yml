@@ -1,0 +1,422 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Type de bump de version"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      build_bff:
+        description: "Inclure le build BFF"
+        required: false
+        type: boolean
+        default: false
+      build_website:
+        description: "Déployer le site web"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# ─── Étape 1 : CI complet ────────────────────────────────────────────────────
+
+jobs:
+  check:
+    name: Lint, typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  unit:
+    name: Tests unitaires (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+
+  e2e:
+    name: Tests E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - run: npm install --no-audit --no-fund
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: Créer .env pour les tests
+        run: |
+          echo "VITE_MEALIE_URL=http://localhost:9000" >> .env
+          echo "VITE_MEALIE_TOKEN=fake-token-ci" >> .env
+      - name: Démarrer le dev server
+        run: npm run dev &
+        env:
+          VITE_MEALIE_URL: http://localhost:9000
+          VITE_MEALIE_TOKEN: fake-token-ci
+      - run: npx wait-on http://localhost:5173 --timeout 60000
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+# ─── Étape 2 : bump de version + tag git ─────────────────────────────────────
+
+  bump-version:
+    name: Bump ${{ inputs.version_type }} version
+    runs-on: ubuntu-latest
+    needs: [check, unit, e2e]
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Bump version
+        id: version
+        run: |
+          npm version ${{ inputs.version_type }} --no-git-tag-version
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push
+          git push --tags
+
+# ─── Étape 3 : build & push Docker (app principale) ─────────────────────────
+
+  docker:
+    name: Build & push Docker image
+    runs-on: ubuntu-latest
+    needs: bump-version
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Nom d'image en minuscules
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.bump-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ─── Étape 4 : HA addon (multi-arch) ─────────────────────────────────────────
+
+  ha-addon:
+    name: Build & push HA addon (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    needs: [bump-version, docker]
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            build_from: alpine:3.20
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: alpine:3.20
+          - arch: armv7
+            platform: linux/arm/v7
+            build_from: alpine:3.20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ha-addon/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/aymericlefeyer/bonap-ha-addon-${{ matrix.arch }}:latest
+            ${{ env.REGISTRY }}/aymericlefeyer/bonap-ha-addon-${{ matrix.arch }}:${{ needs.bump-version.outputs.version }}
+          build-args: BUILD_FROM=${{ matrix.build_from }}
+          cache-from: type=gha,scope=ha-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=ha-${{ matrix.arch }}
+
+# ─── Étape 5 : GitHub release + dispatch aylabs-ha-addons ────────────────────
+
+  release:
+    name: Créer la GitHub release
+    runs-on: ubuntu-latest
+    needs: [bump-version, docker]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Générer le changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.bump-version.outputs.version }}"
+          git-cliff --tag "v${VERSION}" --unreleased --strip all > /tmp/release_notes.md
+          if ! grep -qE '\S' /tmp/release_notes.md; then
+            echo "Maintenance, tests et corrections mineures." > /tmp/release_notes.md
+          fi
+
+      - name: Créer la release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.bump-version.outputs.version }}"
+          if gh release view "v${VERSION}" &>/dev/null; then
+            echo "Release v${VERSION} existe déjà, skip."
+          else
+            gh release create "v${VERSION}" \
+              --title "v${VERSION}" \
+              --notes-file /tmp/release_notes.md \
+              --target main
+          fi
+
+      - name: Trigger aylabs-ha-addons
+        env:
+          AYLABS_HA_TOKEN: ${{ secrets.AYLABS_HA_TOKEN }}
+        run: |
+          if [ -z "$AYLABS_HA_TOKEN" ]; then
+            echo "AYLABS_HA_TOKEN non défini, skip."
+            exit 0
+          fi
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${AYLABS_HA_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/AyLabsCode/aylabs-ha-addons/dispatches \
+            -d '{"event_type":"bonap-released","client_payload":{"version":"${{ needs.bump-version.outputs.version }}"}}'
+
+# ─── Étape 6 (opt.) : BFF ─────────────────────────────────────────────────────
+
+  bff-bump:
+    name: Bump version BFF
+    runs-on: ubuntu-latest
+    needs: bump-version
+    if: inputs.build_bff
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump BFF version
+        id: version
+        run: |
+          cd bff
+          npm version ${{ inputs.version_type }} --no-git-tag-version
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bff/package.json
+          git commit -m "chore(bff): bump version à ${{ steps.version.outputs.version }} [skip ci]"
+          git push
+
+  bff-build:
+    name: Build & push BFF (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    needs: bff-bump
+    if: inputs.build_bff
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./bff
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/aymericlefeyer/bonap-trmnl-${{ matrix.arch }}:latest
+            ${{ env.REGISTRY }}/aymericlefeyer/bonap-trmnl-${{ matrix.arch }}:${{ needs.bff-bump.outputs.version }}
+          cache-from: type=gha,scope=bff-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=bff-${{ matrix.arch }}
+
+  bff-release:
+    name: Release BFF
+    runs-on: ubuntu-latest
+    needs: [bff-bump, bff-build]
+    if: inputs.build_bff
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - run: |
+          git-cliff \
+            --tag "bff-v${{ needs.bff-bump.outputs.version }}" \
+            --unreleased --strip all \
+            --include-path "bff/**" \
+            > /tmp/release_notes.md
+
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="bff-v${{ needs.bff-bump.outputs.version }}"
+          if gh release view "${VERSION}" &>/dev/null; then
+            echo "Release ${VERSION} existe déjà, skip."
+          else
+            gh release create "${VERSION}" \
+              --title "BFF v${{ needs.bff-bump.outputs.version }}" \
+              --notes-file /tmp/release_notes.md \
+              --target main
+          fi
+
+# ─── Étape 7 (opt.) : Website ────────────────────────────────────────────────
+
+  website:
+    name: Déployer le site web
+    runs-on: ubuntu-latest
+    needs: bump-version
+    if: inputs.build_website
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+
+      - working-directory: website
+        run: npm ci
+
+      - working-directory: website
+        run: npm run build
+
+      - uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: website/dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          dangerous-clean-slate: false
