@@ -845,8 +845,8 @@ function buildPrintHtml(items: ShoppingItem[], labels: ShoppingLabel[], date: st
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
   <title>Liste de courses</title>
   <style>
-    body { font-family: system-ui, sans-serif; font-size: 11pt; color: #111; margin: 2cm; }
-    @page { margin: 1.5cm; }
+    body { font-family: system-ui, sans-serif; font-size: 11pt; color: #111; margin: 0.5cm 0.8cm; }
+    @page { margin: 0.5cm 0.8cm; }
   </style>
   </head><body>
   <div style="border-bottom:2px solid #333;margin-bottom:1.5rem;padding-bottom:0.5rem">
