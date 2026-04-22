@@ -30,7 +30,7 @@ RUN npm install --production
 # =============================================================================
 # Stage 3 — Serve
 # =============================================================================
-FROM nginx:1.27-alpine AS runner
+FROM nginx:1.29-alpine AS runner
 
 # Installer gettext pour envsubst + nodejs pour le proxy Marmiton
 RUN apk add --no-cache gettext nodejs
