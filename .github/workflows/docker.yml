@@ -8,12 +8,96 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ─── Étape 1 : tous les tests doivent passer avant de publier ───
+  check:
+    name: Lint, typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  unit:
+    name: Unit tests (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Install Playwright system deps only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: Create .env for tests
+        run: |
+          echo "VITE_MEALIE_URL=http://localhost:9000" >> .env
+          echo "VITE_MEALIE_TOKEN=fake-token-ci" >> .env
+      - name: Start dev server
+        run: npm run dev &
+        env:
+          VITE_MEALIE_URL: http://localhost:9000
+          VITE_MEALIE_TOKEN: fake-token-ci
+      - name: Wait for dev server to be ready
+        run: npx wait-on http://localhost:5173 --timeout 60000
+      - name: Run Playwright tests
+        run: npm run test:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ─── Étape 2 : build & push Docker si tous les tests passent ───
   build-and-push:
     name: Build and push image
     runs-on: ubuntu-latest
+    needs: [check, unit, e2e]
     permissions:
       contents: write
       packages: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout repository
@@ -63,6 +147,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ─── Étape 3 : release GitHub + trigger aylabs-ha-addons ───
   release:
     name: Create GitHub release
     runs-on: ubuntu-latest
@@ -82,14 +167,10 @@ jobs:
         with:
           tool: git-cliff
 
-      - name: Get app version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
       - name: Generate changelog
         id: changelog
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.build-and-push.outputs.version }}"
           git-cliff --tag "v${VERSION}" --unreleased --strip all > /tmp/release_notes.md
           if ! grep -qE '\S' /tmp/release_notes.md; then
             echo "Maintenance, tests et corrections mineures." > /tmp/release_notes.md
@@ -100,7 +181,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.build-and-push.outputs.version }}"
           if gh release view "v${VERSION}" &>/dev/null; then
             echo "Release v${VERSION} already exists, skipping."
           else
@@ -114,9 +195,13 @@ jobs:
         env:
           AYLABS_HA_TOKEN: ${{ secrets.AYLABS_HA_TOKEN }}
         run: |
-          curl -s -X POST \
+          if [ -z "$AYLABS_HA_TOKEN" ]; then
+            echo "AYLABS_HA_TOKEN secret not set, skipping cross-repo dispatch."
+            exit 0
+          fi
+          curl -sf -X POST \
             -H "Authorization: Bearer ${AYLABS_HA_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/AyLabsCode/aylabs-ha-addons/dispatches \
-            -d '{"event_type":"bonap-released","client_payload":{"version":"${{ steps.version.outputs.version }}"}}'
+            -d '{"event_type":"bonap-released","client_payload":{"version":"${{ needs.build-and-push.outputs.version }}"}}'
