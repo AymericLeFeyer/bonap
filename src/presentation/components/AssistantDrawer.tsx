@@ -52,7 +52,7 @@ export function AssistantDrawer() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "fixed bottom-[72px] md:bottom-5 right-4 md:right-5 z-50 print-hide",
+          "fixed bottom-[72px] md:bottom-5 right-4 md:right-5 z-50",
           "flex h-11 w-11 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
           "shadow-[0_4px_16px_oklch(0.58_0.175_38/0.40),0_2px_6px_oklch(0_0_0/0.12)]",

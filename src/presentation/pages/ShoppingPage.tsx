@@ -787,15 +787,9 @@ function DefaultCatalogModal({ open, onOpenChange, habituelsItems, onAdd }: Defa
   )
 }
 
-// ─── PrintView ────────────────────────────────────────────────────────────────
+// ─── buildPrintHtml ───────────────────────────────────────────────────────────
 
-interface PrintViewProps {
-  items: ShoppingItem[]
-  labels: ShoppingLabel[]
-  date: string
-}
-
-function PrintView({ items, labels, date }: PrintViewProps) {
+function buildPrintHtml(items: ShoppingItem[], labels: ShoppingLabel[], date: string): string {
   const unchecked = items.filter((i) => !i.checked)
   const checked = items.filter((i) => i.checked)
 
@@ -818,68 +812,50 @@ function PrintView({ items, labels, date }: PrintViewProps) {
     })
   }
 
+  const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+  const renderGroups = (groups: [string, { label: string; items: ShoppingItem[] }][], faded = false) =>
+    groups.map(([, group]) => {
+      const labelHtml = groups.length > 1
+        ? `<p style="font-size:8pt;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;color:${faded ? "#aaa" : "#666"};margin:0 0 4px">${escape(group.label)}</p>`
+        : ""
+      const itemsHtml = group.items.map((item) => {
+        const name = escape(item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article")
+        const qty = item.quantity && item.quantity > 1 ? `<span style="font-size:9pt;color:#888;margin-left:8px">×${item.quantity}</span>` : ""
+        const style = faded ? "opacity:0.35;text-decoration:line-through;color:#aaa" : ""
+        return `<div style="display:flex;align-items:center;padding:3px 0;border-bottom:1px solid #eee;${style}">
+          <span style="display:inline-block;width:12px;height:12px;border:1.5px solid ${faded ? "#bbb" : "#555"};margin-right:8px;flex-shrink:0"></span>
+          <span style="flex:1">${name}</span>${qty}
+        </div>`
+      }).join("")
+      return `<div style="break-inside:avoid;margin-bottom:0.75rem">
+        ${labelHtml}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 1.5rem">${itemsHtml}</div>
+      </div>`
+    }).join("")
+
   const allGroups = buildGroups(unchecked)
   const checkedGroups = buildGroups(checked)
 
-  return (
-    <div
-      className="hidden"
-      style={{ display: "none" }}
-      id="print-view"
-      aria-hidden="true"
-    >
-      <div className="print-header">
-        <h1 style={{ fontSize: "18pt", fontWeight: "bold", margin: 0 }}>Liste de courses</h1>
-        <p style={{ fontSize: "9pt", color: "#888", margin: "4px 0 0" }}>{date}</p>
-      </div>
+  const checkedSection = checked.length > 0 ? `
+    <p style="font-size:8pt;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;color:#aaa;margin:1.5rem 0 4px;border-top:1px solid #eee;padding-top:0.5rem">Déjà achetés</p>
+    ${renderGroups(checkedGroups, true)}
+  ` : ""
 
-      {allGroups.map(([key, group]) => (
-        <div key={key} className="print-group">
-          {allGroups.length > 1 && (
-            <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px" }}>
-              {group.label}
-            </p>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0 1.5rem" }}>
-            {group.items.map((item) => {
-              const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
-              const qty = item.quantity && item.quantity > 1 ? `×${item.quantity}` : ""
-              return (
-                <div key={item.id} className="print-item">
-                  <span className="print-checkbox" />
-                  <span style={{ flex: 1 }}>{name}</span>
-                  {qty && <span style={{ fontSize: "9pt", color: "#888", marginLeft: "8px" }}>{qty}</span>}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-
-      {checked.length > 0 && (
-        <>
-          <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", margin: "1.5rem 0 4px", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
-            Déjà achetés
-          </p>
-          {checkedGroups.map(([key, group]) => (
-            <div key={key} className="print-group">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0 1.5rem" }}>
-                {group.items.map((item) => {
-                  const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
-                  return (
-                    <div key={item.id} className="print-item print-item-checked">
-                      <span className="print-checkbox" style={{ borderColor: "#bbb" }} />
-                      <span style={{ flex: 1, textDecoration: "line-through", color: "#aaa" }}>{name}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  )
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+  <title>Liste de courses</title>
+  <style>
+    body { font-family: system-ui, sans-serif; font-size: 11pt; color: #111; margin: 2cm; }
+    @page { margin: 1.5cm; }
+  </style>
+  </head><body>
+  <div style="border-bottom:2px solid #333;margin-bottom:1.5rem;padding-bottom:0.5rem">
+    <h1 style="font-size:18pt;font-weight:bold;margin:0">Liste de courses</h1>
+    <p style="font-size:9pt;color:#888;margin:4px 0 0">${escape(date)}</p>
+  </div>
+  ${renderGroups(allGroups)}
+  ${checkedSection}
+  </body></html>`
 }
 
 // ─── ShoppingPage ──────────────────────────────────────────────────────────────
@@ -955,13 +931,17 @@ export function ShoppingPage() {
   const progressPct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0
 
   const handlePrint = () => {
-    const printView = document.getElementById("print-view")
-    if (printView) printView.style.display = "block"
-    window.print()
-    if (printView) printView.style.display = "none"
+    const date = new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    const html = buildPrintHtml(items, labels, date)
+    const iframe = document.createElement("iframe")
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0"
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    iframe.contentWindow!.onafterprint = () => document.body.removeChild(iframe)
+    iframe.contentWindow!.print()
   }
-
-  const printDate = new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -997,10 +977,8 @@ export function ShoppingPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <PrintView items={items} labels={labels} date={printDate} />
-
       {/* ── En-tête ── */}
-      <div className="sticky top-0 z-20 -mx-4 md:-mx-7 bg-background/95 px-4 md:px-7 pb-3 pt-5 backdrop-blur-md border-b border-border/40 print-hide">
+      <div className="sticky top-0 z-20 -mx-4 md:-mx-7 bg-background/95 px-4 md:px-7 pb-3 pt-5 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-heading text-2xl font-bold">Liste de courses</h1>
           <div className="flex items-center gap-2">
@@ -1066,7 +1044,7 @@ export function ShoppingPage() {
       )}
 
       {!loading && (
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6 print-hide">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
           {/* ── Prochaines courses ── */}
           <section className="flex flex-col lg:w-[60%]">
             <div className="mb-3 flex items-center justify-between">
