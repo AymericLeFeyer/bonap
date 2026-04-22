@@ -13,8 +13,8 @@ export function formatDate(date: Date): string {
  * Returns at least 1.
  */
 export function getWeeksBetween(startDate: string, endDate: string): number {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+  const start = new Date(startDate + "T00:00:00")
+  const end = new Date(endDate + "T00:00:00")
   const diffMs = end.getTime() - start.getTime()
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) + 1
   return Math.max(1, diffDays / 7)

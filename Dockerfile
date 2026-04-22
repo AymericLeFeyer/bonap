@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Copier les fichiers de dépendances en premier (meilleur cache Docker)
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # Copier le reste du code source
 COPY . .

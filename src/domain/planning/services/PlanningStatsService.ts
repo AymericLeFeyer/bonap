@@ -38,7 +38,7 @@ export function computeLeftoverPercentage(mealPlans: MealieMealPlan[]): number {
     if (prev.date === curr.date) {
       consecutive = true
     } else {
-      const d = new Date(prev.date)
+      const d = new Date(prev.date + "T00:00:00")
       d.setDate(d.getDate() + 1)
       if (formatDate(d) === curr.date) consecutive = true
     }
@@ -65,8 +65,8 @@ export function computeStreak(
 ): number {
   const datesWithMeal = new Set(mealPlans.map((m) => m.date))
 
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+  const start = new Date(startDate + "T00:00:00")
+  const end = new Date(endDate + "T00:00:00")
 
   const current = new Date(end)
   const dayOfWeek = current.getDay() === 0 ? 6 : current.getDay() - 1
