@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Sparkles,
   ChevronRight,
+  Printer,
 } from "lucide-react"
 import { DEFAULT_HABITUELS } from "../../shared/constants/defaultHabituels.ts"
 import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
@@ -786,6 +787,97 @@ function DefaultCatalogModal({ open, onOpenChange, habituelsItems, onAdd }: Defa
   )
 }
 
+// ─── PrintView ────────────────────────────────────────────────────────────────
+
+interface PrintViewProps {
+  items: ShoppingItem[]
+  labels: ShoppingLabel[]
+  date: string
+}
+
+function PrintView({ items, labels, date }: PrintViewProps) {
+  const unchecked = items.filter((i) => !i.checked)
+  const checked = items.filter((i) => i.checked)
+
+  const buildGroups = (list: ShoppingItem[]) => {
+    const groups = new Map<string, { label: string; items: ShoppingItem[] }>()
+    for (const item of list) {
+      const key = item.label?.id ?? "__none__"
+      const labelName = item.label?.name ?? "Sans étiquette"
+      if (!groups.has(key)) groups.set(key, { label: labelName, items: [] })
+      groups.get(key)!.items.push(item)
+    }
+    for (const g of groups.values()) {
+      g.items.sort((a, b) => itemSortKey(a).localeCompare(itemSortKey(b), "fr"))
+    }
+    const labelOrder = new Map(labels.map((l, i) => [l.id, i]))
+    return [...groups.entries()].sort(([a], [b]) => {
+      if (a === "__none__") return 1
+      if (b === "__none__") return -1
+      return (labelOrder.get(a) ?? Infinity) - (labelOrder.get(b) ?? Infinity)
+    })
+  }
+
+  const allGroups = buildGroups(unchecked)
+  const checkedGroups = buildGroups(checked)
+
+  return (
+    <div
+      className="hidden"
+      style={{ display: "none" }}
+      id="print-view"
+      aria-hidden="true"
+    >
+      <div className="print-header">
+        <h1 style={{ fontSize: "18pt", fontWeight: "bold", margin: 0 }}>Liste de courses</h1>
+        <p style={{ fontSize: "9pt", color: "#888", margin: "4px 0 0" }}>{date}</p>
+      </div>
+
+      {allGroups.map(([key, group]) => (
+        <div key={key} className="print-group">
+          {allGroups.length > 1 && (
+            <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#666", margin: "0 0 4px" }}>
+              {group.label}
+            </p>
+          )}
+          {group.items.map((item) => {
+            const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
+            const qty = item.quantity && item.quantity > 1 ? `×${item.quantity}` : ""
+            return (
+              <div key={item.id} className="print-item">
+                <span className="print-checkbox" />
+                <span style={{ flex: 1 }}>{name}</span>
+                {qty && <span style={{ fontSize: "9pt", color: "#888", marginLeft: "8px" }}>{qty}</span>}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+
+      {checked.length > 0 && (
+        <>
+          <p style={{ fontSize: "8pt", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em", color: "#aaa", margin: "1.5rem 0 4px", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
+            Déjà achetés
+          </p>
+          {checkedGroups.map(([key, group]) => (
+            <div key={key} className="print-group">
+              {group.items.map((item) => {
+                const name = item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article"
+                return (
+                  <div key={item.id} className="print-item print-item-checked">
+                    <span className="print-checkbox" style={{ borderColor: "#bbb" }} />
+                    <span style={{ flex: 1, textDecoration: "line-through", color: "#aaa" }}>{name}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── ShoppingPage ──────────────────────────────────────────────────────────────
 
 export function ShoppingPage() {
@@ -858,6 +950,15 @@ export function ShoppingPage() {
   const totalCount = items.length
   const progressPct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0
 
+  const handlePrint = () => {
+    const printView = document.getElementById("print-view")
+    if (printView) printView.style.display = "block"
+    window.print()
+    if (printView) printView.style.display = "none"
+  }
+
+  const printDate = new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
     const note = newItemNote.trim()
@@ -892,8 +993,10 @@ export function ShoppingPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-8">
+      <PrintView items={items} labels={labels} date={printDate} />
+
       {/* ── En-tête ── */}
-      <div className="sticky top-0 z-20 -mx-4 md:-mx-7 bg-background/95 px-4 md:px-7 pb-3 pt-5 backdrop-blur-md border-b border-border/40">
+      <div className="sticky top-0 z-20 -mx-4 md:-mx-7 bg-background/95 px-4 md:px-7 pb-3 pt-5 backdrop-blur-md border-b border-border/40 print-hide">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-heading text-2xl font-bold">Liste de courses</h1>
           <div className="flex items-center gap-2">
@@ -909,6 +1012,20 @@ export function ShoppingPage() {
               aria-label="Rafraîchir"
             >
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={items.length === 0}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)]",
+                "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                "transition-colors disabled:opacity-50",
+              )}
+              aria-label="Imprimer / exporter PDF"
+              title="Imprimer / exporter PDF"
+            >
+              <Printer className="h-4 w-4" />
             </button>
             <a
               href={`${getEnv("VITE_MEALIE_URL").replace(/\/+$/, "")}/group/data/labels`}
@@ -945,7 +1062,7 @@ export function ShoppingPage() {
       )}
 
       {!loading && (
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6 print-hide">
           {/* ── Prochaines courses ── */}
           <section className="flex flex-col lg:w-[60%]">
             <div className="mb-3 flex items-center justify-between">
