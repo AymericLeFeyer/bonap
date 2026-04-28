@@ -95,7 +95,7 @@ function RecipeThumbnail({ recipe, emoji }: { recipe: MealieRecipe; emoji: strin
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-2xl">
-          {emoji ?? "🍽️"}
+          {emoji}
         </div>
       )}
     </div>

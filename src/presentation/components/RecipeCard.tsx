@@ -46,7 +46,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="text-4xl">{emoji ?? "🍽️"}</span>
+              {emoji && <span className="text-4xl">{emoji}</span>}
             </div>
           )}
 

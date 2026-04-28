@@ -540,7 +540,7 @@ function RecipeDrawerImage({ recipe }: { recipe: MealieRecipe }) {
                 </>
             ) : (
                 <div className="flex aspect-video w-full items-center justify-center bg-muted">
-                    <span className="text-6xl">{emoji ?? "🍽️"}</span>
+                    {emoji && <span className="text-6xl">{emoji}</span>}
                 </div>
             )}
         </div>
