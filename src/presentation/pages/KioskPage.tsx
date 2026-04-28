@@ -47,7 +47,7 @@ const ALL_MEAL_TYPES = [
   { key: "dinner", label: "Dîner", hour: 19 },
 ] as const
 
-function getNextMealKey(now: Date, daysAhead: number, mealTypes: typeof ALL_MEAL_TYPES): { dateStr: string; type: string } | null {
+function getNextMealKey(now: Date, daysAhead: number, mealTypes: ReadonlyArray<{ key: string; hour: number }>): { dateStr: string; type: string } | null {
   const t = today()
   const hour = now.getHours()
   for (let d = 0; d < daysAhead; d++) {
