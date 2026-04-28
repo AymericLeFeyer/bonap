@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
-import { Loader2, RefreshCw, X } from "lucide-react"
+import { useLocation } from "react-router-dom"
+import { Loader2, RefreshCw } from "lucide-react"
 import type { MealieMealPlan } from "../../shared/types/mealie.ts"
 import { getWeekPlanningUseCase } from "../../infrastructure/container.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { cn } from "../../lib/utils.ts"
+import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
+import { getMealVisibleNote } from "../components/planning/planningUtils.ts"
+import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000
-const DAYS_AHEAD = 5
 
 function addDays(date: Date, n: number): Date {
   const d = new Date(date)
@@ -39,19 +41,19 @@ function formatFullDate(date: Date): string {
   return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 }
 
-const MEAL_TYPES = [
+const ALL_MEAL_TYPES = [
   { key: "breakfast", label: "Petit-déjeuner", hour: 8 },
   { key: "lunch", label: "Déjeuner", hour: 12 },
   { key: "dinner", label: "Dîner", hour: 19 },
 ] as const
 
-function getNextMealKey(now: Date): { dateStr: string; type: string } | null {
+function getNextMealKey(now: Date, daysAhead: number, mealTypes: typeof ALL_MEAL_TYPES): { dateStr: string; type: string } | null {
   const t = today()
   const hour = now.getHours()
-  for (let d = 0; d < DAYS_AHEAD; d++) {
+  for (let d = 0; d < daysAhead; d++) {
     const day = addDays(t, d)
     const dateStr = formatDate(day)
-    for (const mt of MEAL_TYPES) {
+    for (const mt of mealTypes) {
       if (d > 0 || hour < mt.hour) return { dateStr, type: mt.key }
     }
   }
@@ -65,19 +67,26 @@ interface DayGroup {
 }
 
 export function KioskPage() {
-  const navigate = useNavigate()
+  const location = useLocation()
+  const fromApp = (location.state as { fromApp?: boolean } | null)?.fromApp === true
+
+  const { showBreakfast, kioskDays } = usePlanningPreferences()
+  const mealTypes = ALL_MEAL_TYPES.filter((mt) => mt.key !== "breakfast" || showBreakfast)
+
   const [mealPlans, setMealPlans] = useState<MealieMealPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(() => new Date())
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [toastVisible, setToastVisible] = useState(fromApp)
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
 
   const fetchMeals = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     else setRefreshing(true)
     try {
       const start = formatDate(today())
-      const end = formatDate(addDays(today(), DAYS_AHEAD - 1))
+      const end = formatDate(addDays(today(), kioskDays - 1))
       const data = await getWeekPlanningUseCase.execute(start, end)
       setMealPlans(data)
       setLastRefresh(new Date())
@@ -85,29 +94,34 @@ export function KioskPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [kioskDays])
 
   useEffect(() => { void fetchMeals() }, [fetchMeals])
 
-  // Clock: update every minute
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(timer)
   }, [])
 
-  // Auto-refresh every 5 minutes
   useEffect(() => {
     const timer = setInterval(() => void fetchMeals(true), REFRESH_INTERVAL_MS)
     return () => clearInterval(timer)
   }, [fetchMeals])
 
-  const nextMeal = getNextMealKey(now)
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (!toastVisible) return
+    const timer = setTimeout(() => setToastVisible(false), 6000)
+    return () => clearTimeout(timer)
+  }, [toastVisible])
 
-  const days: DayGroup[] = Array.from({ length: DAYS_AHEAD }, (_, i) => {
+  const nextMeal = getNextMealKey(now, kioskDays, mealTypes)
+
+  const days: DayGroup[] = Array.from({ length: kioskDays }, (_, i) => {
     const date = addDays(today(), i)
     const dateStr = formatDate(date)
     const meals: Record<string, MealieMealPlan | undefined> = {}
-    for (const mt of MEAL_TYPES) {
+    for (const mt of mealTypes) {
       meals[mt.key] = mealPlans.find((m) => m.date === dateStr && m.entryType === mt.key)
     }
     return { date, dateStr, meals }
@@ -123,6 +137,18 @@ export function KioskPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col select-none overflow-hidden">
+      {/* Toast "mode kiosk" */}
+      {toastVisible && (
+        <div className={cn(
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
+          "bg-foreground text-background rounded-xl px-5 py-3 shadow-xl",
+          "text-sm font-medium text-center max-w-sm",
+          "transition-opacity duration-500",
+        )}>
+          Mode kiosk activé — modifiez l'URL ou revenez en arrière pour quitter
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
         <div>
@@ -147,22 +173,14 @@ export function KioskPage() {
           >
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
           </button>
-          <button
-            type="button"
-            onClick={() => navigate("/planning")}
-            className="p-2 rounded-full hover:bg-secondary transition-colors"
-            title="Quitter le mode kiosk"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
         </div>
       </header>
 
-      {/* Days */}
+      {/* Days grid */}
       <div className="flex-1 overflow-x-auto">
         <div
           className="flex h-full gap-3 p-4"
-          style={{ minWidth: `${DAYS_AHEAD * 220}px` }}
+          style={{ minWidth: `${kioskDays * 220}px` }}
         >
           {days.map(({ date, dateStr, meals }, dayIdx) => {
             const isToday = dayIdx === 0
@@ -176,7 +194,6 @@ export function KioskPage() {
                     : "bg-card border border-border",
                 )}
               >
-                {/* Day label */}
                 <div className={cn(
                   "text-center font-bold text-sm uppercase tracking-wider",
                   isToday ? "text-primary" : "text-muted-foreground",
@@ -184,8 +201,7 @@ export function KioskPage() {
                   {formatDayLabel(date)}
                 </div>
 
-                {/* Meal slots */}
-                {MEAL_TYPES.map((mt) => {
+                {mealTypes.map((mt) => {
                   const meal = meals[mt.key]
                   const isNext = nextMeal?.dateStr === dateStr && nextMeal?.type === mt.key
                   return (
@@ -194,6 +210,7 @@ export function KioskPage() {
                       label={mt.label}
                       meal={meal}
                       isNext={isNext}
+                      onSelect={(slug) => setSelectedSlug(slug)}
                     />
                   )
                 })}
@@ -202,6 +219,12 @@ export function KioskPage() {
           })}
         </div>
       </div>
+
+      {/* Recipe detail modal (read-only + mode cuisine) */}
+      <RecipeDetailModal
+        slug={selectedSlug}
+        onOpenChange={(open) => { if (!open) setSelectedSlug(null) }}
+      />
     </div>
   )
 }
@@ -210,9 +233,10 @@ interface MealSlotProps {
   label: string
   meal: MealieMealPlan | undefined
   isNext: boolean
+  onSelect: (slug: string) => void
 }
 
-function MealSlot({ label, meal, isNext }: MealSlotProps) {
+function MealSlot({ label, meal, isNext, onSelect }: MealSlotProps) {
   return (
     <div
       className={cn(
@@ -222,9 +246,8 @@ function MealSlot({ label, meal, isNext }: MealSlotProps) {
           : "bg-secondary/40 border border-border/50",
       )}
     >
-      {/* Label */}
       <div className={cn(
-        "px-3 py-1.5 text-xs font-semibold",
+        "px-3 py-1.5 text-xs font-semibold shrink-0",
         isNext
           ? "bg-primary text-primary-foreground"
           : "bg-secondary text-muted-foreground",
@@ -234,7 +257,13 @@ function MealSlot({ label, meal, isNext }: MealSlotProps) {
       </div>
 
       {meal?.recipe ? (
-        <RecipeCard recipe={meal.recipe} />
+        <button
+          type="button"
+          className="flex-1 flex flex-col text-left hover:brightness-95 transition-[filter] cursor-pointer w-full"
+          onClick={() => meal.recipe?.slug && onSelect(meal.recipe.slug)}
+        >
+          <RecipeCard meal={meal} />
+        </button>
       ) : (
         <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground/50 italic p-2">
           Rien de prévu
@@ -244,26 +273,39 @@ function MealSlot({ label, meal, isNext }: MealSlotProps) {
   )
 }
 
-function RecipeCard({ recipe }: { recipe: NonNullable<MealieMealPlan["recipe"]> }) {
+function RecipeCard({ meal }: { meal: MealieMealPlan }) {
+  const recipe = meal.recipe!
+  const [imgError, setImgError] = useState(false)
   const imageUrl = recipe.id ? recipeImageUrl(recipe, "min-original") : null
+  const note = getMealVisibleNote(meal)
 
   return (
     <div className="flex-1 flex flex-col">
-      {imageUrl && (
-        <div className="relative w-full aspect-video bg-secondary overflow-hidden">
+      {/* Image */}
+      <div className="relative w-full aspect-video bg-secondary overflow-hidden">
+        {imageUrl && !imgError ? (
           <img
             src={imageUrl}
             alt={recipe.name}
             className="w-full h-full object-cover"
             loading="lazy"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none" }}
+            onError={() => setImgError(true)}
           />
-        </div>
-      )}
-      <div className="px-3 py-2">
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground/50 italic">
+            Pas d'image
+          </div>
+        )}
+      </div>
+
+      {/* Infos */}
+      <div className="px-3 py-2 space-y-0.5">
         <p className="text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
+        {note && (
+          <p className="text-xs text-muted-foreground line-clamp-2">{note}</p>
+        )}
         {recipe.recipeCategory && recipe.recipeCategory.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="text-xs text-muted-foreground/60 line-clamp-1">
             {recipe.recipeCategory.map((c) => c.name).join(", ")}
           </p>
         )}

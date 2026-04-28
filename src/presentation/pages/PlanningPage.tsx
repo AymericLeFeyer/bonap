@@ -428,7 +428,7 @@ export function PlanningPage() {
             <Button
               variant="outline"
               size="icon-sm"
-              onClick={() => navigate("/kiosk")}
+              onClick={() => navigate("/kiosk", { state: { fromApp: true } })}
               title="Mode kiosk"
             >
               <Monitor className="h-3.5 w-3.5" />

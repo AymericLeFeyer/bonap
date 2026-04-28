@@ -120,7 +120,7 @@ function FeatureRow({ label, description, enabled, onChange }: { label: string; 
 
 export function SettingsPage() {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme()
-  const { showBreakfast, setShowBreakfast } = usePlanningPreferences()
+  const { showBreakfast, setShowBreakfast, kioskDays, setKioskDays } = usePlanningPreferences()
   const { familySize, setFamilySize } = useFamilySize()
   const { flags, setFlag } = useFeatureFlags()
   const { enabled: defaultHabituelsEnabled, toggle: toggleDefaultHabituels } = useDefaultHabituels()
@@ -368,6 +368,37 @@ export function SettingsPage() {
             enabled={flags.autoPlan}
             onChange={(v) => setFlag("autoPlan", v)}
           />
+        </div>
+
+        {/* ── Sous-section Kiosk ── */}
+        <div className="mt-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold">Mode kiosk</p>
+            <p className="text-xs text-muted-foreground">Paramètres de l'affichage tablette (<code className="font-mono">/kiosk</code>)</p>
+          </div>
+          <div className="flex items-center justify-between py-2 px-1">
+            <div>
+              <p className="text-sm font-medium">Nombre de jours affichés</p>
+              <p className="text-xs text-muted-foreground">Stocké sur cet appareil uniquement</p>
+            </div>
+            <div className="flex items-center rounded-[var(--radius-lg)] border border-border overflow-hidden bg-card">
+              {([3, 5, 7] as const).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setKioskDays(n)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-semibold transition-colors",
+                    kioskDays === n
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  {n}j
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </CollapsibleSection>
 

@@ -3,6 +3,7 @@ import { planningPrefsService } from "../../infrastructure/planning/PlanningPref
 
 export function usePlanningPreferences() {
   const [prefs, setPrefs] = useState(() => planningPrefsService.load())
+  const [kioskPrefs, setKioskPrefs] = useState(() => planningPrefsService.loadKiosk())
 
   const setShowBreakfast = useCallback((value: boolean) => {
     const next = { ...prefs, showBreakfast: value }
@@ -10,5 +11,16 @@ export function usePlanningPreferences() {
     setPrefs(next)
   }, [prefs])
 
-  return { showBreakfast: prefs.showBreakfast, setShowBreakfast }
+  const setKioskDays = useCallback((value: 3 | 5 | 7) => {
+    const next = { kioskDays: value }
+    planningPrefsService.saveKiosk(next)
+    setKioskPrefs(next)
+  }, [])
+
+  return {
+    showBreakfast: prefs.showBreakfast,
+    setShowBreakfast,
+    kioskDays: kioskPrefs.kioskDays,
+    setKioskDays,
+  }
 }
