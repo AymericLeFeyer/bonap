@@ -15,8 +15,10 @@ interface RecipeCardProps {
 
 export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
   const [imgError, setImgError] = useState(false)
+  const hasImage = Boolean(recipe.image)
   const imageUrl = recipeImageUrl(recipe, "min-original")
   const emoji = getRecipeEmoji(recipe)
+  const showEmoji = !hasImage || imgError
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
   const categories = recipe.recipeCategory ?? []
 
@@ -37,7 +39,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
       >
         {/* Image carrée */}
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          {!imgError ? (
+          {!showEmoji ? (
             <img
               src={imageUrl}
               alt={recipe.name}
@@ -45,7 +47,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center bg-muted">
               <span className="text-4xl">{emoji ?? "🍽️"}</span>
             </div>
           )}

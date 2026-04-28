@@ -14,6 +14,7 @@ import { useUpdateCalorieTag } from "../../presentation/hooks/useUpdateCalorieTa
 
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season"
 import { recipeImageUrl } from "../../shared/utils/image"
+import { getRecipeEmoji } from "../../shared/utils/recipeEmoji"
 import { formatDuration } from "../../shared/utils/duration"
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
 
@@ -22,7 +23,7 @@ import { cn } from "../../lib/utils"
 import { RecipeIngredientsList } from "./RecipeIngredientsList"
 import { RecipeInstructionsList } from "./RecipeInstructionsList"
 
-import type { MealieCategory, MealieRatings, Season } from "../../shared/types/mealie"
+import type { MealieCategory, MealieRatings, MealieRecipe, Season } from "../../shared/types/mealie"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
 
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container"
@@ -323,15 +324,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                     {recipe && (
                         <article className="space-y-5 pb-24">
                             {/* Image */}
-                            <div className="relative">
-                                <img
-                                    src={recipeImageUrl(recipe, "original")}
-                                    alt={recipe.name}
-                                    className="aspect-video w-full object-cover"
-                                />
-                                {/* Dégradé bas pour transition vers le contenu */}
-                                <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-card to-transparent" />
-                            </div>
+                            <RecipeDrawerImage recipe={recipe} />
 
                             <div className="space-y-4 px-5">
                                 {/* Nom */}
@@ -526,5 +519,32 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                 </div>
             </div>
         </>
+    )
+}
+
+function RecipeDrawerImage({ recipe }: { recipe: MealieRecipe }) {
+    const [imgError, setImgError] = useState(false)
+    const hasImage = Boolean(recipe.image)
+    const emoji = getRecipeEmoji(recipe)
+    const showEmoji = !hasImage || imgError
+
+    return (
+        <div className="relative">
+            {!showEmoji ? (
+                <>
+                    <img
+                        src={recipeImageUrl(recipe, "original")}
+                        alt={recipe.name}
+                        className="aspect-video w-full object-cover"
+                        onError={() => setImgError(true)}
+                    />
+                    <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-card to-transparent" />
+                </>
+            ) : (
+                <div className="flex aspect-video w-full items-center justify-center bg-muted">
+                    <span className="text-6xl">{emoji ?? "🍽️"}</span>
+                </div>
+            )}
+        </div>
     )
 }
