@@ -11,6 +11,7 @@ import { createRecipeUseCase } from "../../infrastructure/container.ts"
 import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
 import type { MealieRecipe, RecipeFormIngredient } from "../../shared/types/mealie.ts"
 import { randomFoodEmoji, EXTRAS_EMOJI_KEY, SIMPLE_RECIPE_TAG_SLUG } from "../../shared/utils/recipeEmoji.ts"
+import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
 
 interface SimpleRecipePickerProps {
   onCreated: (recipe: MealieRecipe) => void
@@ -89,6 +90,7 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
         tags: [simpleTag],
         extras: { [EXTRAS_EMOJI_KEY]: randomFoodEmoji() },
       })
+      recipeEmojiStore.set(recipe.id, recipe.extras?.[EXTRAS_EMOJI_KEY] ?? "")
       onCreated(recipe)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de créer le repas simple.")

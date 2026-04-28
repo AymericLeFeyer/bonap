@@ -33,6 +33,7 @@ import {
   Smile,
 } from "lucide-react"
 import { FOOD_EMOJIS, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
+import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
 import { useState, useRef, useCallback, useEffect, type ChangeEvent } from "react"
 import { CookingMode } from "../components/CookingMode.tsx"
 import type {
@@ -409,6 +410,9 @@ export function RecipeDetailPage() {
       setFormData(buildFormData(updated))
       if (updated.image) setImagePreview(recipeImageUrl(updated, "original"))
       setIsDirty(false)
+      const emoji = formData.extras?.[EXTRAS_EMOJI_KEY]
+      if (emoji) recipeEmojiStore.set(updated.id, emoji)
+      else recipeEmojiStore.remove(updated.id)
     }
   }
 
