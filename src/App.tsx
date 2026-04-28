@@ -11,6 +11,7 @@ import { SettingsPage } from './presentation/pages/SettingsPage.tsx'
 import { SuggestionsPage } from './presentation/pages/SuggestionsPage.tsx'
 import { ExploreRecipesPage } from './presentation/pages/ExploreRecipesPage.tsx'
 import { NutritionMappingPage } from './presentation/pages/NutritionMappingPage.tsx'
+import { KioskPage } from './presentation/pages/KioskPage.tsx'
 
 const STORAGE_KEYS = {
   MEALIE_URL: 'bonap-mealie-url',
@@ -31,6 +32,7 @@ function App() {
   return (
     <Routes>
       {isProtectedRoute && <Route path="login" element={<AuthPage />} />}
+      <Route path="kiosk" element={<KioskPage />} />
       <Route element={isProtectedRoute ? <ProtectedRoute /> : <Outlet />}>
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/recipes" replace />} />
