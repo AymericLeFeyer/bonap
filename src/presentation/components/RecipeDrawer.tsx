@@ -524,13 +524,11 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
 
 function RecipeDrawerImage({ recipe }: { recipe: MealieRecipe }) {
     const [imgError, setImgError] = useState(false)
-    const hasImage = Boolean(recipe.image)
     const emoji = getRecipeEmoji(recipe)
-    const showEmoji = !hasImage || imgError
 
     return (
         <div className="relative">
-            {!showEmoji ? (
+            {!imgError ? (
                 <>
                     <img
                         src={recipeImageUrl(recipe, "original")}

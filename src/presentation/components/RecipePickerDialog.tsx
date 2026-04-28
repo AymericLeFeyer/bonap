@@ -83,10 +83,9 @@ function RecipeList({
 
 function RecipeThumbnail({ recipe, emoji }: { recipe: MealieRecipe; emoji: string | null }) {
   const [imgError, setImgError] = useState(false)
-  const showEmoji = !recipe.image || imgError
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] bg-muted">
-      {!showEmoji ? (
+      {!imgError ? (
         <img
           src={recipeImageUrl(recipe, "min-original")}
           alt={recipe.name}
