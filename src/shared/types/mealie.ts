@@ -98,6 +98,7 @@ export interface RecipeFormData {
   seasons: Season[]
   categories: Array<{ id: string; name: string; slug: string }>
   tags: Array<{ id: string; name: string; slug: string }>
+  extras?: Record<string, string>
 }
 
 export interface MealieRecipe {

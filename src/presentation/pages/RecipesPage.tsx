@@ -7,9 +7,10 @@ import { getCaloriesFromTags } from "../../shared/utils/calorie.ts"
 import { useGridColumns } from "../hooks/useGridColumns.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
 import { Button } from "../components/ui/button.tsx"
-import {Loader2, AlertCircle, UtensilsCrossed, Plus, PenLine, } from "lucide-react"
+import {Loader2, AlertCircle, UtensilsCrossed, Plus, PenLine, ChefHat } from "lucide-react"
 import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
+import { isSimpleRecipe } from "../../shared/utils/recipeEmoji.ts"
 import { getEnv } from "../../shared/utils/env.ts"
 import { getRecipesUseCase, getRecipeUseCase } from "../../infrastructure/container.ts"
 import { cn } from "../../lib/utils.ts"
@@ -25,6 +26,7 @@ export function RecipesPage() {
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
   const [maxCalories, setMaxCalories] = useState<number | undefined>(undefined)
   const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([])
+  const [showSimple, setShowSimple] = useState(false)
   const [noIngredients, setNoIngredients] = useState(false)
   const [noIngredientRecipes, setNoIngredientRecipes] = useState<MealieRecipe[] | null>(null)
   const [noIngredientsLoading, setNoIngredientsLoading] = useState(false)
@@ -168,6 +170,9 @@ export function RecipesPage() {
       : recipes
 
     return base.filter((recipe) => {
+      // Masquer les recettes simples par défaut
+      if (!showSimple && isSimpleRecipe(recipe)) return false
+
       // =====================
       // SAISONS
       // =====================
@@ -229,6 +234,7 @@ export function RecipesPage() {
     selectedTags,
     maxTotalTime,
     maxCalories,
+    showSimple,
   ])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [tagSearch, setTagSearch] = useState("")
@@ -284,6 +290,24 @@ export function RecipesPage() {
                 {columns}
               </span>
             </div>
+
+            {/* Toggle recettes simples */}
+            <button
+              type="button"
+              onClick={() => setShowSimple((v) => !v)}
+              title={showSimple ? "Masquer les repas simples" : "Afficher les repas simples"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-[var(--radius-lg)]",
+                "border px-3 py-1.5 text-sm font-semibold transition-all duration-150",
+                "shadow-subtle",
+                showSimple
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
+              )}
+            >
+              <ChefHat className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Simples</span>
+            </button>
 
             {/* Importer depuis Mealie */}
             <a

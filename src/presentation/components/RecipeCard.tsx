@@ -5,6 +5,7 @@ import type { MealieRecipe } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
+import { getRecipeEmoji } from "../../shared/utils/recipeEmoji.ts"
 
 interface RecipeCardProps {
   recipe: MealieRecipe
@@ -15,6 +16,7 @@ interface RecipeCardProps {
 export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
   const [imgError, setImgError] = useState(false)
   const imageUrl = recipeImageUrl(recipe, "min-original")
+  const emoji = getRecipeEmoji(recipe)
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
   const categories = recipe.recipeCategory ?? []
 
@@ -44,7 +46,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="text-4xl opacity-20">🍽️</span>
+              <span className="text-4xl">{emoji ?? "🍽️"}</span>
             </div>
           )}
 

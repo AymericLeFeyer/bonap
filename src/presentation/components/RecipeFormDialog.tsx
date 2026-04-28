@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Loader2, AlertCircle, Plus, Trash2, GripVertical } from "lucide-react"
+import { Loader2, AlertCircle, Plus, Trash2, GripVertical, Smile } from "lucide-react"
+import { FOOD_EMOJIS, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
 import {
   Dialog,
   DialogContent,
@@ -98,6 +99,7 @@ function buildInitialFormData(recipe?: MealieRecipe): RecipeFormData {
     seasons: getRecipeSeasonsFromTags(recipe?.tags),
     categories: (recipe?.recipeCategory ?? []).map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
     tags: (recipe?.tags ?? []).filter((t) => !isSeasonTag(t)).map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
+    extras: recipe?.extras ? { ...recipe.extras } : {},
   }
 }
 
@@ -277,6 +279,52 @@ function RecipeFormContent({ recipe, onClose, onSuccess }: RecipeFormContentProp
               {Number(formData.recipeYield) === 1 ? "1 portion" : `${formData.recipeYield} portions`}
             </span>
           )}
+        </div>
+      </div>
+
+      {/* Emoji illustration */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Smile className="h-4 w-4 text-muted-foreground" />
+          <Label>Illustration (emoji)</Label>
+          <span className="text-xs text-muted-foreground">— affiché à la place de l'image si absente</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {/* "Aucun" option */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = { ...(formData.extras ?? {}) }
+              delete next[EXTRAS_EMOJI_KEY]
+              setFormData((prev) => ({ ...prev, extras: next }))
+            }}
+            className={cn(
+              "h-9 px-3 rounded-md border text-xs font-medium transition-colors",
+              !formData.extras?.[EXTRAS_EMOJI_KEY]
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-secondary",
+            )}
+          >
+            Aucun
+          </button>
+          {FOOD_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => setFormData((prev) => ({
+                ...prev,
+                extras: { ...(prev.extras ?? {}), [EXTRAS_EMOJI_KEY]: emoji },
+              }))}
+              className={cn(
+                "h-9 w-9 rounded-md border text-xl transition-colors",
+                formData.extras?.[EXTRAS_EMOJI_KEY] === emoji
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-secondary",
+              )}
+            >
+              {emoji}
+            </button>
+          ))}
         </div>
       </div>
 

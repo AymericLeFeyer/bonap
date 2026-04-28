@@ -202,6 +202,7 @@ export class RecipeRepository implements IRecipeRepository {
           text: step.text,
         })),
       tags: [...data.tags, ...seasonTags],
+      extras: { ...(current.extras ?? {}), ...(data.extras ?? {}) },
     }
     return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, payload)
   }
