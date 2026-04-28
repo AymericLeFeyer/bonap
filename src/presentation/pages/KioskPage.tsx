@@ -292,7 +292,7 @@ function RecipeCard({ meal }: { meal: MealieMealPlan }) {
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground/50 italic">
+          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground/50 italic bg-secondary/40">
             Pas d'image
           </div>
         )}
@@ -303,11 +303,6 @@ function RecipeCard({ meal }: { meal: MealieMealPlan }) {
         <p className="text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
         {note && (
           <p className="text-xs text-muted-foreground line-clamp-2">{note}</p>
-        )}
-        {recipe.recipeCategory && recipe.recipeCategory.length > 0 && (
-          <p className="text-xs text-muted-foreground/60 line-clamp-1">
-            {recipe.recipeCategory.map((c) => c.name).join(", ")}
-          </p>
         )}
       </div>
     </div>
