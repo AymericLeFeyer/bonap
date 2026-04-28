@@ -142,7 +142,17 @@ export function RecipePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl">
+      <DialogContent
+        className="flex max-h-[85vh] flex-col sm:max-w-3xl"
+        onPointerDownOutside={(e) => {
+          // Autocomplete dropdowns are portalled outside the dialog DOM.
+          // Prevent Radix from closing the dialog when the user clicks a suggestion.
+          const target = e.target as Element
+          if (target.closest('[role="listbox"]') || target.closest('[role="option"]')) {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Choisir un repas</DialogTitle>
           <DialogDescription>
