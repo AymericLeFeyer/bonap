@@ -3,9 +3,10 @@ import { createPortal } from "react-dom"
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListChecks,
   Loader2, AlertCircle, Eye, Trash2, ShoppingCart, CheckCircle2,
-  MessageSquarePlus, MessageSquare, Sparkles,
+  MessageSquarePlus, MessageSquare, Sparkles, Monitor,
 } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
+import { useNavigate } from "react-router-dom"
 import { usePlanning } from "../hooks/usePlanning.ts"
 import { useAddRecipesToCart } from "../hooks/useAddRecipesToCart.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
@@ -56,6 +57,7 @@ const MEAL_TYPES = [
 const DRAG_THRESHOLD = 8
 
 export function PlanningPage() {
+  const navigate = useNavigate()
   const {
     mealPlans, loading, error, centerDate, nbDays, setNbDays,
     goToPrevDay, goToNextDay, goToPrevPeriod, goToNextPeriod, goToToday, goToTodayMobile,
@@ -421,6 +423,16 @@ export function PlanningPage() {
                 <ListChecks className="h-3.5 w-3.5" />
               </button>
             </div>
+
+            {/* Mode kiosk */}
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => navigate("/kiosk")}
+              title="Mode kiosk"
+            >
+              <Monitor className="h-3.5 w-3.5" />
+            </Button>
 
             {/* Sélecteur nombre de jours */}
             <div className={cn(
