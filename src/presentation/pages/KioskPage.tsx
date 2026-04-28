@@ -4,8 +4,8 @@ import { Loader2, RefreshCw } from "lucide-react"
 import type { MealieMealPlan } from "../../shared/types/mealie.ts"
 import { getWeekPlanningUseCase } from "../../infrastructure/container.ts"
 import { formatDate } from "../../shared/utils/date.ts"
-import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { cn } from "../../lib/utils.ts"
+import { RecipeImage } from "../components/RecipeImage.tsx"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { getMealVisibleNote } from "../components/planning/planningUtils.ts"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
@@ -275,27 +275,18 @@ function MealSlot({ label, meal, isNext, onSelect }: MealSlotProps) {
 
 function RecipeCard({ meal }: { meal: MealieMealPlan }) {
   const recipe = meal.recipe!
-  const [imgError, setImgError] = useState(false)
-  const imageUrl = recipe.id ? recipeImageUrl(recipe, "min-original") : null
   const note = getMealVisibleNote(meal)
 
   return (
     <div className="flex-1 flex flex-col">
       {/* Image */}
       <div className="relative w-full aspect-video bg-secondary overflow-hidden">
-        {imageUrl && !imgError ? (
-          <img
-            src={imageUrl}
-            alt={recipe.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground/50 italic bg-secondary/40">
-            Pas d'image
-          </div>
-        )}
+        <RecipeImage
+          recipe={recipe}
+          alt={recipe.name}
+          className="w-full h-full object-cover"
+          fallbackClassName="w-full h-full text-4xl"
+        />
       </div>
 
       {/* Infos */}
