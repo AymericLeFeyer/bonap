@@ -19,6 +19,7 @@ import { useTags } from "../hooks/useTags.ts"
 import { useFoods } from "../hooks/useFoods.ts"
 import { useUnits } from "../hooks/useUnits.ts"
 import type { MealieRecipe, RecipeFormData, RecipeFormIngredient, RecipeFormInstruction, Season } from "../../shared/types/mealie.ts"
+import { cn } from "../../lib/utils.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
 
