@@ -278,8 +278,7 @@ jobs:
           echo "HTTP status: $STATUS"
           [ -n "$BODY" ] && echo "Response: $BODY"
           if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
-            echo "::error::Dispatch échoué (HTTP $STATUS)"
-            exit 1
+            echo "::warning::Dispatch aylabs-ha-addons échoué (HTTP $STATUS) — étape ignorée."
           fi
 
 # ─── Étape 6 (opt.) : BFF ─────────────────────────────────────────────────────
