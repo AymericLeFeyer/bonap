@@ -4,7 +4,7 @@ import { CookingMode } from "./CookingMode"
 import { PlanningSlotPicker } from "./PlanningSlotPicker"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 import { Badge } from "./ui/badge"
-import { X, CalendarPlus, UtensilsCrossed, ExternalLink, CookingPot, Loader2, Clock, Star, Heart } from "lucide-react"
+import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, Heart } from "lucide-react"
 
 import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"

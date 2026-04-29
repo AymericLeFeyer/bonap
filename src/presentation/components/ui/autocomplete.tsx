@@ -104,7 +104,7 @@ export function Autocomplete({
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
     }
-  }, [open])
+  }, [open, portalContainer])
 
   const selectItem = (item: AutocompleteOption) => {
     if (item.id === "__create__") {
