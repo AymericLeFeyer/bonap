@@ -41,7 +41,7 @@ test.describe("Repas simple", () => {
     await page.route("**/api/recipes/tomates-farine", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({ json: SIMPLE_RECIPE_CREATED })
-      } else if (route.request().method() === "PATCH") {
+      } else if (route.request().method() === "PUT" || route.request().method() === "PATCH") {
         await route.fulfill({ json: SIMPLE_RECIPE_CREATED })
       } else {
         await route.continue()
