@@ -121,6 +121,8 @@ test.describe("Repas simple", () => {
         await route.fulfill({
           json: { id: 99, date: "2026-04-29", entryType: "dinner", recipeId: "simple-001", recipe: SIMPLE_RECIPE_CREATED },
         })
+      } else if (route.request().method() === "GET") {
+        await route.fulfill({ json: { items: [], page: 1, per_page: -1, total: 0, total_pages: 1 } })
       } else {
         await route.continue()
       }
