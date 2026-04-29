@@ -96,7 +96,7 @@ test.describe("Mode Kiosk", () => {
             description: "",
             image: null,
             tags: [{ id: "tag-simple", name: "simple", slug: "simple" }],
-            extras: { emoji: "🍳" },
+            extras: { bonap_emoji: "🍳" },
           },
         },
       ],
@@ -109,6 +109,9 @@ test.describe("Mode Kiosk", () => {
       } else {
         await route.continue()
       }
+    })
+    await page.route("**/api/recipes/tomates-oeufs", async (route) => {
+      await route.fulfill({ json: simpleRecipeMeal.items[0].recipe })
     })
 
     await page.goto("/kiosk")

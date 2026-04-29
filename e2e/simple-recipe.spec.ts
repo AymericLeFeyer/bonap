@@ -9,12 +9,11 @@ const SIMPLE_RECIPE_CREATED = {
   description: "",
   recipeIngredient: [
     { referenceId: "ri-s1", quantity: 1, unit: null, food: { id: "f4", name: "tomates" }, note: "", display: "1 tomates" },
-    { referenceId: "ri-s2", quantity: 1, unit: null, food: { id: "f1", name: "farine" }, note: "", display: "1 farine" },
   ],
   recipeInstructions: [],
   tags: [{ id: "tag-simple", name: "simple", slug: "simple" }],
   recipeCategory: [],
-  extras: { emoji: "🍅" },
+  extras: { bonap_emoji: "🍅" },
   image: null,
 }
 
@@ -24,7 +23,6 @@ test.describe("Repas simple", () => {
     await setAuthToken(page)
     await mockAllApiRoutes(page)
 
-    // Mock création repas simple (POST /api/recipes → slug, puis GET slug, puis PATCH)
     await page.route("**/api/recipes", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify("tomates-farine") })
@@ -41,7 +39,6 @@ test.describe("Repas simple", () => {
         await route.continue()
       }
     })
-    // Tags : inclut le tag "simple"
     await page.route("**/api/organizers/tags**", async (route) => {
       await route.fulfill({
         json: {
@@ -54,31 +51,34 @@ test.describe("Repas simple", () => {
 
   test("ouvre le dialog repas simple depuis le planning", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
+    await page.getByLabel("Ajouter un repas").first().click()
     await expect(page.getByRole("dialog")).toBeVisible()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
     await expect(page.getByText(/ingrédients/i)).toBeVisible()
   })
 
   test("affiche les champs dans le bon ordre : ingrédients → nom → emoji", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
     const labels = page.locator("label")
     const texts = await labels.allInnerTexts()
     const ingredientsIdx = texts.findIndex((t) => /ingrédients/i.test(t))
     const nomIdx = texts.findIndex((t) => /nom du repas/i.test(t))
-    const emojiIdx = texts.findIndex((t) => /emoji/i.test(t))
+    const emojiIdx = texts.findIndex((t) => /^emoji$/i.test(t.trim()))
 
+    expect(ingredientsIdx).toBeGreaterThanOrEqual(0)
+    expect(nomIdx).toBeGreaterThanOrEqual(0)
+    expect(emojiIdx).toBeGreaterThanOrEqual(0)
     expect(ingredientsIdx).toBeLessThan(nomIdx)
     expect(nomIdx).toBeLessThan(emojiIdx)
   })
 
   test("pas de champ quantité ni unité dans le formulaire repas simple", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
     await expect(page.getByPlaceholder(/qté/i)).not.toBeVisible()
     await expect(page.getByPlaceholder(/unité/i)).not.toBeVisible()
@@ -86,8 +86,8 @@ test.describe("Repas simple", () => {
 
   test("le nom se génère automatiquement depuis les ingrédients", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
     const input = page.getByPlaceholder(/aliment/i).first()
     await input.fill("tomates")
@@ -96,20 +96,22 @@ test.describe("Repas simple", () => {
 
   test("affiche une grille d'emojis prédéfinis", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
-    // Au moins 5 boutons emoji visibles dans la section emoji
-    const emojiSection = page.locator("label", { hasText: /emoji/i }).locator("..")
+    // La section emoji contient plusieurs boutons emoji (au moins 5)
+    const emojiLabel = page.locator("label", { hasText: /^emoji$/i })
+    await expect(emojiLabel).toBeVisible()
+    // Les boutons emoji sont des frères dans le parent de la label
+    const emojiSection = emojiLabel.locator("xpath=..")
     const emojiButtons = emojiSection.locator("button")
-    await expect(emojiButtons).toHaveCount(await emojiButtons.count())
     expect(await emojiButtons.count()).toBeGreaterThanOrEqual(5)
   })
 
   test("bouton Créer désactivé si aucun ingrédient renseigné", async ({ page }) => {
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
     await expect(page.getByRole("button", { name: /créer et ajouter/i })).toBeDisabled()
   })
@@ -119,19 +121,19 @@ test.describe("Repas simple", () => {
     await page.route("**/api/households/mealplans**", async (route) => {
       if (route.request().method() === "POST") {
         mealplanPostCalled = true
-        await route.fulfill({ json: { id: 99, date: "2026-04-29", entryType: "dinner", recipeId: "simple-001", recipe: SIMPLE_RECIPE_CREATED } })
+        await route.fulfill({
+          json: { id: 99, date: "2026-04-29", entryType: "dinner", recipeId: "simple-001", recipe: SIMPLE_RECIPE_CREATED },
+        })
       } else {
         await route.continue()
       }
     })
 
     await page.goto("/planning")
-    await page.getByRole("button", { name: /ajouter/i }).first().click()
-    await page.getByRole("tab", { name: /repas simple/i }).click()
+    await page.getByLabel("Ajouter un repas").first().click()
+    await page.getByRole("button", { name: /repas simple/i }).click()
 
-    const input = page.getByPlaceholder(/aliment/i).first()
-    await input.fill("tomates")
-
+    await page.getByPlaceholder(/aliment/i).first().fill("tomates")
     await page.getByRole("button", { name: /créer et ajouter/i }).click()
     await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 5000 })
     expect(mealplanPostCalled).toBe(true)
