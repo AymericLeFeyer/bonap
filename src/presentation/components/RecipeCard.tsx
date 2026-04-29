@@ -1,10 +1,13 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { SeasonBadge } from "./SeasonBadge.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
+import { getRecipeEmoji, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
+import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
+import { getRecipeUseCase } from "../../infrastructure/container.ts"
 
 interface RecipeCardProps {
   recipe: MealieRecipe
@@ -14,7 +17,23 @@ interface RecipeCardProps {
 
 export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
   const [imgError, setImgError] = useState(false)
+  const [emoji, setEmoji] = useState<string | null>(() => getRecipeEmoji(recipe))
   const imageUrl = recipeImageUrl(recipe, "min-original")
+
+  // When image fails and no emoji cached yet, fetch full recipe to get extras
+  useEffect(() => {
+    if (!imgError || emoji !== null) return
+    let cancelled = false
+    getRecipeUseCase.execute(recipe.slug).then((full) => {
+      if (cancelled) return
+      const e = full.extras?.[EXTRAS_EMOJI_KEY] ?? null
+      if (e) {
+        recipeEmojiStore.set(full.id, e)
+        setEmoji(e)
+      }
+    }).catch(() => {/* ignore */})
+    return () => { cancelled = true }
+  }, [imgError, emoji, recipe.slug])
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
   const categories = recipe.recipeCategory ?? []
 
@@ -44,7 +63,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="text-4xl opacity-20">🍽️</span>
+              {emoji && <span className="text-4xl">{emoji}</span>}
             </div>
           )}
 

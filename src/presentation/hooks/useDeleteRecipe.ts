@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { deleteRecipeUseCase } from "../../infrastructure/container.ts"
+import { deleteRecipeUseCase, recipeRepository } from "../../infrastructure/container.ts"
 
 export function useDeleteRecipe() {
   const [deleting, setDeleting] = useState(false)
@@ -19,5 +19,15 @@ export function useDeleteRecipe() {
     }
   }
 
-  return { deleteRecipe, deleting, error }
+  const deleteImage = async (slug: string): Promise<boolean> => {
+    try {
+      await recipeRepository.deleteImage(slug)
+      return true
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      return false
+    }
+  }
+
+  return { deleteRecipe, deleteImage, deleting, error }
 }

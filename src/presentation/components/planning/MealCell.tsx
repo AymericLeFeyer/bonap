@@ -6,7 +6,7 @@ import {
 } from "lucide-react"
 import type { MealieMealPlan } from "../../../shared/types/mealie.ts"
 import { cn } from "../../../lib/utils.ts"
-import { recipeImageUrl } from "../../../shared/utils/image.ts"
+import { RecipeImage } from "../RecipeImage.tsx"
 import { parseServings } from "../../../shared/utils/servings.ts"
 import { getMealServings, getMealVisibleNote } from "./planningUtils.ts"
 
@@ -134,10 +134,11 @@ export function MealCell({
               )}
               <div className="flex items-center gap-2 p-2">
                 {meal.recipe && (
-                  <img
-                    src={recipeImageUrl(meal.recipe, "min-original")}
+                  <RecipeImage
+                    recipe={meal.recipe}
                     alt={name}
                     className="h-[72px] w-[72px] shrink-0 rounded-[var(--radius-md)] object-cover"
+                    fallbackClassName="h-[72px] w-[72px] shrink-0 rounded-[var(--radius-md)]"
                   />
                 )}
                 <span className="line-clamp-4 flex-1 text-[12.5px] font-medium leading-snug">{name}</span>
@@ -284,10 +285,10 @@ export function MealCell({
                       )}
                     >
                       {meal.recipe && (
-                        <img
-                          src={recipeImageUrl(meal.recipe, "min-original")}
-                          alt=""
+                        <RecipeImage
+                          recipe={meal.recipe}
                           className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                          fallbackClassName="h-8 w-8 shrink-0 rounded-[var(--radius-sm)]"
                         />
                       )}
                       <span className="line-clamp-2 leading-snug">

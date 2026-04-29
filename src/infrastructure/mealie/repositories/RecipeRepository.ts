@@ -202,12 +202,17 @@ export class RecipeRepository implements IRecipeRepository {
           text: step.text,
         })),
       tags: [...data.tags, ...seasonTags],
+      extras: { ...(current.extras ?? {}), ...(data.extras ?? {}) },
     }
     return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, payload)
   }
 
   async uploadImage(slug: string, file: File): Promise<void> {
     return mealieApiClient.uploadImage(slug, file)
+  }
+
+  async deleteImage(slug: string): Promise<void> {
+    return mealieApiClient.delete(`/api/recipes/${slug}/image`)
   }
 
   private simplifyRecipeForPut(current: MealieRecipe): Partial<MealieRecipe> {

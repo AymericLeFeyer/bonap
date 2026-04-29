@@ -30,7 +30,10 @@ import {
   Sparkles,
   Star,
   Heart,
+  Smile,
 } from "lucide-react"
+import { FOOD_EMOJIS, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
+import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
 import { useState, useRef, useCallback, useEffect, type ChangeEvent } from "react"
 import { CookingMode } from "../components/CookingMode.tsx"
 import type {
@@ -95,6 +98,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
     recipeYield: recipe.recipeServings ? String(recipe.recipeServings) : "",
+    extras: recipe.extras ? { ...recipe.extras } : {},
   }
 }
 
@@ -137,7 +141,7 @@ export function RecipeDetailPage() {
   const { units } = useUnits()
   const { updateRecipe, loading: saving, error: saveError } = useRecipeForm()
   const { fetchAiImage } = useAiImage()
-  const { deleteRecipe, deleting } = useDeleteRecipe()
+  const { deleteRecipe, deleteImage, deleting } = useDeleteRecipe()
   const { updateNutrition, loading: nutritionSaving, error: nutritionSaveError } = useUpdateNutrition()
   const navigate = useNavigate()
   const [aiProvider, setAiProvider] = useState<ImageProvider>("wikipedia-en")
@@ -147,6 +151,7 @@ export function RecipeDetailPage() {
 
   const [formData, setFormData] = useState<RecipeFormData | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [removingImage, setRemovingImage] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
   const [nutritionLoading, setNutritionLoading] = useState(false)
@@ -190,6 +195,14 @@ export function RecipeDetailPage() {
   }, [])
 
   // ─── Image ─────────────────────────────────────────────────────────────────
+
+  const handleDeleteImage = async () => {
+    if (!recipe) return
+    setRemovingImage(true)
+    await deleteImage(recipe.slug)
+    setImagePreview(null)
+    setRemovingImage(false)
+  }
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -406,6 +419,9 @@ export function RecipeDetailPage() {
       setFormData(buildFormData(updated))
       if (updated.image) setImagePreview(recipeImageUrl(updated, "original"))
       setIsDirty(false)
+      const emoji = formData.extras?.[EXTRAS_EMOJI_KEY]
+      if (emoji) recipeEmojiStore.set(updated.id, emoji)
+      else recipeEmojiStore.remove(updated.id)
     }
   }
 
@@ -562,6 +578,24 @@ export function RecipeDetailPage() {
                 onChange={handleImageChange}
               />
 
+              {/* Supprimer l'image */}
+              {imagePreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleDeleteImage()}
+                  disabled={removingImage}
+                  className="gap-1.5 text-destructive hover:text-destructive"
+                >
+                  {removingImage
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Trash2 className="h-4 w-4" />
+                  }
+                  Supprimer l'image
+                </Button>
+              )}
+
               {/* Bouton photo via IA — WIP */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span title="WIP — fonctionnalité en cours de développement">
@@ -587,6 +621,48 @@ export function RecipeDetailPage() {
                     <option key={p.value} value={p.value}>{p.label}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Emoji illustration */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Smile className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Illustration (emoji)</span>
+                <span className="text-xs text-muted-foreground">— affiché si pas d'image</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...(formData.extras ?? {}) }
+                    delete next[EXTRAS_EMOJI_KEY]
+                    patch({ extras: next })
+                  }}
+                  className={cn(
+                    "h-8 px-2.5 rounded-md border text-xs font-medium transition-colors",
+                    !formData.extras?.[EXTRAS_EMOJI_KEY]
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  Aucun
+                </button>
+                {FOOD_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => patch({ extras: { ...(formData.extras ?? {}), [EXTRAS_EMOJI_KEY]: emoji } })}
+                    className={cn(
+                      "h-8 w-8 rounded-md border text-lg transition-colors",
+                      formData.extras?.[EXTRAS_EMOJI_KEY] === emoji
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-secondary",
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
             </div>
 
