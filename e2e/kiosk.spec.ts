@@ -113,10 +113,13 @@ test.describe("Mode Kiosk", () => {
     await page.route("**/api/recipes/tomates-oeufs", async (route) => {
       await route.fulfill({ json: simpleRecipeMeal.items[0].recipe })
     })
+    // Déclenche onError immédiatement pour afficher le fallback emoji
+    await page.route("**/api/media/recipes/**", async (route) => {
+      await route.fulfill({ status: 404, body: "" })
+    })
 
     await page.goto("/kiosk")
     await expect(page.getByText("tomates, oeufs")).toBeVisible()
-    // L'emoji doit apparaître dans le fallback image
-    await expect(page.getByText("🍳")).toBeVisible()
+    await expect(page.getByText("🍳")).toBeVisible({ timeout: 8000 })
   })
 })
