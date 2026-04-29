@@ -120,6 +120,7 @@ export function RecipePickerDialog({
   const [tab, setTab] = useState<Tab>("recipes")
   const [inputValue, setInputValue] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [dialogContentEl, setDialogContentEl] = useState<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(inputValue), 300)
@@ -143,10 +144,17 @@ export function RecipePickerDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
+        ref={setDialogContentEl}
         className="flex max-h-[85vh] flex-col sm:max-w-3xl"
         onPointerDownOutside={(e) => {
           // Autocomplete dropdowns are portalled outside the dialog DOM.
           // Prevent Radix from closing the dialog when the user clicks a suggestion.
+          const target = e.target as Element
+          if (target.closest('[role="listbox"]') || target.closest('[role="option"]')) {
+            e.preventDefault()
+          }
+        }}
+        onInteractOutside={(e) => {
           const target = e.target as Element
           if (target.closest('[role="listbox"]') || target.closest('[role="option"]')) {
             e.preventDefault()
@@ -200,7 +208,7 @@ export function RecipePickerDialog({
           </>
         ) : (
           <div className="flex-1 overflow-y-auto px-1">
-            <SimpleRecipePicker onCreated={handleSelect} />
+            <SimpleRecipePicker onCreated={handleSelect} dropdownContainer={dialogContentEl} />
           </div>
         )}
       </DialogContent>

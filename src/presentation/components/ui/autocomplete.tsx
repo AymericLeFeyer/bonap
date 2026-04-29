@@ -19,6 +19,8 @@ interface AutocompleteProps {
   allowCreate?: boolean
   createLabel?: (value: string) => string
   "aria-label"?: string
+  /** Container pour le portal du dropdown (par défaut document.body). Passer le nœud du Dialog pour éviter le blocage Radix. */
+  portalContainer?: HTMLElement | null
 }
 
 export function Autocomplete({
@@ -32,6 +34,7 @@ export function Autocomplete({
   allowCreate = false,
   createLabel = (v) => `Créer "${v}"`,
   "aria-label": ariaLabel,
+  portalContainer,
 }: AutocompleteProps) {
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
@@ -69,13 +72,29 @@ export function Autocomplete({
       const spaceBelow = window.innerHeight - rect.bottom
       const dropdownHeight = 192 // max-h-48 = 12rem = 192px
       const showAbove = spaceBelow < dropdownHeight + 8 && rect.top > dropdownHeight
-      setDropdownStyle({
-        position: "fixed",
-        top: showAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 9999,
-      })
+
+      if (portalContainer && portalContainer !== document.body) {
+        // Le container a un transform CSS → position: fixed est relative à lui.
+        // On soustrait le bounding rect du container pour obtenir les coordonnées locales.
+        const containerRect = portalContainer.getBoundingClientRect()
+        setDropdownStyle({
+          position: "fixed",
+          top: showAbove
+            ? rect.top - dropdownHeight - 4 - containerRect.top
+            : rect.bottom + 4 - containerRect.top,
+          left: rect.left - containerRect.left,
+          width: rect.width,
+          zIndex: 9999,
+        })
+      } else {
+        setDropdownStyle({
+          position: "fixed",
+          top: showAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+          zIndex: 9999,
+        })
+      }
     }
 
     update()
@@ -137,6 +156,7 @@ export function Autocomplete({
       id={`${id}-list`}
       role="listbox"
       style={dropdownStyle}
+      onMouseDown={(e) => e.preventDefault()}
       className={cn(
         "max-h-48 overflow-auto rounded-md border border-border",
         "bg-white dark:bg-zinc-900 text-foreground shadow-md",
@@ -197,7 +217,7 @@ export function Autocomplete({
         )}
       />
 
-      {dropdown && createPortal(dropdown, document.body)}
+      {dropdown && createPortal(dropdown, portalContainer ?? document.body)}
     </div>
   )
 }

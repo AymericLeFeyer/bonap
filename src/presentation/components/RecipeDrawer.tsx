@@ -263,7 +263,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                                     "transition-all duration-150",
                                                 )}
                                             >
-                                                <CookingPot className="h-3.5 w-3.5" />
+                                                <ExternalLink className="h-3.5 w-3.5" />
                                                 <span className="sm:hidden">Page complète</span>
                                             </Link>
                                         </TooltipTrigger>

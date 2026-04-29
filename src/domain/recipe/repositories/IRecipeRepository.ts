@@ -31,5 +31,6 @@ export interface IRecipeRepository {
   getFavorites(): Promise<MealieFavoritesResponse>
   toggleFavorite(slug: string, isFavorite: boolean): Promise<void>
   uploadImage(slug: string, file: File): Promise<void>
+  deleteImage(slug: string): Promise<void>
   delete(slug: string): Promise<void>
 }

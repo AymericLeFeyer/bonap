@@ -211,6 +211,10 @@ export class RecipeRepository implements IRecipeRepository {
     return mealieApiClient.uploadImage(slug, file)
   }
 
+  async deleteImage(slug: string): Promise<void> {
+    return mealieApiClient.delete(`/api/recipes/${slug}/image`)
+  }
+
   private simplifyRecipeForPut(current: MealieRecipe): Partial<MealieRecipe> {
     return {
       ...current,

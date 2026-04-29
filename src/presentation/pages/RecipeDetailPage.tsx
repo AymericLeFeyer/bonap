@@ -141,7 +141,7 @@ export function RecipeDetailPage() {
   const { units } = useUnits()
   const { updateRecipe, loading: saving, error: saveError } = useRecipeForm()
   const { fetchAiImage } = useAiImage()
-  const { deleteRecipe, deleting } = useDeleteRecipe()
+  const { deleteRecipe, deleteImage, deleting } = useDeleteRecipe()
   const { updateNutrition, loading: nutritionSaving, error: nutritionSaveError } = useUpdateNutrition()
   const navigate = useNavigate()
   const [aiProvider, setAiProvider] = useState<ImageProvider>("wikipedia-en")
@@ -151,6 +151,7 @@ export function RecipeDetailPage() {
 
   const [formData, setFormData] = useState<RecipeFormData | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [removingImage, setRemovingImage] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
   const [nutritionLoading, setNutritionLoading] = useState(false)
@@ -194,6 +195,14 @@ export function RecipeDetailPage() {
   }, [])
 
   // ─── Image ─────────────────────────────────────────────────────────────────
+
+  const handleDeleteImage = async () => {
+    if (!recipe) return
+    setRemovingImage(true)
+    await deleteImage(recipe.slug)
+    setImagePreview(null)
+    setRemovingImage(false)
+  }
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -568,6 +577,24 @@ export function RecipeDetailPage() {
                 className="hidden"
                 onChange={handleImageChange}
               />
+
+              {/* Supprimer l'image */}
+              {imagePreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleDeleteImage()}
+                  disabled={removingImage}
+                  className="gap-1.5 text-destructive hover:text-destructive"
+                >
+                  {removingImage
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Trash2 className="h-4 w-4" />
+                  }
+                  Supprimer l'image
+                </Button>
+              )}
 
               {/* Bouton photo via IA — WIP */}
               <div className="flex items-center gap-2 flex-wrap">

@@ -5,38 +5,35 @@ import { Button } from "./ui/button.tsx"
 import { Label } from "./ui/label.tsx"
 import { Autocomplete } from "./ui/autocomplete.tsx"
 import { useFoods } from "../hooks/useFoods.ts"
-import { useUnits } from "../hooks/useUnits.ts"
 import { useTags } from "../hooks/useTags.ts"
 import { createRecipeUseCase } from "../../infrastructure/container.ts"
 import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
 import type { MealieRecipe, RecipeFormIngredient } from "../../shared/types/mealie.ts"
-import { randomFoodEmoji, EXTRAS_EMOJI_KEY, SIMPLE_RECIPE_TAG_SLUG } from "../../shared/utils/recipeEmoji.ts"
+import { randomFoodEmoji, FOOD_EMOJIS, EXTRAS_EMOJI_KEY, SIMPLE_RECIPE_TAG_SLUG } from "../../shared/utils/recipeEmoji.ts"
 import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
+import { cn } from "../../lib/utils.ts"
 
 interface SimpleRecipePickerProps {
   onCreated: (recipe: MealieRecipe) => void
+  dropdownContainer?: HTMLElement | null
 }
 
 function buildEmptyIngredient(): RecipeFormIngredient {
   return { quantity: "1", unit: "", unitId: undefined, food: "", foodId: undefined, note: "" }
 }
 
-export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
+export function SimpleRecipePicker({ onCreated, dropdownContainer }: SimpleRecipePickerProps) {
   const { foods } = useFoods()
-  const { units } = useUnits()
   const { tags } = useTags()
 
   const [name, setName] = useState("")
   const [nameEditedManually, setNameEditedManually] = useState(false)
+  const [emoji, setEmoji] = useState(() => randomFoodEmoji())
   const [ingredients, setIngredients] = useState<RecipeFormIngredient[]>([buildEmptyIngredient()])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const foodOptions = foods.map((f) => ({ id: f.id, label: f.name }))
-  const unitOptions = units.map((u) => ({
-    id: u.id,
-    label: u.useAbbreviation && u.abbreviation ? u.abbreviation : u.name,
-  }))
 
   const updateIngredient = (index: number, patch: Partial<RecipeFormIngredient>) => {
     setIngredients((prev) => {
@@ -73,6 +70,7 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
 
   const handleCreate = async () => {
     const finalName = name.trim() || "Repas simple"
+    const finalEmoji = emoji.trim() || randomFoodEmoji()
     setLoading(true)
     setError(null)
     try {
@@ -88,7 +86,7 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
         seasons: [],
         categories: [],
         tags: [simpleTag],
-        extras: { [EXTRAS_EMOJI_KEY]: randomFoodEmoji() },
+        extras: { [EXTRAS_EMOJI_KEY]: finalEmoji },
       })
       recipeEmojiStore.set(recipe.id, recipe.extras?.[EXTRAS_EMOJI_KEY] ?? "")
       onCreated(recipe)
@@ -103,20 +101,7 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor="simple-name">Nom du repas</Label>
-        <Input
-          id="simple-name"
-          placeholder="Généré automatiquement depuis les ingrédients"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value)
-            setNameEditedManually(true)
-          }}
-          disabled={loading}
-        />
-      </div>
-
+      {/* 1. Ingrédients */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label>Ingrédients</Label>
@@ -126,25 +111,9 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
           </Button>
         </div>
 
-        <div className="hidden sm:grid sm:grid-cols-[80px_1.5fr_1fr_32px] sm:gap-2 sm:items-center px-1">
-          <span className="text-xs text-muted-foreground font-medium">Qté</span>
-          <span className="text-xs text-muted-foreground font-medium">Aliment</span>
-          <span className="text-xs text-muted-foreground font-medium">Unité</span>
-          <span />
-        </div>
-
         <div className="space-y-2">
           {ingredients.map((ing, index) => (
-            <div key={index} className="grid grid-cols-[60px_1.5fr_1fr_32px] sm:grid-cols-[80px_1.5fr_1fr_32px] gap-2 items-center">
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="Qté"
-                value={ing.quantity}
-                onChange={(e) => updateIngredient(index, { quantity: e.target.value })}
-                disabled={loading}
-                className="min-w-0 px-2"
-              />
+            <div key={index} className="flex gap-2 items-center">
               <Autocomplete
                 value={ing.food}
                 onChange={(value, option) => updateIngredient(index, {
@@ -154,16 +123,8 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
                 options={foodOptions}
                 placeholder="Aliment…"
                 disabled={loading}
-              />
-              <Autocomplete
-                value={ing.unit}
-                onChange={(value, option) => updateIngredient(index, {
-                  unit: value,
-                  unitId: option ? option.id : undefined,
-                })}
-                options={unitOptions}
-                placeholder="Unité…"
-                disabled={loading}
+                className="flex-1"
+                portalContainer={dropdownContainer}
               />
               <Button
                 type="button"
@@ -179,8 +140,46 @@ export function SimpleRecipePicker({ onCreated }: SimpleRecipePickerProps) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Une recette avec le tag «&nbsp;simple&nbsp;» sera créée dans Mealie, avec un emoji attribué automatiquement.
+          Quantité par défaut : 1, sans unité.
         </p>
+      </div>
+
+      {/* 2. Nom */}
+      <div className="space-y-1.5">
+        <Label htmlFor="simple-name">Nom du repas</Label>
+        <Input
+          id="simple-name"
+          placeholder="Généré automatiquement depuis les ingrédients"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value)
+            setNameEditedManually(true)
+          }}
+          disabled={loading}
+        />
+      </div>
+
+      {/* 3. Emoji */}
+      <div className="space-y-2">
+        <Label>Emoji</Label>
+        <div className="flex flex-wrap gap-2">
+          {FOOD_EMOJIS.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => setEmoji(e)}
+              disabled={loading}
+              className={cn(
+                "h-9 w-9 rounded-md border text-xl transition-colors",
+                emoji === e
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-secondary",
+              )}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (
