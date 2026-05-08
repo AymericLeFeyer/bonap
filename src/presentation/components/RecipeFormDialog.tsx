@@ -290,6 +290,7 @@ function RecipeFormContent({ recipe, onClose, onSuccess }: RecipeFormContentProp
           <Label>Illustration (emoji)</Label>
           <span className="text-xs text-muted-foreground">— affiché à la place de l'image si absente</span>
         </div>
+        <p className="text-xs text-muted-foreground/70">Si certains emojis n'apparaissent pas correctement, votre appareil ne les supporte peut-être pas.</p>
         <div className="flex flex-wrap gap-2">
           {/* "Aucun" option */}
           <button
