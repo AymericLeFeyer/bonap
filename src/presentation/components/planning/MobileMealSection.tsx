@@ -3,7 +3,7 @@ import { createPortal } from "react-dom"
 import { Plus, Copy, Check } from "lucide-react"
 import type { MealieMealPlan } from "../../../shared/types/mealie.ts"
 import { cn } from "../../../lib/utils.ts"
-import { recipeImageUrl } from "../../../shared/utils/image.ts"
+import { RecipeImage } from "../RecipeImage.tsx"
 import { getMealServings } from "./planningUtils.ts"
 
 export interface MobileMealSectionProps {
@@ -70,11 +70,11 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
             )}
             {meal.recipe ? (
               <div className="relative w-full aspect-square">
-                <img
-                  src={recipeImageUrl(meal.recipe, "min-original")}
+                <RecipeImage
+                  recipe={meal.recipe}
                   alt={meal.recipe.name ?? "Repas"}
-                  draggable={false}
                   className="w-full h-full object-cover pointer-events-none"
+                  fallbackClassName="w-full h-full text-4xl"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4">
                   <span className="block text-[11px] font-semibold text-white leading-tight line-clamp-2">
@@ -159,10 +159,10 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
                         )}
                       >
                         {meal.recipe && (
-                          <img
-                            src={recipeImageUrl(meal.recipe, "min-original")}
-                            alt=""
+                          <RecipeImage
+                            recipe={meal.recipe}
                             className="h-8 w-8 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                            fallbackClassName="h-8 w-8 shrink-0 rounded-[var(--radius-sm)]"
                           />
                         )}
                         <span className="line-clamp-2 leading-snug">
