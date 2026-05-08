@@ -9,7 +9,7 @@ import { useTags } from "../hooks/useTags.ts"
 import { createRecipeUseCase } from "../../infrastructure/container.ts"
 import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
 import type { MealieRecipe, RecipeFormIngredient } from "../../shared/types/mealie.ts"
-import { randomFoodEmoji, FOOD_EMOJIS, EXTRAS_EMOJI_KEY, SIMPLE_RECIPE_TAG_SLUG } from "../../shared/utils/recipeEmoji.ts"
+import { randomFoodEmoji, getSupportedFoodEmojis, getUnsupportedEmojiCount, EXTRAS_EMOJI_KEY, SIMPLE_RECIPE_TAG_SLUG } from "../../shared/utils/recipeEmoji.ts"
 import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
 import { cn } from "../../lib/utils.ts"
 
@@ -163,7 +163,7 @@ export function SimpleRecipePicker({ onCreated, dropdownContainer }: SimpleRecip
       <div className="space-y-2">
         <Label>Emoji</Label>
         <div className="flex flex-wrap gap-2">
-          {FOOD_EMOJIS.map((e) => (
+          {getSupportedFoodEmojis().map((e) => (
             <button
               key={e}
               type="button"
@@ -180,6 +180,11 @@ export function SimpleRecipePicker({ onCreated, dropdownContainer }: SimpleRecip
             </button>
           ))}
         </div>
+        {getUnsupportedEmojiCount() > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {getUnsupportedEmojiCount()} emoji{getUnsupportedEmojiCount() > 1 ? "s" : ""} masqué{getUnsupportedEmojiCount() > 1 ? "s" : ""} — non disponibles sur cet appareil.
+          </p>
+        )}
       </div>
 
       {error && (
