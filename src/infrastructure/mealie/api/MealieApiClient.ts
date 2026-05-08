@@ -122,6 +122,11 @@ export class MealieApiClient implements IMealieApiClient {
 
       if (response.status === 204) return undefined as T
       return (await response.json()) as T
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new MealieApiError(`La requête ${method} ${path} a expiré`, 0)
+      }
+      throw err
     } finally {
       clearTimeout(timer)
     }
