@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import legacy from '@vitejs/plugin-legacy'
 import { readFileSync } from 'fs'
 import { spawn } from 'child_process'
 
@@ -37,7 +38,12 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tailwindcss(), marmitonProxyPlugin],
+    plugins: [
+      react(),
+      tailwindcss(),
+      legacy({ targets: ['defaults', 'Android >= 7'] }),
+      marmitonProxyPlugin,
+    ],
     define: {
       __APP_VERSION__: JSON.stringify(version),
     },
