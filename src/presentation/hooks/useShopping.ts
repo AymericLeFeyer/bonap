@@ -9,6 +9,8 @@ import {
   deleteItemUseCase,
   clearListUseCase,
   shoppingRepository,
+  getFoodsUseCase,
+  createFoodUseCase,
 } from "../../infrastructure/container.ts"
 import { extractFoodKey } from "../../shared/utils/food.ts"
 import { foodLabelStore } from "../../infrastructure/shopping/FoodLabelStore.ts"
@@ -269,16 +271,22 @@ export function useShopping() {
       shoppingListId: habituelsListId,
       checked: false,
       position: 0,
-      isFood: false,
+      isFood: true,
       note,
+      foodName: note,
       source: "mealie",
     }
     setHabituelsItems((prev) => [...prev, tempItem])
     try {
+      const foods = await getFoodsUseCase.execute()
+      const normalizedNote = note.trim().toLowerCase()
+      const existing = foods.find((f) => f.name.toLowerCase() === normalizedNote)
+      const food = existing ?? await createFoodUseCase.execute(note.trim())
       await shoppingRepository.addItem(habituelsListId, {
         shoppingListId: habituelsListId,
         note,
-        isFood: false,
+        isFood: true,
+        foodId: food.id,
         labelId,
       })
       const result = await getShoppingItemsUseCase.execute()
