@@ -27,13 +27,14 @@ export function HabituelItemRow({ item, labels, cartItems, onAddToCart, onDelete
     return i.note?.toLowerCase() === item.note?.toLowerCase()
   })
   const [editing, setEditing] = useState(false)
-  const [editValue, setEditValue] = useState(item.note ?? "")
+  const displayName = item.foodName ?? item.note ?? ""
+  const [editValue, setEditValue] = useState(displayName)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const name = item.note ?? "Article sans nom"
+  const name = displayName || "Article sans nom"
 
   const handleEdit = () => {
-    setEditValue(item.note ?? "")
+    setEditValue(displayName)
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 0)
   }
