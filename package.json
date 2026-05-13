@@ -24,10 +24,10 @@
     "clsx": "^2.1.1",
     "express": "^5.2.1",
     "lucide-react": "^1.14.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.13.1",
+    "react-router-dom": "^7.15.0",
     "rehype-raw": "^7.0.0",
     "tailwind-merge": "^3.5.0"
   },
