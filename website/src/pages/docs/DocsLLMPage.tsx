@@ -8,8 +8,8 @@ const providersRows = [
   { cells: ['Mistral', 'Partiel', 'Suggestions + assistant (sans tools ni streaming)', 'mistral-large-latest'] },
   { cells: ['Perplexity', 'Partiel', 'Suggestions + assistant (sans tools ni streaming)', 'sonar-pro'] },
   { cells: ['OpenRouter', 'Partiel', 'Accès multi-providers via une seule clé', 'anthropic/claude-sonnet-4-6'] },
-  { cells: ['OpenCode Zen', 'Partiel', 'Catalogue complet OpenCode (Claude, GPT-5, Gemini, MiniMax…) — sans tools ni streaming', 'claude-sonnet-4-6, gpt-5.5, minimax-m3'] },
-  { cells: ['OpenCode Go', 'Partiel', 'Modèles open (MiniMax, Qwen, GLM, Kimi…) low-cost — sans tools ni streaming', 'minimax-m3, qwen3.7-max, kimi-k2.7-code'] },
+  { cells: ['OpenCode Zen', 'Partiel', 'Catalogue complet OpenCode (Claude, GPT-5, Gemini, MiniMax…) — sans tools ni streaming', 'claude-sonnet-5, gpt-5.5, gemini-3.1-pro, minimax-m3'] },
+  { cells: ['OpenCode Go', 'Partiel', 'Modèles open (MiniMax, Qwen, GLM, Kimi…) low-cost — sans tools ni streaming', 'minimax-m3, qwen3.7-max, deepseek-v4-pro'] },
   { cells: ['Ollama', 'Partiel', 'Local (localhost:11434) — sans tools ni streaming', 'llama3.2, mistral...'] },
 ]
 
