@@ -70,6 +70,10 @@ export class LLMConfigService {
           return await fetchOllamaModels(config.ollamaBaseUrl)
         case 'openrouter':
           return await fetchOpenRouterModels(config.apiKey)
+        case 'opencode-go':
+          return await fetchOpenCodeGoModels(config.apiKey)
+        case 'opencode':
+          return await fetchOpenCodeModels(config.apiKey)
         default:
           return LLM_PROVIDERS[config.provider as LLMProvider]?.models ?? []
       }
@@ -93,6 +97,10 @@ export class LLMConfigService {
           return await testOllama(config.ollamaBaseUrl)
         case 'openrouter':
           return await testOpenRouter(config.apiKey, config.model)
+        case 'opencode-go':
+          return await testOpenCodeGo(config.apiKey, config.model)
+        case 'opencode':
+          return await testOpenCode(config.apiKey, config.model)
         default:
           return { ok: false, message: 'Fournisseur inconnu' }
       }
@@ -250,6 +258,50 @@ async function testOpenRouter(
   return { ok: false, message: `Erreur ${res.status}` }
 }
 
+async function testOpenCodeGo(
+  apiKey: string,
+  model: string,
+): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'Hi' }],
+    }),
+  })
+  if (res.ok || res.status === 400) return { ok: true, message: 'Clé valide' }
+  if (res.status === 401) return { ok: false, message: 'Clé invalide (401)' }
+  if (res.status === 403) return { ok: false, message: 'Clé invalide (403)' }
+  return { ok: false, message: `Erreur ${res.status}` }
+}
+
+async function testOpenCode(
+  apiKey: string,
+  model: string,
+): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'Hi' }],
+    }),
+  })
+  if (res.ok || res.status === 400) return { ok: true, message: 'Clé valide' }
+  if (res.status === 401) return { ok: false, message: 'Clé invalide (401)' }
+  if (res.status === 403) return { ok: false, message: 'Clé invalide (403)' }
+  return { ok: false, message: `Erreur ${res.status}` }
+}
+
 async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
   const res = await fetch('https://api.anthropic.com/v1/models', {
     headers: {
@@ -294,6 +346,24 @@ async function fetchOllamaModels(baseUrl: string): Promise<string[]> {
 
 async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
   const res = await fetch('https://openrouter.ai/api/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id).sort()
+}
+
+async function fetchOpenCodeGoModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://opencode.ai/zen/go/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id).sort()
+}
+
+async function fetchOpenCodeModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://opencode.ai/zen/v1/models', {
     headers: { Authorization: `Bearer ${apiKey}` },
   })
   if (!res.ok) throw new Error(`${res.status}`)

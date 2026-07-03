@@ -147,7 +147,7 @@ Open [http://localhost:5173](http://localhost:5173).
 | `VITE_MEALIE_TOKEN` | Yes | Mealie API Bearer token (Profile → API Tokens) |
 | `VITE_THEME` | No | Bonapp theme |
 | `VITE_ACCENT_COLORS` | No | Bonapp Accent Color |
-| `LLM_PROVIDER` | No | AI provider (lowercase). Must be one of: `anthropic`, `openai`, `google`, `mistral`, `perplexity`, `ollama`, `openrouter`. If set, overrides the in-app setting on all devices. |
+| `LLM_PROVIDER` | No | AI provider (lowercase). Must be one of: `anthropic`, `openai`, `google`, `mistral`, `perplexity`, `ollama`, `openrouter`, `opencode`, `opencode-go`. If set, overrides the in-app setting on all devices. |
 | `LLM_API_KEY` | No | API key for the AI provider. If set, the key is shared across all devices automatically. |
 | `LLM_MODEL` | No | AI model to use (e.g. `claude-sonnet-4-6`). If set, overrides the in-app model selector. |
 | `LLM_OLLAMA_URL` | No | Base URL of your Ollama instance (e.g. `http://ollama:11434`). Used when `LLM_PROVIDER=ollama`. |
@@ -244,6 +244,8 @@ Bonap supports multiple AI providers for the suggestion engine and the assistant
 | Mistral | `mistral` | No (fallback) | No |
 | Perplexity | `perplexity` | No (fallback) | No |
 | OpenRouter | `openrouter` | No (fallback) | No |
+| OpenCode Zen | `opencode` | No (fallback) | No |
+| OpenCode Go | `opencode-go` | No (fallback) | No |
 | Ollama (local) | `ollama` | No (fallback) | No |
 
 > For the full assistant experience (tool use + streaming), Anthropic is required.

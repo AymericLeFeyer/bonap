@@ -8,6 +8,8 @@ const providersRows = [
   { cells: ['Mistral', 'Partiel', 'Suggestions + assistant (sans tools ni streaming)', 'mistral-large-latest'] },
   { cells: ['Perplexity', 'Partiel', 'Suggestions + assistant (sans tools ni streaming)', 'sonar-pro'] },
   { cells: ['OpenRouter', 'Partiel', 'Accès multi-providers via une seule clé', 'anthropic/claude-sonnet-4-6'] },
+  { cells: ['OpenCode Zen', 'Partiel', 'Catalogue complet OpenCode (Claude, GPT-5, Gemini, MiniMax…) — sans tools ni streaming', 'claude-sonnet-4-6, gpt-5.5, minimax-m3'] },
+  { cells: ['OpenCode Go', 'Partiel', 'Modèles open (MiniMax, Qwen, GLM, Kimi…) low-cost — sans tools ni streaming', 'minimax-m3, qwen3.7-max, kimi-k2.7-code'] },
   { cells: ['Ollama', 'Partiel', 'Local (localhost:11434) — sans tools ni streaming', 'llama3.2, mistral...'] },
 ]
 
@@ -146,7 +148,7 @@ export default function DocsLLMPage() {
         Section <strong style={{ color: 'var(--text)' }}>Intelligence Artificielle</strong> :
       </p>
       <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 2.2, marginBottom: '1rem' }}>
-        <li><strong style={{ color: 'var(--text)' }}>Provider</strong> — choisissez Anthropic, OpenAI, Google, Mistral, Perplexity, OpenRouter ou Ollama</li>
+        <li><strong style={{ color: 'var(--text)' }}>Provider</strong> — choisissez Anthropic, OpenAI, Google, Mistral, Perplexity, OpenRouter, OpenCode Zen, OpenCode Go ou Ollama</li>
         <li><strong style={{ color: 'var(--text)' }}>Clé API</strong> — votre clé du provider choisi</li>
         <li><strong style={{ color: 'var(--text)' }}>Modèle</strong> — cliquez sur "Tester la connexion" pour charger automatiquement les modèles disponibles</li>
       </ul>
@@ -283,6 +285,39 @@ export default function DocsLLMPage() {
           'Collez la clé dans Bonap → Paramètres → IA → OpenRouter',
         ]}
         note="Les modèles suffixés :free (ex: google/gemma-3-27b-it:free) sont gratuits sans limite de crédit. Parfait pour tester."
+      />
+
+      <ProviderCard
+        name="OpenCode Zen"
+        badge="paid"
+        pricing="Catalogue complet curé par l'équipe OpenCode : Claude, GPT-5, Gemini, Grok, MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo + quelques modèles gratuits. Facturation au token au prix du modèle. Exemples : Claude Sonnet 4.6 ~3 $/M tokens, GPT-5 ~1,07 $, Gemini 3 Flash ~0,50 $."
+        url="https://opencode.ai/zen"
+        urlLabel="opencode.ai/zen"
+        steps={[
+          'Créez un compte sur <a href="https://opencode.ai/auth" target="_blank" rel="noopener noreferrer" style="color: var(--primary)">opencode.ai/auth</a>',
+          'Allez dans <strong>API Keys</strong> et créez une clé',
+          'Copiez la clé (format <code style="font-size:0.8em;background:var(--primary-subtle);color:var(--primary-light);padding:0 4px;border-radius:3px">oc-...</code>)',
+          'Dans Bonap → Paramètres → IA, sélectionnez <strong>OpenCode Zen</strong> et collez la clé',
+          'Cliquez sur <strong>Tester la connexion</strong> pour charger les ~74 modèles disponibles',
+        ]}
+        note="Endpoint OpenAI-compatible. Aucun proxy CORS n'est nécessaire : le navigateur appelle directement https://opencode.ai/zen/v1. Le forfait le plus large : il inclut aussi les modèles propriétaires (Claude, GPT, Gemini) sans avoir besoin d'un compte chez chaque fournisseur."
+      />
+
+      <ProviderCard
+        name="OpenCode Go"
+        badge="freemium"
+        pricing="Forfait low-cost d'OpenCode donnant accès à des modèles open réputés (MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo…). Exemples : MiniMax M3 ~0,30 $ / million de tokens d'entrée, DeepSeek V4 Flash ~0,14 $."
+        url="https://opencode.ai/zen"
+        urlLabel="opencode.ai/zen"
+        steps={[
+          'Créez un compte sur <a href="https://opencode.ai/auth" target="_blank" rel="noopener noreferrer" style="color: var(--primary)">opencode.ai/auth</a>',
+          'Activez le plan <strong>OpenCode Go</strong> et ajoutez un moyen de paiement',
+          'Allez dans <strong>API Keys</strong> et créez une clé',
+          'Copiez la clé (format <code style="font-size:0.8em;background:var(--primary-subtle);color:var(--primary-light);padding:0 4px;border-radius:3px">oc-...</code>)',
+          'Dans Bonap → Paramètres → IA, sélectionnez <strong>OpenCode Go</strong> et collez la clé',
+          'Cliquez sur <strong>Tester la connexion</strong> pour charger les modèles disponibles',
+        ]}
+        note="Endpoint OpenAI-compatible. Aucun proxy CORS n'est nécessaire : le navigateur appelle directement https://opencode.ai/zen/go/v1."
       />
 
       <ProviderCard

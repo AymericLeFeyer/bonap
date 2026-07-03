@@ -49,6 +49,10 @@ export async function llmChat(
       return callOpenRouter(config, systemPrompt, userMessage)
     case 'ollama':
       return callOllama(config, systemPrompt, userMessage)
+    case 'opencode-go':
+      return callOpenCodeGo(config, systemPrompt, userMessage)
+    case 'opencode':
+      return callOpenCode(config, systemPrompt, userMessage)
     default:
       throw new Error('Fournisseur IA inconnu')
   }
@@ -243,6 +247,64 @@ async function callOpenRouter(
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText)
     throw new Error(`OpenRouter ${res.status}: ${err}`)
+  }
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>
+  }
+  return data.choices[0]?.message.content ?? ''
+}
+
+async function callOpenCodeGo(
+  config: LLMConfig,
+  system: string,
+  user: string,
+): Promise<string> {
+  const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text().catch(() => res.statusText)
+    throw new Error(`OpenCode Go ${res.status}: ${err}`)
+  }
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>
+  }
+  return data.choices[0]?.message.content ?? ''
+}
+
+async function callOpenCode(
+  config: LLMConfig,
+  system: string,
+  user: string,
+): Promise<string> {
+  const res = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text().catch(() => res.statusText)
+    throw new Error(`OpenCode Zen ${res.status}: ${err}`)
   }
   const data = (await res.json()) as {
     choices: Array<{ message: { content: string } }>

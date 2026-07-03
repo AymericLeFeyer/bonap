@@ -1,7 +1,7 @@
 # CLAUDE.md — Bonap
 
 Documentation technique pour Claude Code. Mis à jour à chaque session.
-Dernière mise à jour : 2026-03-25.
+Dernière mise à jour : 2026-07-03.
 
 ---
 
@@ -282,7 +282,7 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 | `/stats` | `StatsPage` | Statistiques (30j/90j/12m) : top recettes, top ingrédients, streak, restes, couverture catalogue |
 | `/shopping` | `ShoppingPage` | Liste de courses "Bonap" + liste "Habituels" |
 | `/suggestions` | `SuggestionsPage` | Suggestions IA (critères prédéfinis + texte libre → 5 suggestions via LLM) |
-| `/settings` | `SettingsPage` | Config LLM (Anthropic/OpenAI/Google/Ollama), thème, couleur d'accent |
+| `/settings` | `SettingsPage` | Config LLM (Anthropic/OpenAI/Google/Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go/Ollama), thème, couleur d'accent |
 
 **Layout** : `Layout.tsx` wrap toutes les routes. Il contient `Sidebar` + `AssistantDrawer` (bouton flottant Sparkles en bas à droite).
 
@@ -374,7 +374,7 @@ export class MonUseCase {
 1. **`llmChat`** (`LLMService.ts`) : appel single-turn (system + user → text). Utilisé dans `SuggestionsPage` pour générer des suggestions JSON.
 2. **`sendAssistantMessage`** (`AssistantService.ts`) : streaming multi-turn avec tool use. Utilisé dans `AssistantDrawer`.
 
-**Providers supportés** : Anthropic (streaming + tool use), OpenAI (fallback, non-streaming), Google (fallback), Ollama (local, fallback).
+**Providers supportés** : Anthropic (streaming + tool use), OpenAI (fallback, non-streaming), Google (fallback), Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go (fallback), Ollama (local, fallback).
 
 **Configuration** : stockée dans localStorage (`bonap_llm_config`). Accessible dans `SettingsPage`.
 
@@ -445,3 +445,17 @@ npm run preview  # Prévisualisation du build prod
 ### Assistant Drawer
 - Les tools (`search_recipe`, `add_to_planning`, `create_recipe`) sont définis dans `AssistantService.ts` côté API et dans `useAssistant.ts` côté implémentation (les deux doivent être synchro)
 - Uniquement Anthropic supporte le streaming + tool use ; les autres providers n'ont pas accès aux tools
+
+### OpenCode Go
+- Provider payant low-cost d'OpenCode qui donne accès à des modèles open (MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo…) avec une seule clé API
+- Endpoint : `https://opencode.ai/zen/go/v1/chat/completions` (OpenAI-compatible) — pas de proxy CORS nécessaire (CORS supporté nativement)
+- Liste de modèles : `https://opencode.ai/zen/go/v1/models` (Bearer auth)
+- Identifiant dans `LLMConfig.provider` : `'opencode-go'`
+- Implémenté comme un fallback non-streaming sans tool use (comme OpenAI/Mistral/OpenRouter)
+
+### OpenCode Zen
+- Catalogue complet d'OpenCode (~74 modèles) : Claude, GPT-5, Gemini, Grok, MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo + quelques modèles gratuits
+- Endpoint : `https://opencode.ai/zen/v1/chat/completions` (OpenAI-compatible) — CORS supporté nativement
+- Liste de modèles : `https://opencode.ai/zen/v1/models` (Bearer auth)
+- Identifiant dans `LLMConfig.provider` : `'opencode'` (label UI : "OpenCode Zen")
+- Implémenté comme un fallback non-streaming sans tool use (comme OpenCode Go)

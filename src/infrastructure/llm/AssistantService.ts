@@ -371,13 +371,17 @@ async function chatFallback(
     config.provider === 'openai' ||
     config.provider === 'mistral' ||
     config.provider === 'perplexity' ||
-    config.provider === 'openrouter'
+    config.provider === 'openrouter' ||
+    config.provider === 'opencode-go' ||
+    config.provider === 'opencode'
   ) {
     const endpoints: Record<string, string> = {
       openai: 'https://api.openai.com/v1/chat/completions',
       mistral: 'https://api.mistral.ai/v1/chat/completions',
       perplexity: 'https://api.perplexity.ai/chat/completions',
       openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+      'opencode-go': 'https://opencode.ai/zen/go/v1/chat/completions',
+      opencode: 'https://opencode.ai/zen/v1/chat/completions',
     }
     const res = await fetch(endpoints[config.provider], {
       method: 'POST',
