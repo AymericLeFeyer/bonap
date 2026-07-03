@@ -164,7 +164,10 @@ export function SettingsPage() {
         ? { state: 'ok', message: result.message }
         : { state: 'error', message: result.message },
     )
-    if (result.ok) {
+    // OpenCode Go expose ~20 modèles sur le endpoint /models : ne pas
+    // remplacer la liste curée automatiquement. L'utilisateur peut charger
+    // le catalogue complet via le bouton "Voir tous les modèles".
+    if (result.ok && config.provider !== 'opencode-go') {
       setIsFetchingModels(true)
       try {
         const models = await llmConfigService.fetchModels(config)
@@ -643,6 +646,22 @@ export function SettingsPage() {
               {isFetchingModels && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleFetchModels}
+                disabled={isFetchingModels || !config.apiKey}
+                className="ml-auto gap-1.5"
+                title={`Charger tous les modèles disponibles depuis ${providerInfo.label}`}
+              >
+                {isFetchingModels ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Voir tous les modèles
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {availableModels.map((m) => (
