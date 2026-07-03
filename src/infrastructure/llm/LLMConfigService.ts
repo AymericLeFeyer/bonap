@@ -145,6 +145,13 @@ function getOllamaProxyConfig(
   return { url: `${clean}${subpath}`, fetchHeaders: {} }
 }
 
+function getOpenCodeBaseUrl(go: boolean): string {
+  if (import.meta.env.DEV) {
+    return go ? '/api/opencode-go' : '/api/opencode'
+  }
+  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+}
+
 async function testAnthropic(
   apiKey: string,
   model: string,
@@ -262,7 +269,7 @@ async function testOpenCodeGo(
   apiKey: string,
   model: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
+  const res = await fetch(`${getOpenCodeBaseUrl(true)}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -284,7 +291,7 @@ async function testOpenCode(
   apiKey: string,
   model: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const res = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+  const res = await fetch(`${getOpenCodeBaseUrl(false)}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -354,7 +361,7 @@ async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
 }
 
 async function fetchOpenCodeGoModels(apiKey: string): Promise<string[]> {
-  const res = await fetch('https://opencode.ai/zen/go/v1/models', {
+  const res = await fetch(`${getOpenCodeBaseUrl(true)}/models`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   })
   if (!res.ok) throw new Error(`${res.status}`)
@@ -363,7 +370,7 @@ async function fetchOpenCodeGoModels(apiKey: string): Promise<string[]> {
 }
 
 async function fetchOpenCodeModels(apiKey: string): Promise<string[]> {
-  const res = await fetch('https://opencode.ai/zen/v1/models', {
+  const res = await fetch(`${getOpenCodeBaseUrl(false)}/models`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   })
   if (!res.ok) throw new Error(`${res.status}`)

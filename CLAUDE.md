@@ -448,14 +448,15 @@ npm run preview  # Prévisualisation du build prod
 
 ### OpenCode Go
 - Provider payant low-cost d'OpenCode qui donne accès à des modèles open (MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo…) avec une seule clé API
-- Endpoint : `https://opencode.ai/zen/go/v1/chat/completions` (OpenAI-compatible) — pas de proxy CORS nécessaire (CORS supporté nativement)
+- Endpoint : `https://opencode.ai/zen/go/v1/chat/completions` (OpenAI-compatible)
+- OpenCode ne renvoie pas `Access-Control-Allow-Origin` → les appels passent par un proxy `/api/opencode-go` côté Vite (dev) et nginx (prod addon HA), comme Ollama
 - Liste de modèles : `https://opencode.ai/zen/go/v1/models` (Bearer auth)
 - Identifiant dans `LLMConfig.provider` : `'opencode-go'`
 - Implémenté comme un fallback non-streaming sans tool use (comme OpenAI/Mistral/OpenRouter)
 
 ### OpenCode Zen
 - Catalogue complet d'OpenCode (~74 modèles) : Claude, GPT-5, Gemini, Grok, MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo + quelques modèles gratuits
-- Endpoint : `https://opencode.ai/zen/v1/chat/completions` (OpenAI-compatible) — CORS supporté nativement
+- Endpoint : `https://opencode.ai/zen/v1/chat/completions` (OpenAI-compatible) — proxifié via `/api/opencode` (même mécanisme qu'OpenCode Go)
 - Liste de modèles : `https://opencode.ai/zen/v1/models` (Bearer auth)
 - Identifiant dans `LLMConfig.provider` : `'opencode'` (label UI : "OpenCode Zen")
 - Implémenté comme un fallback non-streaming sans tool use (comme OpenCode Go)

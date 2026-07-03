@@ -20,6 +20,15 @@ function getOllamaFetchConfig(
   return { url: `${clean}/api/chat`, extraHeaders: {} }
 }
 
+// OpenCode ne renvoie pas Access-Control-Allow-Origin → on passe par le proxy
+// Vite (dev) ou nginx (prod addon HA) pour éviter l'erreur CORS navigateur.
+function getOpenCodeBaseUrl(go: boolean): string {
+  if (import.meta.env.DEV) {
+    return go ? '/api/opencode-go' : '/api/opencode'
+  }
+  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+}
+
 /**
  * Sends a single chat turn to the configured LLM provider.
  * Returns the raw text of the assistant response.
@@ -259,7 +268,7 @@ async function callOpenCodeGo(
   system: string,
   user: string,
 ): Promise<string> {
-  const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
+  const res = await fetch(`${getOpenCodeBaseUrl(true)}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -288,7 +297,7 @@ async function callOpenCode(
   system: string,
   user: string,
 ): Promise<string> {
-  const res = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+  const res = await fetch(`${getOpenCodeBaseUrl(false)}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.apiKey}`,

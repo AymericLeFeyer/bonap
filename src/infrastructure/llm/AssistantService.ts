@@ -25,6 +25,13 @@ function getOllamaFetchConfig(
   return { url: `${clean}/api/chat`, extraHeaders: {} }
 }
 
+function getOpenCodeBaseUrl(go: boolean): string {
+  if (import.meta.env.DEV) {
+    return go ? '/api/opencode-go' : '/api/opencode'
+  }
+  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+}
+
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface AssistantTool {
@@ -380,8 +387,8 @@ async function chatFallback(
       mistral: 'https://api.mistral.ai/v1/chat/completions',
       perplexity: 'https://api.perplexity.ai/chat/completions',
       openrouter: 'https://openrouter.ai/api/v1/chat/completions',
-      'opencode-go': 'https://opencode.ai/zen/go/v1/chat/completions',
-      opencode: 'https://opencode.ai/zen/v1/chat/completions',
+      'opencode-go': `${getOpenCodeBaseUrl(true)}/chat/completions`,
+      opencode: `${getOpenCodeBaseUrl(false)}/chat/completions`,
     }
     const res = await fetch(endpoints[config.provider], {
       method: 'POST',

@@ -300,7 +300,7 @@ export default function DocsLLMPage() {
           'Dans Bonap → Paramètres → IA, sélectionnez <strong>OpenCode Zen</strong> et collez la clé',
           'Cliquez sur <strong>Tester la connexion</strong> pour charger les ~74 modèles disponibles',
         ]}
-        note="Endpoint OpenAI-compatible. Aucun proxy CORS n'est nécessaire : le navigateur appelle directement https://opencode.ai/zen/v1. Le forfait le plus large : il inclut aussi les modèles propriétaires (Claude, GPT, Gemini) sans avoir besoin d'un compte chez chaque fournisseur."
+        note="Endpoint OpenAI-compatible. Comme l'API OpenCode ne renvoie pas les en-têtes CORS, Bonap passe par un proxy intégré (Vite en dev, nginx en prod addon HA) pour éviter l'erreur navigateur. Le forfait le plus large : il inclut aussi les modèles propriétaires (Claude, GPT, Gemini) sans avoir besoin d'un compte chez chaque fournisseur."
       />
 
       <ProviderCard
@@ -317,7 +317,7 @@ export default function DocsLLMPage() {
           'Dans Bonap → Paramètres → IA, sélectionnez <strong>OpenCode Go</strong> et collez la clé',
           'Cliquez sur <strong>Tester la connexion</strong> pour charger les modèles disponibles',
         ]}
-        note="Endpoint OpenAI-compatible. Aucun proxy CORS n'est nécessaire : le navigateur appelle directement https://opencode.ai/zen/go/v1."
+        note="Endpoint OpenAI-compatible. Comme l'API OpenCode ne renvoie pas les en-têtes CORS, Bonap passe par un proxy intégré (Vite en dev, nginx en prod addon HA) pour éviter l'erreur navigateur."
       />
 
       <ProviderCard
