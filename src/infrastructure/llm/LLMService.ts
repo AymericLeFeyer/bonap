@@ -20,6 +20,15 @@ function getOllamaFetchConfig(
   return { url: `${clean}/api/chat`, extraHeaders: {} }
 }
 
+// OpenCode ne renvoie pas Access-Control-Allow-Origin → on passe par le proxy
+// Vite (dev) ou nginx (prod addon HA) pour éviter l'erreur CORS navigateur.
+function getOpenCodeBaseUrl(go: boolean): string {
+  if (import.meta.env.DEV) {
+    return go ? '/api/opencode-go' : '/api/opencode'
+  }
+  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+}
+
 /**
  * Sends a single chat turn to the configured LLM provider.
  * Returns the raw text of the assistant response.
@@ -49,6 +58,10 @@ export async function llmChat(
       return callOpenRouter(config, systemPrompt, userMessage)
     case 'ollama':
       return callOllama(config, systemPrompt, userMessage)
+    case 'opencode-go':
+      return callOpenCodeGo(config, systemPrompt, userMessage)
+    case 'opencode':
+      return callOpenCode(config, systemPrompt, userMessage)
     default:
       throw new Error('Fournisseur IA inconnu')
   }
@@ -243,6 +256,64 @@ async function callOpenRouter(
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText)
     throw new Error(`OpenRouter ${res.status}: ${err}`)
+  }
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>
+  }
+  return data.choices[0]?.message.content ?? ''
+}
+
+async function callOpenCodeGo(
+  config: LLMConfig,
+  system: string,
+  user: string,
+): Promise<string> {
+  const res = await fetch(`${getOpenCodeBaseUrl(true)}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text().catch(() => res.statusText)
+    throw new Error(`OpenCode Go ${res.status}: ${err}`)
+  }
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>
+  }
+  return data.choices[0]?.message.content ?? ''
+}
+
+async function callOpenCode(
+  config: LLMConfig,
+  system: string,
+  user: string,
+): Promise<string> {
+  const res = await fetch(`${getOpenCodeBaseUrl(false)}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text().catch(() => res.statusText)
+    throw new Error(`OpenCode Zen ${res.status}: ${err}`)
   }
   const data = (await res.json()) as {
     choices: Array<{ message: { content: string } }>
