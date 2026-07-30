@@ -25,6 +25,11 @@ export const RECIPE_PIZZA = {
   prepTime: "PT30M",
   performTime: "PT45M",
   totalTime: "PT1H15M",
+  // Mealie >= 2 : le nombre est dans recipeServings, recipeYield n'est
+  // que le libellé d'unité (vérifié sur une instance v3.22.0).
+  recipeServings: 4,
+  recipeYieldQuantity: 4,
+  recipeYield: "personnes",
   recipeIngredient: [
     {
       referenceId: "ri1",
@@ -74,6 +79,9 @@ export const RECIPE_SALADE = {
   prepTime: "PT15M",
   performTime: null,
   totalTime: "PT15M",
+  // Recette « legacy » : nombre stocké dans recipeYield, comme avant que
+  // Mealie ne sépare les champs. Doit rester lisible.
+  recipeYield: "2 personnes",
   recipeIngredient: [
     {
       referenceId: "ri4",
@@ -130,6 +138,9 @@ export const MEALPLANS_RESPONSE = {
         slug: "pizza-maison",
         name: "Pizza maison",
         description: "Une pizza classique",
+        recipeServings: 4,
+        recipeYieldQuantity: 4,
+        recipeYield: "personnes",
       },
     },
     {
@@ -143,6 +154,7 @@ export const MEALPLANS_RESPONSE = {
         slug: "salade-nicoise",
         name: "Salade niçoise",
         description: "Une salade fraîche",
+        recipeYield: "2 personnes",
       },
     },
   ],

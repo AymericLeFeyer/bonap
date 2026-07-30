@@ -7,7 +7,7 @@ import {
 import type { MealieMealPlan } from "../../../shared/types/mealie.ts"
 import { cn } from "../../../lib/utils.ts"
 import { RecipeImage } from "../RecipeImage.tsx"
-import { parseServings } from "../../../shared/utils/servings.ts"
+import { getRecipeServings } from "../../../shared/utils/servings.ts"
 import { getMealServings, getMealVisibleNote } from "./planningUtils.ts"
 
 export interface MealCellProps {
@@ -96,7 +96,7 @@ export function MealCell({
         {meals.map((meal) => {
           const name = meal.recipe?.name ?? meal.title ?? "Sans titre"
           const mealServings = getMealServings(meal)
-          const baseServings = parseServings(meal.recipe?.recipeYield)
+          const baseServings = getRecipeServings(meal.recipe)
           const isSelected = selectionMode && (selectedMealIds?.has(meal.id) ?? false)
           return (
             <div

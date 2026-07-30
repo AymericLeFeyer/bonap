@@ -47,7 +47,7 @@ import type {
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
-import { parseServings } from "../../shared/utils/servings.ts"
+import { getRecipeServings, parseServings } from "../../shared/utils/servings.ts"
 import { cn } from "../../lib/utils.ts"
 import { MarkdownContent } from "../components/MarkdownContent.tsx"
 
@@ -97,7 +97,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
     tags: (recipe.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
-    recipeYield: recipe.recipeServings ? String(recipe.recipeServings) : "",
+    recipeYield: getRecipeServings(recipe)?.toString() ?? "",
     extras: recipe.extras ? { ...recipe.extras } : {},
   }
 }
@@ -442,7 +442,7 @@ export function RecipeDetailPage() {
           recipeName={recipe.name}
           ingredients={recipe.recipeIngredient ?? []}
           instructions={recipe.recipeInstructions ?? []}
-          baseServings={parseServings(recipe.recipeYield)}
+          baseServings={getRecipeServings(recipe)}
           targetServings={parseServings(formData.recipeYield)}
           onClose={() => setCookingMode(false)}
         />
