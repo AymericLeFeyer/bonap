@@ -15,9 +15,11 @@ import {
   getPlanningRangeUseCase,
   addMealUseCase,
   createRecipeUseCase,
+  getRecipesUseCase,
 } from "../../infrastructure/container.ts"
 import { mealieApiClient } from "../../infrastructure/mealie/api/index.ts"
 import { getIngressBasename } from "../../shared/utils/env.ts"
+import { getCurrentSeason } from "../../shared/utils/season.ts"
 import type { MealieRecipe, RecipeFormIngredient } from "../../shared/types/mealie.ts"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -390,18 +392,24 @@ export function WeeklyMealGenerator() {
 
   // ── Build prompt ──────────────────────────────────────────────────────────
 
-  const buildPrompt = () => {
+  const buildPrompt = (blacklist: string[]) => {
     const criteriaText = [
       ...selectedCriteria,
       ...(freeText.trim() ? [freeText.trim()] : []),
     ].join(", ")
-    const system = `Tu es un chef cuisinier. Génère une liste de ${nbMeals} plats réels et connus
-pour une semaine de repas (ex: "Bœuf bourguignon", "Poulet rôti", "Lasagnes", "Salade niçoise").
+    const blacklistText = blacklist.length
+      ? `\nNE propose AUCUN de ces plats déjà dans mon répertoire :\n${blacklist.map((n) => `  - ${n}`).join("\n")}`
+      : ""
+    const season = getCurrentSeason()
+    const seasonLabels: Record<string, string> = { printemps: "printemps", ete: "été", automne: "automne", hiver: "hiver" }
+    const system = `Tu es un chef cuisinier. Génère une liste de ${nbMeals} plats réels et variés
+pour une semaine de repas. Évite les plats trop classiques et redondants.
 Chaque plat doit pouvoir être trouvé sur un site de recettes comme Marmiton.
+Tiens compte de la saison en cours : ${seasonLabels[season] ?? season}.${blacklistText}
 Réponds UNIQUEMENT avec un tableau JSON valide, sans markdown, sans explication, sans texte avant ou après.
 Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux critères"}]
 - ${nbMeals} éléments exactement
-- Uniquement des plats réels et connus
+- Uniquement des plats réels
 - "reason" : une phrase courte en français expliquant pourquoi ce plat correspond aux critères`
     return { system, user: `Critères : ${criteriaText || "Aucun critère particulier, surprise-moi"}` }
   }
@@ -412,7 +420,9 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
     setLoading(true)
     setError(null)
     try {
-      const { system, user } = buildPrompt()
+      const existing = await getRecipesUseCase.execute(1, 200)
+      const existingNames = (existing.items ?? []).map((r) => r.name).filter(Boolean)
+      const { system, user } = buildPrompt(existingNames)
       const response = await llmChat(system, user)
       const parsed = parseResponse(response)
       const valid = parsed.filter((s) => s.name.trim()).slice(0, nbMeals)
@@ -561,11 +571,11 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
 
       {/* ── Header ── */}
       <div className="flex items-center gap-2 text-sm font-semibold">
-        <CalendarDays className="h-4 w-4 text-primary" />
-        Planifier une semaine de repas
+        <Sparkles className="h-4 w-4 text-primary" />
+        Découvrir de nouvelles recettes
       </div>
       <p className="text-xs text-muted-foreground">
-        L'IA imagine des plats pour la semaine, on les importe depuis Marmiton et on les ajoute au planning.
+        L'IA trouve des plats que vous n'avez pas déjà, les importe depuis Marmiton et les ajoute au planning.
       </p>
 
       {/* ── Step: Form ── */}
@@ -648,9 +658,9 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
 
           <Button onClick={handleGenerate} disabled={loading || !isConfigured} className="gap-2">
             {loading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Génération…</>
+              <><Loader2 className="h-4 w-4 animate-spin" />Recherche de nouvelles recettes…</>
             ) : (
-              <><Sparkles className="h-4 w-4" />Générer {nbMeals} repas</>
+              <><Sparkles className="h-4 w-4" />Trouver {nbMeals} nouvelles recettes</>
             )}
           </Button>
         </div>
@@ -660,8 +670,8 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
       {step === "generated" && (
         <div className="space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-muted-foreground/50">
-            {meals.length} plat{meals.length > 1 ? "s" : ""} proposé{meals.length > 1 ? "s" : ""}
-            {acceptedCount > 0 && ` — ${acceptedCount} sélectionné${acceptedCount > 1 ? "s" : ""}`}
+            {meals.length} nouvelle{meals.length > 1 ? "s" : ""} recette{meals.length > 1 ? "s" : ""} proposée{meals.length > 1 ? "s" : ""}
+            {acceptedCount > 0 && ` — ${acceptedCount} à conserver`}
           </p>
 
           {meals.map((m) => (
@@ -710,7 +720,7 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
             </Button>
             <Button onClick={handleImportAndPlan} disabled={acceptedCount === 0} className="gap-1.5">
               <ChefHat className="h-4 w-4" />
-              Rechercher et planifier {acceptedCount} plat{acceptedCount > 1 ? "s" : ""}
+              Importer et planifier {acceptedCount} nouvelle{acceptedCount > 1 ? "s" : ""} recette{acceptedCount > 1 ? "s" : ""}
             </Button>
           </div>
         </div>
@@ -755,7 +765,7 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-[oklch(0.45_0.16_145)]">
             <CheckCircle2 className="h-5 w-5" />
-            {okCount} recette{okCount > 1 ? "s" : ""} importée{okCount > 1 ? "s" : ""} et planifiée{okCount > 1 ? "s" : ""}
+            {okCount} nouvelle{okCount > 1 ? "s" : ""} recette{okCount > 1 ? "s" : ""} importée{okCount > 1 ? "s" : ""} et planifiée{okCount > 1 ? "s" : ""}
           </div>
 
           <div className="space-y-2">
@@ -811,7 +821,7 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
           <div className="flex gap-2 pt-1">
             <Button onClick={() => { setStep("form"); setMeals([]); setError(null) }} className="gap-1.5">
               <Sparkles className="h-4 w-4" />
-              Nouvelle génération
+              Nouvelles idées
             </Button>
             <Link to="/planning">
               <Button variant="outline" className="gap-1.5">
