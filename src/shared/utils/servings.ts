@@ -1,8 +1,31 @@
+import type { MealieRecipe } from "../types/mealie.ts"
+
 /** Parse "4", "4 personnes", "pour 4", "4-6 personnes" → first number found */
 export function parseServings(recipeYield?: string): number | undefined {
   if (!recipeYield) return undefined
   const m = recipeYield.match(/\d+/)
   return m ? parseInt(m[0], 10) : undefined
+}
+
+/**
+ * Reads a recipe's base servings count.
+ *
+ * Mealie >= 2 stores the number in `recipeServings` (mirrored in
+ * `recipeYieldQuantity`) and keeps `recipeYield` as a plain unit label
+ * ("personnes", "parts"…). Reading the number out of `recipeYield` therefore
+ * silently disables the whole servings system — and Bonap's own save strips
+ * digits from `recipeYield`, so an edited recipe would lose its portions.
+ * The `recipeYield` parse is kept last as a fallback for recipes created
+ * before Mealie split the fields.
+ */
+export function getRecipeServings(recipe?: MealieRecipe): number | undefined {
+  if (!recipe) return undefined
+  const candidates = [recipe.recipeServings, recipe.recipeYieldQuantity]
+  for (const value of candidates) {
+    if (typeof value === "number" && value > 0) return value
+  }
+  const legacy = parseServings(recipe.recipeYield)
+  return legacy && legacy > 0 ? legacy : undefined
 }
 
 /**

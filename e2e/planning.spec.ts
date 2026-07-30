@@ -147,4 +147,32 @@ test.describe("Planning", () => {
       await expect(page.getByRole("heading", { name: "Planning" })).toBeVisible()
     })
   })
+
+  test.describe("Portions (issue #14)", () => {
+    test("lit les portions d'une recette Mealie v2+ (nombre dans recipeServings)", async ({ page }) => {
+      await page.goto("/planning")
+      const table = page.locator("table")
+      await expect(table.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+
+      // La pizza a recipeServings: 4 et recipeYield: "personnes" (pas de chiffre).
+      await expect(table.getByText("4 pers.").first()).toBeVisible()
+    })
+
+    test("lit encore les recettes legacy (nombre dans recipeYield)", async ({ page }) => {
+      await page.goto("/planning")
+      const table = page.locator("table")
+      await expect(table.getByText("Salade niçoise")).toBeVisible({ timeout: 8000 })
+
+      // La salade n'a que recipeYield: "2 personnes".
+      await expect(table.getByText("2 pers.").first()).toBeVisible()
+    })
+
+    test("n'affiche plus 'Définir les portions' quand la recette en a", async ({ page }) => {
+      await page.goto("/planning")
+      const table = page.locator("table")
+      await expect(table.getByText("Pizza maison")).toBeVisible({ timeout: 8000 })
+
+      await expect(table.getByText("Définir les portions dans la recette")).toHaveCount(0)
+    })
+  })
 })

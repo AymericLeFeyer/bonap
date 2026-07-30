@@ -26,7 +26,7 @@ import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { generateBalancedMealPlan } from "../../shared/utils/balancedMealPlanner.ts"
-import { parseServings, encodeServingsInText } from "../../shared/utils/servings.ts"
+import { getRecipeServings, encodeServingsInText } from "../../shared/utils/servings.ts"
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
@@ -123,7 +123,7 @@ export function PlanningPage() {
     }
     const meals = filtered.map((m) => {
       const selected = getMealServings(m)
-      const base = parseServings(m.recipe?.recipeYield)
+      const base = getRecipeServings(m.recipe)
       const servingsRatio = selected && base && base > 0 ? selected / base : 1
       return { slug: m.recipe!.slug, recipeName: m.recipe!.name, servingsRatio, date: m.date }
     })
