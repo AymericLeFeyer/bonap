@@ -805,7 +805,7 @@ Format exact : [{"name":"Nom du plat","reason":"Pourquoi ce plat correspond aux 
                   )}
                   {m.status === "not_found" && (
                     <a
-                      href={`https://www.marmiton.org/recherche?q=${encodeURIComponent(m.name)}`}
+                      href={`https://www.marmiton.org/recettes/recherche.aspx?aqt=${encodeURIComponent(m.name).replace(/%20/g, "+")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
