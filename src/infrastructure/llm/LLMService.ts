@@ -21,12 +21,9 @@ function getOllamaFetchConfig(
 }
 
 // OpenCode ne renvoie pas Access-Control-Allow-Origin → on passe par le proxy
-// Vite (dev) ou nginx (prod addon HA) pour éviter l'erreur CORS navigateur.
+// Vite (dev) ou nginx (prod : Docker/HA addon) pour éviter l'erreur CORS navigateur.
 function getOpenCodeBaseUrl(go: boolean): string {
-  if (import.meta.env.DEV) {
-    return go ? '/api/opencode-go' : '/api/opencode'
-  }
-  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+  return go ? '/api/opencode-go' : '/api/opencode'
 }
 
 /**

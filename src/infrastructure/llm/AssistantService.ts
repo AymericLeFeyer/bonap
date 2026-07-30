@@ -26,10 +26,7 @@ function getOllamaFetchConfig(
 }
 
 function getOpenCodeBaseUrl(go: boolean): string {
-  if (import.meta.env.DEV) {
-    return go ? '/api/opencode-go' : '/api/opencode'
-  }
-  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+  return go ? '/api/opencode-go' : '/api/opencode'
 }
 
 // ─── Public types ─────────────────────────────────────────────────────────────
