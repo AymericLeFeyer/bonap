@@ -32,7 +32,7 @@ function rawItem(overrides = {}) {
     isFood: true,
     note: "Lait",
     quantity: 2,
-    unit: { name: "L" },
+    unit: { id: "u-l", name: "litre", abbreviation: "L", useAbbreviation: true },
     food: { name: "lait" },
     label: { id: "label-1", name: "Produits laitiers", color: "#aaa" },
     display: "2 L lait",
@@ -99,7 +99,9 @@ describe("ShoppingRepository", () => {
       expect(items).toHaveLength(1)
       const item = items[0]
       expect(item.foodName).toBe("lait")
-      expect(item.unitName).toBe("L")
+      expect(item.unit?.name).toBe("litre")
+      expect(item.unit?.abbreviation).toBe("L")
+      expect(item.unit?.useAbbreviation).toBe(true)
       expect(item.label?.name).toBe("Produits laitiers")
       expect(item.source).toBe("mealie")
       expect(labels).toHaveLength(1)

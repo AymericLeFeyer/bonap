@@ -197,6 +197,15 @@ export interface MealieShoppingItemRecipeRef {
   recipe?: { id: string; name: string; slug: string }
 }
 
+export interface MealieShoppingItemUnit {
+  id: string
+  name: string
+  pluralName?: string | null
+  abbreviation?: string | null
+  pluralAbbreviation?: string | null
+  useAbbreviation?: boolean
+}
+
 export interface MealieShoppingItem {
   id: string
   shoppingListId: string
@@ -205,7 +214,7 @@ export interface MealieShoppingItem {
   isFood: boolean
   note?: string
   quantity?: number
-  unit?: { id: string; name: string }
+  unit?: MealieShoppingItemUnit
   food?: { id: string; name: string }
   label?: MealieShoppingLabel
   display?: string
