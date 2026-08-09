@@ -1,8 +1,9 @@
-import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
+import type { IShoppingRepository, ShoppingRecipeEntry } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
 import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
 import type {
   MealieShoppingItem,
   MealieShoppingItemCreate,
+  MealieShoppingListAddRecipe,
   MealieShoppingItemUpdate,
   MealieShoppingList,
   MealieRawPaginatedShoppingLists,
@@ -92,6 +93,15 @@ export class ShoppingRepository implements IShoppingRepository {
       "/api/households/shopping/items/create-bulk",
       items.map((item) => ({ ...item, shoppingListId: listId })),
     )
+  }
+
+  async addRecipes(listId: string, entries: ShoppingRecipeEntry[]): Promise<void> {
+    if (entries.length === 0) return
+    const payload: MealieShoppingListAddRecipe[] = entries.map((e) => ({
+      recipeId: e.recipeId,
+      recipeIncrementQuantity: e.quantity,
+    }))
+    await mealieApiClient.post(`/api/households/shopping/lists/${listId}/recipe`, payload)
   }
 
   async updateItem(_listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem> {

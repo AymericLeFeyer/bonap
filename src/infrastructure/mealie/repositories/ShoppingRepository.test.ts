@@ -194,4 +194,28 @@ describe("ShoppingRepository", () => {
       expect(result.id).toBe("item-1")
     })
   })
+
+  // ── addRecipes — endpoint natif d'expansion des recettes ────────────────────
+
+  describe("addRecipes", () => {
+    it("poste sur l'endpoint natif avec le facteur d'échelle", async () => {
+      client.post.mockResolvedValue(undefined)
+      await repo.addRecipes("list-1", [
+        { recipeId: "r1", quantity: 1.5 },
+        { recipeId: "r2", quantity: 1 },
+      ])
+      expect(client.post).toHaveBeenCalledWith(
+        "/api/households/shopping/lists/list-1/recipe",
+        [
+          { recipeId: "r1", recipeIncrementQuantity: 1.5 },
+          { recipeId: "r2", recipeIncrementQuantity: 1 },
+        ],
+      )
+    })
+
+    it("n'appelle pas l'API sans entrée", async () => {
+      await repo.addRecipes("list-1", [])
+      expect(client.post).not.toHaveBeenCalled()
+    })
+  })
 })

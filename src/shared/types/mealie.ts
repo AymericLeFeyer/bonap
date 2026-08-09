@@ -212,6 +212,18 @@ export interface MealieShoppingItem {
   recipeReferences?: MealieShoppingItemRecipeRef[]
 }
 
+/**
+ * Payload de POST /api/households/shopping/lists/{id}/recipe.
+ * `recipeIncrementQuantity` multiplie les quantités de tous les ingrédients :
+ * 1.5 sur une recette de 4 portions en donne 6. Mealie applique le facteur,
+ * fusionne les articles par aliment et unité, hérite l'étiquette de l'aliment
+ * et conserve les références vers les recettes d'origine.
+ */
+export interface MealieShoppingListAddRecipe {
+  recipeId: string
+  recipeIncrementQuantity: number
+}
+
 export interface MealieShoppingItemCreate {
   shoppingListId: string
   checked?: boolean
