@@ -2,6 +2,7 @@ import { useState, useRef } from "react"
 import { Minus, Plus, Trash2, Check } from "lucide-react"
 import type { ShoppingItem, ShoppingLabel } from "../../../domain/shopping/entities/ShoppingItem.ts"
 import { cn } from "../../../lib/utils.ts"
+import { formatUnit } from "../../../shared/utils/shoppingQuantity.ts"
 import { LabelDropdown } from "./LabelDropdown.tsx"
 
 interface MealieItemRowProps {
@@ -22,6 +23,8 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
   const recipeNamesFromNote = recipeSuffix ? [recipeSuffix] : []
   const allRecipeNames = item.recipeNames?.length ? item.recipeNames : recipeNamesFromNote
   const qty = item.quantity ?? 0
+  // The stepper badge stays purely numeric, so the unit is rendered beside it.
+  const unitLabel = qty > 0 ? formatUnit(qty, item.unit) : ""
 
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(displayName)
@@ -90,6 +93,17 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
           <Plus className="h-3 w-3" />
         </button>
       </div>
+
+      {unitLabel && (
+        <span
+          className={cn(
+            "shrink-0 text-xs text-muted-foreground tabular-nums",
+            item.checked && "line-through opacity-40",
+          )}
+        >
+          {unitLabel}
+        </span>
+      )}
 
       {editing ? (
         <input

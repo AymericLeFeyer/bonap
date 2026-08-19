@@ -24,7 +24,16 @@ function mapItem(raw: MealieShoppingItem, recipeById: Map<string, string> = new 
     isFood: raw.isFood,
     note: raw.note,
     quantity: raw.quantity,
-    unitName: raw.unit?.name,
+    unit: raw.unit
+      ? {
+          id: raw.unit.id,
+          name: raw.unit.name,
+          pluralName: raw.unit.pluralName ?? undefined,
+          abbreviation: raw.unit.abbreviation ?? undefined,
+          pluralAbbreviation: raw.unit.pluralAbbreviation ?? undefined,
+          useAbbreviation: raw.unit.useAbbreviation,
+        }
+      : undefined,
     foodName: raw.food?.name,
     label: raw.label
       ? { id: raw.label.id, name: raw.label.name, color: raw.label.color }
