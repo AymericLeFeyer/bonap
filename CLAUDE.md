@@ -1,116 +1,31 @@
 # CLAUDE.md — Bonap
 
-Documentation technique pour Claude Code. Mis à jour à chaque session.
-Dernière mise à jour : 2026-07-03.
+Mémoire projet pour Claude Code. Compressée depuis les 5 livrables `docs/` (MVP-SCOPE, PDL, SDLC, ROADMAP, MVP-EXEC). Mis à jour : 2026-08-10.
 
----
+## 1. Projet
 
-## 1. Présentation du projet
+**Bonap** : front-end React pour [Mealie](https://mealie.io) (app self-hosted de recettes + planning repas). Remplace l'UI Mealie par une interface enrichie (suggestions IA, stats, liste de courses avec "Habituels", thème personnalisable).
 
-**Bonap** est un front-end React pour [Mealie](https://mealie.io/), une application self-hosted de gestion de recettes et de planning de repas. Bonap remplace l'interface native de Mealie par une UI plus ergonomique et enrichie (suggestions IA, statistiques, liste d'achats avec "Habituels", thème/couleur personnalisables).
+**Env** (`.env`) : `VITE_MEALIE_URL` (URL instance Mealie), `VITE_MEALIE_TOKEN` (bearer API). Vite proxie `/api` → Mealie en dev. En prod, Mealie doit être accessible depuis le navigateur.
 
-**Variables d'environnement requises** (fichier `.env` à la racine) :
-```
-VITE_MEALIE_URL=http://localhost:9000   # URL de l'instance Mealie
-VITE_MEALIE_TOKEN=<bearer_token>        # Token API Mealie (généré dans les paramètres Mealie)
-```
+## 2. Stack
 
-En développement, Vite proxie `/api` → `VITE_MEALIE_URL` (pas de CORS à gérer).
-En production, `VITE_MEALIE_URL` doit être directement accessible depuis le navigateur.
+React 19 · TypeScript 5.9 strict · Vite 8 · Tailwind v4 (`@tailwindcss/vite`) · React Router v7 · shadcn/ui (Radix + Tailwind, composants dans `src/presentation/components/ui/`) · lucide-react · react-markdown · ESLint 9 + Prettier. **Pas de React Query/Zustand/Redux** — état via `useState`/`useCallback`/`useRef` dans hooks custom.
 
----
-
-## 2. Stack technique
-
-| Outil | Version / détail |
-|---|---|
-| React | 19 |
-| TypeScript | 5.9 strict |
-| Vite | 8 |
-| Tailwind CSS | v4 (plugin Vite `@tailwindcss/vite`) |
-| React Router | v7 (sans file-based routing) |
-| Design system | shadcn/ui (Radix UI + Tailwind) — composants dans `src/presentation/components/ui/` |
-| Icons | `lucide-react` |
-| Markdown | `react-markdown` |
-| Linting | ESLint 9 + Prettier |
-
-Pas de React Query, pas de Zustand, pas de Redux. Gestion d'état : **useState/useCallback/useRef** dans les hooks custom.
-
----
-
-## 3. Architecture DDD — structure exacte
+## 3. Architecture DDD
 
 ```
 src/
-├── domain/                          # Logique métier pure, sans dépendances externes
-│   ├── organizer/
-│   │   └── repositories/            # IFoodRepository, IUnitRepository, ICategoryRepository, ITagRepository
-│   ├── planning/
-│   │   ├── repositories/            # IPlanningRepository
-│   │   └── services/                # PlanningStatsService (computeLeftoverPercentage, computeStreak, computeCategoryStats)
-│   ├── recipe/
-│   │   └── repositories/            # IRecipeRepository
-│   └── shopping/
-│       ├── entities/                # ShoppingItem, ShoppingList, ShoppingLabel
-│       └── repositories/            # IShoppingRepository
-│
-├── application/                     # Use cases — orchestration entre repo et domain
-│   ├── organizer/
-│   │   └── usecases/                # GetCategoriesUseCase, GetTagsUseCase, GetFoodsUseCase, CreateFoodUseCase, GetUnitsUseCase
-│   ├── planning/
-│   │   └── usecases/                # GetWeekPlanningUseCase, GetPlanningRangeUseCase, AddMealUseCase, DeleteMealUseCase, GetStatsUseCase
-│   ├── recipe/
-│   │   └── usecases/                # GetRecipesUseCase, GetRecipeUseCase, GetRecipesByIdsUseCase, CreateRecipeUseCase, UpdateRecipeUseCase, UpdateSeasonsUseCase, UpdateCategoriesUseCase, resolveIngredients
-│   └── shopping/
-│       └── usecases/                # GetShoppingItemsUseCase, AddItemUseCase, AddRecipesToListUseCase, ToggleItemUseCase, DeleteItemUseCase, ClearListUseCase
-│
-├── infrastructure/                  # Implémentations concrètes
-│   ├── container.ts                 # SINGLETON — toutes les instances repo + use case, importé par les hooks
-│   ├── llm/                         # AssistantService (streaming Anthropic + tool use), LLMService (single-turn), LLMConfigService (localStorage)
-│   ├── mealie/
-│   │   ├── api/                     # MealieApiClient (get/post/put/patch/delete/uploadImage/postSse), IMealieApiClient, index.ts (singleton `mealieApiClient`)
-│   │   └── repositories/            # RecipeRepository, PlanningRepository, ShoppingRepository, CategoryRepository, TagRepository, FoodRepository, UnitRepository
-│   ├── shopping/
-│   │   ├── FoodLabelStore.ts        # localStorage: food_key → labelId (mémorise les labels par aliment)
-│   │   └── RecipeSlugStore.ts       # localStorage: mémorise les slugs de recettes ajoutés à la liste
-│   └── theme/
-│       └── ThemeService.ts          # Gestion light/dark/system + couleur d'accent (oklch), singleton `themeService`
-│
-├── presentation/
-│   ├── components/                  # Composants partagés
-│   │   ├── ui/                      # shadcn/ui: button, badge, card, dialog, input, label, autocomplete
-│   │   ├── Layout.tsx               # Shell principal : Sidebar + AssistantDrawer + <Outlet>
-│   │   ├── Sidebar.tsx              # Navigation latérale (desktop) / bottom bar (mobile)
-│   │   ├── AssistantDrawer.tsx      # Drawer flottant avec chat IA (Anthropic streaming + tools)
-│   │   ├── RecipeCard.tsx           # Carte recette (image, saisons, durée)
-│   │   ├── RecipeDetailModal.tsx    # Modal détail recette (ingrédients + instructions)
-│   │   ├── RecipeFormDialog.tsx     # Formulaire création/édition recette (dialog)
-│   │   ├── RecipeIngredientsList.tsx
-│   │   ├── RecipeInstructionsList.tsx
-│   │   ├── RecipePickerDialog.tsx   # Sélecteur de recette (recherche + sélection)
-│   │   └── SeasonBadge.tsx          # Badge saison coloré
-│   ├── hooks/                       # Hooks custom — appellent les use cases via container.ts
-│   └── pages/                       # Pages React Router
-│
-├── shared/
-│   ├── types/
-│   │   ├── mealie.ts                # Tous les types Mealie (MealieRecipe, MealieMealPlan, MealieShoppingItem…)
-│   │   ├── llm.ts                   # LLMConfig, LLMProvider, DEFAULT_LLM_CONFIG, LLM_PROVIDERS
-│   │   └── errors.ts                # MealieApiError, MealieNotFoundError, MealieUnauthorizedError, MealieServerError
-│   └── utils/
-│       ├── date.ts                  # formatDate, getWeeksBetween
-│       ├── duration.ts              # formatDuration (ISO 8601 PT1H30M ↔ "1 h 30 min")
-│       ├── food.ts                  # extractFoodKey (normalisation clé aliment)
-│       └── season.ts                # getCurrentSeason, getRecipeSeasonsFromTags, isSeasonTag
-│
-├── lib/
-│   └── utils.ts                     # cn() (clsx + tailwind-merge)
-│
-├── App.tsx                          # Routes React Router
-└── main.tsx                         # Entry point (BrowserRouter, themeService.apply())
+├── domain/          # Métier pur. organizer/ (foods, units, categories, tags), planning/ (+ services/PlanningStatsService), recipe/, shopping/ (entities + repositories)
+├── application/     # Use cases. Une classe par use case, injection de repo. <domaine>/usecases/<Verbe><Nom>UseCase.ts
+├── infrastructure/  # container.ts (SINGLETON — toutes les instances repo + use case), llm/ (AssistantService streaming + tools, LLMService single-turn, LLMConfigService), mealie/api/ + mealie/repositories/, shopping/ (FoodLabelStore, RecipeSlugStore — localStorage), theme/ThemeService.ts
+├── presentation/    # components/ (ui/ shadcn + Layout, Sidebar, AssistantDrawer, RecipeCard, RecipeDetailModal, RecipeFormDialog, RecipePickerDialog…), hooks/ (useRecipesInfinite, useRecipe, usePlanning, useShopping, useStats, useAssistant, useTheme…), pages/ (RecipesPage, PlanningPage, StatsPage, ShoppingPage, SuggestionsPage, SettingsPage…)
+├── shared/types/    # mealie.ts, llm.ts, errors.ts (MealieApiError + 404/401/5xx spécialisés)
+├── shared/utils/    # date.ts, duration.ts (ISO 8601 PT1H30M ↔ "1 h 30 min"), food.ts (extractFoodKey), season.ts (tags `saison-`)
+└── lib/utils.ts     # cn() (clsx + tailwind-merge)
 ```
 
----
+**Container pattern** : `src/infrastructure/container.ts` est le SEUL fichier qui instancie repos + use cases. Les hooks importent depuis ce fichier, jamais `new XxxRepository()` dans un hook/composant.
 
 ## 4. Domaines métier
 
@@ -232,18 +147,9 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 
 `MealieApiClient` — singleton `mealieApiClient` (exporté depuis `src/infrastructure/mealie/api/index.ts`).
 
-- Méthodes : `get<T>(path)`, `post<T>(path, body)`, `put<T>(path, body)`, `patch<T>(path, body)`, `delete(path)`, `uploadImage(slug, file)`, `postSse<T>(path, body)`
-- Auth : `Authorization: Bearer <VITE_MEALIE_TOKEN>` sur chaque requête
-- Proxy Vite en dev : `/api/*` → `VITE_MEALIE_URL` (pas de CORS)
-- En prod : requêtes directes vers `VITE_MEALIE_URL`
+## 5. API Mealie (`MealieApiClient`, singleton `mealieApiClient`)
 
-**Erreurs** :
-- 401 → `MealieUnauthorizedError`
-- 404 → `MealieNotFoundError`
-- 5xx → `MealieServerError`
-- Autres → `MealieApiError`
-
-### 5.2 Endpoints utilisés
+Auth `Authorization: Bearer <VITE_MEALIE_TOKEN>`. Erreurs 401/404/5xx mappées. Endpoints :
 
 | Méthode | Endpoint | Usage |
 |---------|----------|-------|
@@ -382,77 +288,46 @@ export class MonUseCase {
 
 `src/infrastructure/container.ts` est le seul fichier qui instancie les repos et use cases. Les hooks importent les instances depuis ce fichier. Jamais `new RecipeRepository()` dans un composant ou hook.
 
----
+## 6. LLM / Assistant
 
-## 9. Fonctionnalité LLM / Assistant
+Deux modes : `llmChat` (single-turn, SuggestionsPage) et `sendAssistantMessage` (streaming multi-turn + tools, AssistantDrawer). Providers : **Anthropic** (seul avec streaming + tool use), OpenAI/Google/Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go (fallback single-turn sans tools), Ollama (local). Config dans localStorage `bonap_llm_config`. Tools : `search_recipe`, `add_to_planning`, `create_recipe` (synchro entre `AssistantService.ts` et `useAssistant.ts`). Proxy Vite dev : `/anthropic`, `/openai`, `/google-ai`, `/api/opencode`, `/api/opencode-go`.
 
-**Deux modes** :
-1. **`llmChat`** (`LLMService.ts`) : appel single-turn (system + user → text). Utilisé dans `SuggestionsPage` pour générer des suggestions JSON.
-2. **`sendAssistantMessage`** (`AssistantService.ts`) : streaming multi-turn avec tool use. Utilisé dans `AssistantDrawer`.
+## 7. Pages / routes
 
-**Providers supportés** : Anthropic (streaming + tool use), OpenAI (fallback, non-streaming), Google (fallback), Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go (fallback), Ollama (local, fallback).
+`/` → `/recipes` · `/recipes` · `/recipes/new` · `/recipes/:slug` · `/recipes/:slug/edit` · `/planning` (fenêtre 3/5/7j, cache ±14j) · `/stats` (30j/90j/12m) · `/shopping` (Bonap + Habituels) · `/suggestions` (IA) · `/settings` (LLM + thème). `Layout.tsx` wrap tout : Sidebar + AssistantDrawer (bouton flottant Sparkles).
 
-**Configuration** : stockée dans localStorage (`bonap_llm_config`). Accessible dans `SettingsPage`.
+## 8. Patterns / conventions
 
-**Tools de l'assistant** :
-- `search_recipe` : recherche par mots-clés dans Mealie
-- `add_to_planning` : ajoute une recette au planning (date + entryType)
-- `create_recipe` : crée une recette dans Mealie
+- **Nouveau use case** : classe + injection repo → instance dans `container.ts` → hook `use<Nom>.ts` qui importe depuis container → page. Jamais de `new XxxRepository()` hors container.
+- **Nouveau composant** : TypeScript strict (pas de `any`), classes Tailwind directes, shadcn/ui pour dialog/badge/button/input/label, `cn()` pour classes conditionnelles.
+- **Nommage** : PascalCase composants/classes, camelCase utils/hooks. Use cases `<Verbe><Nom>UseCase.ts`. Hooks `use<Nom>.ts` (préfixe `use` obligatoire). Named exports partout (sauf `App.tsx`/`main.tsx`).
+- **État** : `useState`/`useCallback` + optimistic updates (pattern `useShopping.toggleItem` — flip immédiat, rollback si erreur). Pas de store global.
+- **Scroll infini** : `useRecipesInfinite` avec `loadingRef` (anti double-fetch) + `filtersKey` sérialisé (arrays triés) pour reset stable.
 
-**Proxy Vite en dev** :
-- `/anthropic` → `https://api.anthropic.com`
-- `/openai` → `https://api.openai.com`
-- `/google-ai` → `https://generativelanguage.googleapis.com`
-- Ollama : pas de proxy (accès direct localhost:11434)
+## 9. Thème
 
----
+light/dark/system (localStorage `bonap_theme`) + 8 couleurs d'accent oklch (localStorage `bonap_accent`, CSS var `--color-primary`). Singleton `themeService` appliqué dans `main.tsx`.
 
-## 10. Thème / Design
-
-- **Mode** : light / dark / system (localStorage `bonap_theme`)
-- **Couleur d'accent** : 8 choix oklch (localStorage `bonap_accent`) — appliquée via CSS custom property `--color-primary`
-- `ThemeService.themeService` (singleton) — appliqué dans `main.tsx` au démarrage et dans `useTheme`
-- Design system : shadcn/ui style avec Tailwind v4
-- CSS variables au format oklch (`oklch(0.62 0.18 42)`)
-
----
-
-## 11. Commandes utiles
+## 10. Commandes
 
 ```bash
-npm run dev      # Dev server (localhost:5173), proxy Mealie + LLM actif
-npm run build    # tsc -b && vite build (output dans dist/)
+npm run dev      # Vite dev server (5173), proxy Mealie + LLM actif
+npm run build    # tsc -b && vite build → dist/
 npm run lint     # ESLint
-npm run preview  # Prévisualisation du build prod
+npm run preview  # Prévisualisation prod
 ```
 
----
+## 11. Pièges critiques
 
-## 12. Points d'attention et pièges connus
-
-### API Mealie
-- **DELETE shopping items** : la query string doit se terminer par `&` (ex: `?ids=abc&ids=def&`). Sans le `&` final, l'API Mealie ignore la requête.
-- **Création recette** : POST `/api/recipes` peut retourner `"slug"` (string) ou `{ slug: "..." }` selon les versions de Mealie — le repo gère les deux.
-- **Saisons via tags** : Mealie ne connaît pas les saisons nativement. Bonap utilise les tags avec préfixe `saison-`. Lors d'un PATCH recette, il faut d'abord résoudre les IDs des tags existants avec GET `/api/organizers/tags`.
-- **`perPage=-1`** : fonctionne pour récupérer toutes les entrées d'un référentiel. Ne pas utiliser pour les recettes (potentiellement des milliers).
-- **updateItem shopping** : PUT `/api/households/shopping/items` retourne parfois `null` (certaines versions Mealie) — fallback sur les données envoyées.
-
-### Durées
-- Le formulaire recette prend des **minutes en integer** (`prepTime: "30"`)
-- L'API Mealie stocke en **ISO 8601** (`PT30M`)
-- La conversion se fait dans `RecipeRepository.minutesToIso()` à l'envoi
-- L'affichage utilise `formatDuration()` qui accepte les deux formats
-
-### Ingredients résolution
-- `resolveIngredients` est appelé à chaque create/update — il fait 2 appels API (foods + units) si nécessaire
-- Les aliments **sont créés** automatiquement s'ils n'existent pas dans le référentiel
-- Les unités **ne sont pas créées** — si l'unité n'existe pas, `unitId` reste undefined et Mealie l'affiche comme texte libre
-
-### Scroll infini
-- `useRecipesInfinite` utilise un `loadingRef` pour éviter les double-fetch. Le `filtersKey` est sérialisé avec tri des arrays pour stabilité.
-
-### Planning cache
-- `usePlanning` maintient un cache en mémoire (`fetchedRange`). Le cache est étendu (jamais remplacé). Utile pour la navigation dans le calendrier sans re-fetch.
+- **DELETE shopping items** : query string doit finir par `&` (`?ids=abc&ids=def&`) — sinon Mealie ignore.
+- **POST `/api/recipes`** : retourne `"slug"` (string) OU `{ slug }` selon version — le repo gère les deux.
+- **Saisons** : Mealie ne connaît pas les saisons nativement. Tags préfixe `saison-` (ex: `saison-ete`). Résoudre les IDs via GET `/api/organizers/tags` avant PATCH.
+- **`perPage=-1`** : OK pour référentiels (foods, units, categories, tags). **Pas pour recettes** (potentiellement des milliers).
+- **updateItem shopping** : PUT peut retourner `null` (certaines versions Mealie) — fallback sur données envoyées.
+- **Durées** : formulaire en minutes integer, API en ISO 8601 (`PT30M`). Conversion dans `RecipeRepository.minutesToIso()`. `formatDuration()` accepte les deux formats.
+- **resolveIngredients** : 2 appels API (foods + units) à chaque create/update. Aliments créés auto, unités non créées (unitId reste undefined → texte libre).
+- **Anthropic-only streaming + tool use** : les 8 autres providers ont fallback single-turn sans tools — documenté dans Settings.
+- **OpenCode Go/Zen** : pas de CORS header → proxy Vite/nginx (`/api/opencode-go`, `/api/opencode`), comme Ollama.
 
 ### Shopping
 - L'ajout d'un item existant (même `foodKey`) **incrémente la quantité** plutôt que de dupliquer
@@ -465,21 +340,12 @@ npm run preview  # Prévisualisation du build prod
 - **`InlineEditServings`** (dans `RecipeEditorShared.tsx`) : composant +/- avec affichage du facteur d'échelle (`2×`, `1.5×`) — utilisé sur la fiche recette en édition.
 - **MealCell** : sélecteur +/- par repas dans le planning. Le delta est encodé via `[s:N]` dans la note du mealplan, ce qui évite de modifier la recette de base.
 
-### Assistant Drawer
-- Les tools (`search_recipe`, `add_to_planning`, `create_recipe`) sont définis dans `AssistantService.ts` côté API et dans `useAssistant.ts` côté implémentation (les deux doivent être synchro)
-- Uniquement Anthropic supporte le streaming + tool use ; les autres providers n'ont pas accès aux tools
+- **v1.0** : en prod (v1.3.5 courant). Maintenance corrective en parallèle.
+- **v1.1** (cible 2027-01-15, ~44h) : PWA/offline, import URL, export PDF, i18n EN/FR, accessibilité WCAG AA, tests E2E couvrant v1.0 (anti-régression avant v2.0). Sprints S0–S6 dans `docs/MVP-EXEC.md`.
+- **v2.0** (cible 2027-06-30, ~52h) : planning auto IA, nutrition (OpenFoodFacts), multi-households, partage public de recettes, cookbook. Feature flags `multiHouseholdsEnabled`/`nutritionEnabled`/`cookbooksEnabled`. Sprints S7–S11 dans `docs/MVP-EXEC.md`.
+- **Skills à créer** (via skill-creator, sprint S0) : `scaffold-ddd-feature`, `e2e-test-gen`, `i18n-extract`, `accessibility-audit`, `performance-audit`, `recipe-migration` (optionnel). Voir `docs/PDL.md` §11 et `docs/MVP-EXEC.md` Sprint S0.
+- **MCP** : Playwright, Context7, GitHub, Filesystem, Sequential Thinking (install Sprint S0 / T6). Custom `bonap-nutrition`, `bonap-pdf` envisagés en v2.0.
 
-### OpenCode Go
-- Provider payant low-cost d'OpenCode qui donne accès à des modèles open (MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo…) avec une seule clé API
-- Endpoint : `https://opencode.ai/zen/go/v1/chat/completions` (OpenAI-compatible)
-- OpenCode ne renvoie pas `Access-Control-Allow-Origin` → les appels passent par un proxy `/api/opencode-go` côté Vite (dev) et nginx (prod addon HA), comme Ollama
-- Liste de modèles : `https://opencode.ai/zen/go/v1/models` (Bearer auth)
-- Identifiant dans `LLMConfig.provider` : `'opencode-go'`
-- Implémenté comme un fallback non-streaming sans tool use (comme OpenAI/Mistral/OpenRouter)
+## 13. Références livrables
 
-### OpenCode Zen
-- Catalogue complet d'OpenCode (~74 modèles) : Claude, GPT-5, Gemini, Grok, MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo + quelques modèles gratuits
-- Endpoint : `https://opencode.ai/zen/v1/chat/completions` (OpenAI-compatible) — proxifié via `/api/opencode` (même mécanisme qu'OpenCode Go)
-- Liste de modèles : `https://opencode.ai/zen/v1/models` (Bearer auth)
-- Identifiant dans `LLMConfig.provider` : `'opencode'` (label UI : "OpenCode Zen")
-- Implémenté comme un fallback non-streaming sans tool use (comme OpenCode Go)
+`docs/MVP-SCOPE.md` (cadrage produit) · `docs/PDL.md` (architecture DDD + modules + séquencement) · `docs/SDLC.md` (méthodologie Kanban-solo, DoR/DoD, CI/CD) · `docs/ROADMAP.md` (v1.1/v2.0 jalons + risques) · `docs/MVP-EXEC.md` (sprints S0–S11 + tickets). Présupposition d'exécution : **solo + Claude Code + sous-agents IA spécialisés créés via skill-creator en local** — pas d'équipe humaine.
