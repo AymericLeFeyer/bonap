@@ -26,7 +26,7 @@ test.describe("Portions / yield", () => {
         })
       })
       await page.goto("/recipes/pizza-maison")
-      const input = page.getByLabel("Nombre de portions")
+      const input = page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })
       await expect(input).toHaveValue("4")
     })
 
@@ -42,7 +42,7 @@ test.describe("Portions / yield", () => {
         })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("6")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("6")
     })
 
     test("parse recipeYield texte (legacy) quand les champs numériques sont absents", async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe("Portions / yield", () => {
         })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("8")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("8")
     })
   })
 
@@ -62,9 +62,9 @@ test.describe("Portions / yield", () => {
         await route.fulfill({ json: { ...RECIPE_PIZZA, recipeServings: 4 } })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("4")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("4")
       await page.getByLabel("Augmenter le nombre de portions").click()
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("5")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("5")
     })
 
     test("le bouton - diminue le compteur de 1", async ({ page }) => {
@@ -72,9 +72,9 @@ test.describe("Portions / yield", () => {
         await route.fulfill({ json: { ...RECIPE_PIZZA, recipeServings: 4 } })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("4")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("4")
       await page.getByLabel("Diminuer le nombre de portions").click()
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("3")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("3")
     })
 
     test("le bouton - est désactivé à 1 portion", async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe("Portions / yield", () => {
         await route.fulfill({ json: { ...RECIPE_PIZZA, recipeServings: 1 } })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("1")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("1")
       await expect(page.getByLabel("Diminuer le nombre de portions")).toBeDisabled()
     })
 
@@ -99,7 +99,7 @@ test.describe("Portions / yield", () => {
       await plus.click()
       await plus.click()
 
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("8")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("8")
       await expect(page.getByText("2×")).toBeVisible()
     })
 
@@ -108,7 +108,7 @@ test.describe("Portions / yield", () => {
         await route.fulfill({ json: { ...RECIPE_PIZZA, recipeServings: 4 } })
       })
       await page.goto("/recipes/pizza-maison")
-      await expect(page.getByLabel("Nombre de portions")).toHaveValue("4")
+      await expect(page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })).toHaveValue("4")
       // À la valeur de base, le multiplicateur ne doit pas apparaître
       await expect(page.getByText(/×/)).toHaveCount(0)
     })
@@ -122,7 +122,7 @@ test.describe("Portions / yield", () => {
         })
       })
       await page.goto("/recipes/pizza-maison")
-      const input = page.getByLabel("Nombre de portions")
+      const input = page.getByRole("spinbutton", { name: "Nombre de portions", exact: true })
       await expect(input).toBeVisible()
       await expect(input).toHaveValue("")
     })
