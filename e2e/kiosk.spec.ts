@@ -79,6 +79,28 @@ test.describe("Mode Kiosk", () => {
     await expect(page.getByRole("dialog").getByText("Pizza maison")).toBeVisible()
   })
 
+  test("bascule vers /kiosk-vertical via le bouton d'orientation", async ({ page }) => {
+    await page.goto("/kiosk")
+    await page.getByTitle("Passer en mode vertical").click()
+    await expect(page).toHaveURL(/\/kiosk-vertical$/)
+    await expect(page.getByTitle("Passer en mode horizontal")).toBeVisible()
+  })
+
+  test("revient sur /kiosk depuis le mode vertical", async ({ page }) => {
+    await page.goto("/kiosk-vertical")
+    await page.getByTitle("Passer en mode horizontal").click()
+    await expect(page).toHaveURL(/\/kiosk$/)
+    await expect(page.getByTitle("Passer en mode vertical")).toBeVisible()
+  })
+
+  test("le mode vertical affiche le planning et les recettes", async ({ page }) => {
+    await page.goto("/kiosk-vertical")
+    await expect(page.getByText("Aujourd'hui")).toBeVisible()
+    await expect(page.getByText("Demain")).toBeVisible()
+    await expect(page.getByText("Pizza maison")).toBeVisible()
+    await expect(page.getByText("Salade niçoise")).toBeVisible()
+  })
+
   test("affiche les repas simples avec leur emoji si pas d'image", async ({ page }) => {
     // Mock un repas simple (tag "simple", pas d'image, extras.emoji)
     const simpleRecipeMeal = {

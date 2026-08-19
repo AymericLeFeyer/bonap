@@ -374,7 +374,9 @@ export function SettingsPage() {
         <div className="mt-4 space-y-3">
           <div>
             <p className="text-sm font-semibold">Mode kiosk</p>
-            <p className="text-xs text-muted-foreground">Paramètres de l'affichage tablette (<code className="font-mono">/kiosk</code>)</p>
+            <p className="text-xs text-muted-foreground">
+              Paramètres de l'affichage tablette (<code className="font-mono">/kiosk</code> en horizontal, <code className="font-mono">/kiosk-vertical</code> en portrait)
+            </p>
           </div>
           <div className="flex items-center justify-between py-2 px-1">
             <div>
