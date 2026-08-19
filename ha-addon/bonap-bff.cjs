@@ -1639,15 +1639,20 @@ function isPrivateOrLocalUrl(rawUrl) {
   }
 }
 
-app.all('/ollama-proxy/*path', async (req, res) => {
+// Mounted with app.use() rather than a wildcard path: `/ollama-proxy/*path` is
+// Express 5 syntax, but this service ships with Express 4 (see bff-package.json),
+// where `*` compiles to `(.*)` and `path` stays a literal — so the pattern only
+// matched URLs ending in "path" and `/ollama-proxy/api/tags` fell through to a
+// 404. A mount path behaves identically on both majors, and `req.url` then holds
+// the remaining subpath, query string included.
+app.use('/ollama-proxy', async (req, res) => {
   const target = req.headers['x-ollama-target']
   if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
     return res
       .status(400)
       .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
   }
-  const subpath = req.params['path'] ?? ''
-  const url = `${target.replace(/\/+$/, '')}/${subpath}`
+  const url = `${target.replace(/\/+$/, '')}${req.url}`
   try {
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
     const upstreamRes = await fetch(url, {
