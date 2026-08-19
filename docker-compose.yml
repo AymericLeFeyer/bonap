@@ -14,4 +14,13 @@ services:
       - VITE_THEME=${VITE_THEME:-}
       # - VITE_ACCENT_COLORS = orange | blue | violet | green | rose | teal | amber | indigo ( optional )
       - VITE_ACCENT_COLORS=${VITE_ACCENT_COLORS:-}
+      # LLM / AI — optionnel, surcharge les réglages in-app sur tous les appareils
+      # - LLM_PROVIDER = anthropic | openai | google | mistral | perplexity | ollama | openrouter (must be lowercase)
+      - LLM_PROVIDER=${LLM_PROVIDER:-}
+      # - LLM_API_KEY = clé API du provider (non requise pour ollama)
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      # - LLM_MODEL = modèle à utiliser (ex : claude-sonnet-4-6, gpt-4o, mistral-large-latest…)
+      - LLM_MODEL=${LLM_MODEL:-}
+      # - LLM_OLLAMA_URL = URL de l'instance Ollama (si LLM_PROVIDER=ollama)
+      - LLM_OLLAMA_URL=${LLM_OLLAMA_URL:-}
     restart: unless-stopped

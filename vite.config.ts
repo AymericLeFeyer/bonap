@@ -62,6 +62,18 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path: string) => path.replace(/^\/api\/ollama/, ''),
         },
+        '/api/opencode-go': {
+          target: 'https://opencode.ai/zen/go/v1',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path: string) => path.replace(/^\/api\/opencode-go/, ''),
+        },
+        '/api/opencode': {
+          target: 'https://opencode.ai/zen/v1',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path: string) => path.replace(/^\/api\/opencode/, ''),
+        },
         '/api': {
           target: env.VITE_MEALIE_URL,
           changeOrigin: true,
