@@ -6,6 +6,8 @@ export type LLMProvider =
   | 'perplexity'
   | 'ollama'
   | 'openrouter'
+  | 'opencode'
+  | 'opencode-go'
 
 export interface LLMConfig {
   provider: LLMProvider
@@ -76,6 +78,40 @@ export const LLM_PROVIDERS: Record<
       'arcee-ai/trinity-mini:free',
       'google/gemma-3-27b-it:free',
       'openrouter/free',
+    ],
+    needsKey: true,
+  },
+  'opencode-go': {
+    label: 'OpenCode Go',
+    models: [
+      'deepseek-v4-flash',
+      'deepseek-v4-pro',
+      'glm-5.2',
+      'qwen3.7-max',
+      'qwen3.7-plus',
+      'minimax-m3',
+    ],
+    needsKey: true,
+  },
+  opencode: {
+    label: 'OpenCode Zen',
+    models: [
+      'claude-haiku-4-5',
+      'claude-sonnet-5',
+      'claude-opus-4-8',
+      'gpt-5-nano',
+      'gpt-5.5',
+      'gpt-5.5-pro',
+      'gemini-3-flash',
+      'gemini-3.1-pro',
+      'grok-build-0.1',
+      'minimax-m3',
+      'deepseek-v4-flash',
+      'deepseek-v4-flash-free',
+      'deepseek-v4-pro',
+      'qwen3.7-plus',
+      'qwen3.7-max',
+      'glm-5.2',
     ],
     needsKey: true,
   },

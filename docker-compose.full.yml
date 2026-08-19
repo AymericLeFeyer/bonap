@@ -26,6 +26,11 @@ services:
       - VITE_MEALIE_TOKEN=
       # - VITE_THEME =  light | dark | system ( optional )
       # - VITE_ACCENT_COLORS = orange | blue | violet | green | rose | teal | amber | indigo ( optional )
+      # LLM / AI — optionnel, surcharge les réglages in-app sur tous les appareils
+      # - LLM_PROVIDER = anthropic | openai | google | mistral | perplexity | ollama | openrouter (must be lowercase)
+      # - LLM_API_KEY = clé API du provider (non requise pour ollama)
+      # - LLM_MODEL = modèle à utiliser (ex : claude-sonnet-4-6, gpt-4o, mistral-large-latest…)
+      # - LLM_OLLAMA_URL = URL de l'instance Ollama (si LLM_PROVIDER=ollama)
     depends_on:
       - mealie
     restart: unless-stopped

@@ -1,7 +1,7 @@
 # CLAUDE.md — Bonap
 
 Documentation technique pour Claude Code. Mis à jour à chaque session.
-Dernière mise à jour : 2026-05-08.
+Dernière mise à jour : 2026-07-03.
 
 ---
 
@@ -298,6 +298,7 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 | `/kiosk-vertical` | `KioskPage` (`orientation="vertical"`) | Même page en portrait — un jour par ligne, repas en colonnes, tout tient à l'écran |
 
 **Mode kiosk** : hors `Layout` (pas de sidebar), auto-refresh toutes les 5 min, horloge mise à jour chaque minute. Le nombre de jours affichés (`kioskDays`, 3/5/7) vient de `usePlanningPreferences` (localStorage `bonap_kiosk_prefs`, réglable dans Settings). Un bouton dans le header bascule entre les deux orientations (`navigate(..., { replace: true })` pour que le retour arrière ramène au planning). Le root est en `h-screen` (pas `min-h-screen`) : c'est ce qui permet aux `h-full` / `flex-1` internes de se résoudre et évite le scroll de page en vertical.
+| `/settings` | `SettingsPage` | Config LLM (Anthropic/OpenAI/Google/Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go/Ollama), thème, couleur d'accent |
 
 **Layout** : `Layout.tsx` wrap toutes les routes. Il contient `Sidebar` + `AssistantDrawer` (bouton flottant Sparkles en bas à droite).
 
@@ -389,7 +390,7 @@ export class MonUseCase {
 1. **`llmChat`** (`LLMService.ts`) : appel single-turn (system + user → text). Utilisé dans `SuggestionsPage` pour générer des suggestions JSON.
 2. **`sendAssistantMessage`** (`AssistantService.ts`) : streaming multi-turn avec tool use. Utilisé dans `AssistantDrawer`.
 
-**Providers supportés** : Anthropic (streaming + tool use), OpenAI (fallback, non-streaming), Google (fallback), Ollama (local, fallback).
+**Providers supportés** : Anthropic (streaming + tool use), OpenAI (fallback, non-streaming), Google (fallback), Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go (fallback), Ollama (local, fallback).
 
 **Configuration** : stockée dans localStorage (`bonap_llm_config`). Accessible dans `SettingsPage`.
 
@@ -467,3 +468,18 @@ npm run preview  # Prévisualisation du build prod
 ### Assistant Drawer
 - Les tools (`search_recipe`, `add_to_planning`, `create_recipe`) sont définis dans `AssistantService.ts` côté API et dans `useAssistant.ts` côté implémentation (les deux doivent être synchro)
 - Uniquement Anthropic supporte le streaming + tool use ; les autres providers n'ont pas accès aux tools
+
+### OpenCode Go
+- Provider payant low-cost d'OpenCode qui donne accès à des modèles open (MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo…) avec une seule clé API
+- Endpoint : `https://opencode.ai/zen/go/v1/chat/completions` (OpenAI-compatible)
+- OpenCode ne renvoie pas `Access-Control-Allow-Origin` → les appels passent par un proxy `/api/opencode-go` côté Vite (dev) et nginx (prod addon HA), comme Ollama
+- Liste de modèles : `https://opencode.ai/zen/go/v1/models` (Bearer auth)
+- Identifiant dans `LLMConfig.provider` : `'opencode-go'`
+- Implémenté comme un fallback non-streaming sans tool use (comme OpenAI/Mistral/OpenRouter)
+
+### OpenCode Zen
+- Catalogue complet d'OpenCode (~74 modèles) : Claude, GPT-5, Gemini, Grok, MiniMax, Qwen, GLM, Kimi, DeepSeek, MiMo + quelques modèles gratuits
+- Endpoint : `https://opencode.ai/zen/v1/chat/completions` (OpenAI-compatible) — proxifié via `/api/opencode` (même mécanisme qu'OpenCode Go)
+- Liste de modèles : `https://opencode.ai/zen/v1/models` (Bearer auth)
+- Identifiant dans `LLMConfig.provider` : `'opencode'` (label UI : "OpenCode Zen")
+- Implémenté comme un fallback non-streaming sans tool use (comme OpenCode Go)

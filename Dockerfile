@@ -1,7 +1,7 @@
 # =============================================================================
 # Stage 1 — Build
 # =============================================================================
-FROM node:25-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN npm run build
 # =============================================================================
 # Stage 2 — Build Marmiton proxy dependencies
 # =============================================================================
-FROM node:25-alpine AS marmiton-builder
+FROM node:26-alpine AS marmiton-builder
 
 WORKDIR /proxy
 
@@ -30,7 +30,7 @@ RUN npm install --production
 # =============================================================================
 # Stage 3 — Serve
 # =============================================================================
-FROM nginx:1.29-alpine AS runner
+FROM nginx:1.31-alpine AS runner
 
 # Installer gettext pour envsubst + nodejs pour le proxy Marmiton
 RUN apk add --no-cache gettext nodejs
