@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef, useEffect, type ReactNode } from "react"
+import { Minus, Plus } from "lucide-react"
 import { Input } from "./ui/input.tsx"
 import { formatDuration, formatMinutes } from "../../shared/utils/duration.ts"
 import { cn } from "../../lib/utils.ts"
@@ -155,6 +156,85 @@ export function InlineEditDuration({ label, value, displayRaw, onChange, disable
       title={disabled ? undefined : "Cliquer pour modifier"}
     >
       {label} : {displayRaw ? formatDuration(displayRaw) : (value ? formatMinutes(value) : "—")}
+    </span>
+  )
+}
+
+// ─── InlineEditServings ────────────────────────────────────────────────────────
+
+export interface InlineEditServingsProps {
+  /** Numeric value as a string (kept as string to match the existing form data shape). */
+  value: string
+  baseServings?: number
+  onChange: (v: string) => void
+  disabled?: boolean
+  min?: number
+  max?: number
+}
+
+/**
+ * +/- stepper for recipe servings (style Mealie post-PR #4298).
+ * Increments by 1, clamped to [min, max], shows a "Nx" multiplier
+ * when the current value differs from the recipe base.
+ */
+export function InlineEditServings({
+  value,
+  baseServings,
+  onChange,
+  disabled,
+  min = 1,
+  max = 99,
+}: InlineEditServingsProps) {
+  const current = Math.max(0, parseInt(value, 10) || 0)
+  const clamp = (n: number) => Math.min(Math.max(n, min), max)
+  const update = (next: number) => onChange(String(clamp(next)))
+
+  const ratio = baseServings && baseServings > 0 && current > 0
+    ? current / baseServings
+    : undefined
+
+  return (
+    <span className="flex items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Portions :</span>
+      <span className="inline-flex items-center rounded-md border border-input bg-background overflow-hidden">
+        <button
+          type="button"
+          onClick={() => update(current - 1)}
+          disabled={disabled || current <= min}
+          aria-label="Diminuer le nombre de portions"
+          className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Minus className="h-3 w-3" />
+        </button>
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={current || ""}
+          onChange={(e) => {
+            const raw = e.target.value
+            if (raw === "") onChange("")
+            else update(parseInt(raw, 10))
+          }}
+          disabled={disabled}
+          aria-label="Nombre de portions"
+          className="h-7 w-10 border-0 bg-transparent text-center text-sm tabular-nums font-semibold focus:outline-none disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        <button
+          type="button"
+          onClick={() => update(current + 1)}
+          disabled={disabled || current >= max}
+          aria-label="Augmenter le nombre de portions"
+          className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </span>
+      {ratio && ratio !== 1 && (
+        <span className="text-xs text-muted-foreground tabular-nums" title={`Recette de base : ${baseServings} portions`}>
+          {ratio % 1 === 0 ? `${ratio}×` : `${(Math.round(ratio * 100) / 100)}×`}
+        </span>
+      )}
     </span>
   )
 }

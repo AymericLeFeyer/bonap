@@ -32,7 +32,8 @@ function App() {
   return (
     <Routes>
       {isProtectedRoute && <Route path="login" element={<AuthPage />} />}
-      <Route path="kiosk" element={<KioskPage />} />
+      <Route path="kiosk" element={<KioskPage orientation="horizontal" />} />
+      <Route path="kiosk-vertical" element={<KioskPage orientation="vertical" />} />
       <Route element={isProtectedRoute ? <ProtectedRoute /> : <Outlet />}>
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/recipes" replace />} />

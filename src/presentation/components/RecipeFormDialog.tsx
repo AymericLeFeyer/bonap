@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Loader2, AlertCircle, Plus, Trash2, GripVertical, Smile } from "lucide-react"
 import { FOOD_EMOJIS, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
+import { getRecipeServings } from "../../shared/utils/servings.ts"
 import {
   Dialog,
   DialogContent,
@@ -94,7 +95,7 @@ function buildInitialFormData(recipe?: MealieRecipe): RecipeFormData {
     prepTime: parsePrepTimeToMinutes(recipe?.prepTime),
     performTime: parsePrepTimeToMinutes(recipe?.performTime),
     totalTime: parsePrepTimeToMinutes(recipe?.totalTime),
-    recipeYield: recipe?.recipeServings ? String(recipe.recipeServings) : "",
+    recipeYield: getRecipeServings(recipe) ? String(getRecipeServings(recipe)) : "",
     recipeIngredient: buildInitialIngredients(recipe),
     recipeInstructions: buildInitialInstructions(recipe),
     seasons: getRecipeSeasonsFromTags(recipe?.tags),

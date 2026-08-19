@@ -183,4 +183,81 @@ describe("RecipeRepository", () => {
       expect(tags.some((t) => t.slug === "saison-ete")).toBe(true)
     })
   })
+
+  // ── Servings — fix du bug #14 (écriture cohérente sur 3 champs) ─────────────
+
+  describe("update — recipeServings / recipeYieldQuantity / recipeYield", () => {
+    const baseForm = {
+      name: "Test",
+      description: "",
+      prepTime: "0",
+      performTime: "0",
+      totalTime: "0",
+      seasons: [] as string[],
+      categories: [] as Array<{ id: string; name: string; slug: string }>,
+      tags: [] as Array<{ id: string; name: string; slug: string }>,
+      recipeIngredient: [],
+      recipeInstructions: [],
+    }
+
+    function setupUpdateWithCurrent(currentRecipe: Record<string, unknown>) {
+      client.get.mockImplementation((url: string) => {
+        if (url.includes("/organizers/tags")) return Promise.resolve({ items: [] })
+        return Promise.resolve(currentRecipe)
+      })
+      client.put.mockResolvedValue({ id: "r1" })
+    }
+
+    it("écrit le nombre saisi dans recipeServings ET recipeYieldQuantity", async () => {
+      setupUpdateWithCurrent({ id: "r1", slug: "test", name: "Test", tags: [] })
+      await repo.update("test", { ...baseForm, recipeYield: "4" })
+      const putBody = client.put.mock.calls[0][1]
+      expect(putBody.recipeServings).toBe(4)
+      expect(putBody.recipeYieldQuantity).toBe(4)
+    })
+
+    it("strip un préfixe numérique parasite dans recipeYield (legacy)", async () => {
+      setupUpdateWithCurrent({
+        id: "r1",
+        slug: "test",
+        name: "Test",
+        tags: [],
+        recipeYield: "4 personnes",
+      })
+      await repo.update("test", { ...baseForm, recipeYield: "6" })
+      const putBody = client.put.mock.calls[0][1]
+      expect(putBody.recipeYield).toBe("personnes")
+      expect(putBody.recipeServings).toBe(6)
+      expect(putBody.recipeYieldQuantity).toBe(6)
+    })
+
+    it("conserve recipeYield si déjà propre (pas de chiffre en tête)", async () => {
+      setupUpdateWithCurrent({
+        id: "r1",
+        slug: "test",
+        name: "Test",
+        tags: [],
+        recipeYield: "personnes",
+      })
+      await repo.update("test", { ...baseForm, recipeYield: "8" })
+      const putBody = client.put.mock.calls[0][1]
+      expect(putBody.recipeYield).toBe("personnes")
+      expect(putBody.recipeServings).toBe(8)
+    })
+
+    it("préserve les valeurs courantes si recipeYield form est vide", async () => {
+      setupUpdateWithCurrent({
+        id: "r1",
+        slug: "test",
+        name: "Test",
+        tags: [],
+        recipeServings: 4,
+        recipeYieldQuantity: 4,
+      })
+      await repo.update("test", { ...baseForm, recipeYield: "" })
+      const putBody = client.put.mock.calls[0][1]
+      expect(putBody.recipeServings).toBe(4)
+      expect(putBody.recipeYieldQuantity).toBe(4)
+    })
+  })
 })
