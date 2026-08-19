@@ -144,6 +144,17 @@ src/
 
 **Durées** : stockées en ISO 8601 (`PT30M`, `PT1H30M`) dans Mealie. Le formulaire accepte des minutes brutes (converti automatiquement). `formatDuration()` parse les deux formats.
 
+**Portions (servings)** : Mealie expose **trois champs** sur la recette :
+- `recipeServings: number` — nombre de portions (numérique, source de vérité écriture)
+- `recipeYieldQuantity: number` — quantité de rendement (numérique, mirroir)
+- `recipeYield: string` — libellé textuel ("portions", "personnes", "cookies"…)
+
+À l'**écriture**, `RecipeRepository.update()` met le nombre saisi à la fois dans `recipeServings` ET `recipeYieldQuantity`, et garde `recipeYield` comme libellé texte (avec strip d'un préfixe numérique parasite éventuel).
+
+À la **lecture**, utiliser `getRecipeServings(recipe)` (`shared/utils/servings.ts`) qui applique l'ordre de priorité : `recipeServings` > `recipeYieldQuantity` > `parseServings(recipeYield)`. **Ne pas appeler `parseServings(recipe.recipeYield)` directement** — c'est l'origine du bug de l'issue #14 (les valeurs Bonap-écrites n'étaient jamais relues).
+
+Format planning : les portions par repas sont encodées en préfixe dans la note du mealplan via `[s:N]note utilisateur` (helpers `encodeServingsInText` / `decodeServingsFromText`). Le helper `getMealServings(meal)` retourne le nombre encodé sinon retombe sur la base de la recette.
+
 ### 4.2 Domaine `planning`
 
 **Entité principale** : `MealieMealPlan`
@@ -193,7 +204,7 @@ ShoppingLabel { id, name, color? }
 **Use cases** :
 - `GetShoppingItemsUseCase.execute()` — charge les deux listes (Bonap + Habituels) en parallèle
 - `AddItemUseCase.execute(listId, note, quantity, labelId?)` — ajoute un item
-- `AddRecipesToListUseCase.execute(listId, recipeIds)` — ajoute les ingrédients de plusieurs recettes
+- `AddRecipesToListUseCase.execute(listId, entries)` — ajoute les ingrédients de plusieurs recettes ; chaque entry accepte un `servingsRatio` qui multiplie les quantités (scaling)
 - `ToggleItemUseCase.execute(listId, item)` — coche/décoche
 - `DeleteItemUseCase.execute(listId, itemId)` — supprime
 - `ClearListUseCase.execute(listId, items, mode)` — mode: "checked" | "all"
@@ -282,6 +293,11 @@ Référentiels Mealie (aliments, unités, catégories, tags) :
 | `/stats` | `StatsPage` | Statistiques (30j/90j/12m) : top recettes, top ingrédients, streak, restes, couverture catalogue |
 | `/shopping` | `ShoppingPage` | Liste de courses "Bonap" + liste "Habituels" |
 | `/suggestions` | `SuggestionsPage` | Suggestions IA (critères prédéfinis + texte libre → 5 suggestions via LLM) |
+| `/settings` | `SettingsPage` | Config LLM (Anthropic/OpenAI/Google/Ollama), thème, couleur d'accent |
+| `/kiosk` | `KioskPage` (`orientation="horizontal"`) | Affichage tablette plein écran — un jour par colonne, scroll horizontal |
+| `/kiosk-vertical` | `KioskPage` (`orientation="vertical"`) | Même page en portrait — un jour par ligne, repas en colonnes, tout tient à l'écran |
+
+**Mode kiosk** : hors `Layout` (pas de sidebar), auto-refresh toutes les 5 min, horloge mise à jour chaque minute. Le nombre de jours affichés (`kioskDays`, 3/5/7) vient de `usePlanningPreferences` (localStorage `bonap_kiosk_prefs`, réglable dans Settings). Un bouton dans le header bascule entre les deux orientations (`navigate(..., { replace: true })` pour que le retour arrière ramène au planning). Le root est en `h-screen` (pas `min-h-screen`) : c'est ce qui permet aux `h-full` / `flex-1` internes de se résoudre et évite le scroll de page en vertical.
 | `/settings` | `SettingsPage` | Config LLM (Anthropic/OpenAI/Google/Mistral/Perplexity/OpenRouter/OpenCode Zen/OpenCode Go/Ollama), thème, couleur d'accent |
 
 **Layout** : `Layout.tsx` wrap toutes les routes. Il contient `Sidebar` + `AssistantDrawer` (bouton flottant Sparkles en bas à droite).
@@ -441,6 +457,13 @@ npm run preview  # Prévisualisation du build prod
 ### Shopping
 - L'ajout d'un item existant (même `foodKey`) **incrémente la quantité** plutôt que de dupliquer
 - La liste "Bonap" et "Habituels" sont auto-créées dans Mealie si elles n'existent pas
+- **Habituels** : créés avec `isFood: true` et un `foodId` résolu (création à la volée si l'aliment n'existe pas dans Mealie). Évite l'enregistrement en simple texte (note) qui empêchait le typage.
+
+### Portions / scaling
+- **Lecture** : toujours `getRecipeServings(recipe)`, jamais `parseServings(recipe.recipeYield)` — voir `shared/utils/servings.ts`. Le bug #14 venait précisément de cette confusion.
+- **Scaling à l'ajout au panier** : `AddRecipesToListUseCase` multiplie `quantity` par `servingsRatio` quand l'ingrédient a `quantity > 0` ET au moins l'un de `unit` ou `food` (sinon impossible à formater proprement). Output : `"500 g farine"`, `"2 oignon"`, ou fallback texte brut. Évite les artefacts type `3 1 cup farine` car ce cas (quantité dans la note libre, pas dans `quantity`) tombe en fallback.
+- **`InlineEditServings`** (dans `RecipeEditorShared.tsx`) : composant +/- avec affichage du facteur d'échelle (`2×`, `1.5×`) — utilisé sur la fiche recette en édition.
+- **MealCell** : sélecteur +/- par repas dans le planning. Le delta est encodé via `[s:N]` dans la note du mealplan, ce qui évite de modifier la recette de base.
 
 ### Assistant Drawer
 - Les tools (`search_recipe`, `add_to_planning`, `create_recipe`) sont définis dans `AssistantService.ts` côté API et dans `useAssistant.ts` côté implémentation (les deux doivent être synchro)

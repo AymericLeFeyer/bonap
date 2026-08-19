@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
-import { useLocation } from "react-router-dom"
-import { Loader2, RefreshCw } from "lucide-react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { Loader2, RefreshCw, Rows3, Columns3 } from "lucide-react"
 import type { MealieMealPlan } from "../../shared/types/mealie.ts"
 import { getWeekPlanningUseCase } from "../../infrastructure/container.ts"
 import { formatDate } from "../../shared/utils/date.ts"
@@ -66,9 +66,17 @@ interface DayGroup {
   meals: Record<string, MealieMealPlan | undefined>
 }
 
-export function KioskPage() {
+export type KioskOrientation = "horizontal" | "vertical"
+
+interface KioskPageProps {
+  orientation?: KioskOrientation
+}
+
+export function KioskPage({ orientation = "horizontal" }: KioskPageProps = {}) {
   const location = useLocation()
+  const navigate = useNavigate()
   const fromApp = (location.state as { fromApp?: boolean } | null)?.fromApp === true
+  const isVertical = orientation === "vertical"
 
   const { showBreakfast, kioskDays } = usePlanningPreferences()
   const mealTypes = ALL_MEAL_TYPES.filter((mt) => mt.key !== "breakfast" || showBreakfast)
@@ -136,7 +144,7 @@ export function KioskPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col select-none overflow-hidden">
+    <div className="h-screen bg-background text-foreground flex flex-col select-none overflow-hidden">
       {/* Toast "mode kiosk" */}
       {toastVisible && (
         <div className={cn(
@@ -164,6 +172,18 @@ export function KioskPage() {
           )}
           <button
             type="button"
+            onClick={() =>
+              navigate(isVertical ? "/kiosk" : "/kiosk-vertical", { replace: true })
+            }
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+            title={isVertical ? "Passer en mode horizontal" : "Passer en mode vertical"}
+          >
+            {isVertical
+              ? <Columns3 className="h-4 w-4 text-muted-foreground" />
+              : <Rows3 className="h-4 w-4 text-muted-foreground" />}
+          </button>
+          <button
+            type="button"
             onClick={() => void fetchMeals(true)}
             className={cn(
               "p-2 rounded-full hover:bg-secondary transition-colors",
@@ -176,47 +196,23 @@ export function KioskPage() {
         </div>
       </header>
 
-      {/* Days grid */}
-      <div className="flex-1 overflow-x-auto">
+      {/* Days grid — colonnes en horizontal, lignes empilées en vertical */}
+      <div className={cn("flex-1", isVertical ? "overflow-y-auto" : "overflow-x-auto")}>
         <div
-          className="flex h-full gap-3 p-4"
-          style={{ minWidth: `${kioskDays * 220}px` }}
+          className={cn("flex gap-3 p-4 h-full", isVertical && "flex-col")}
+          style={isVertical ? undefined : { minWidth: `${kioskDays * 220}px` }}
         >
-          {days.map(({ date, dateStr, meals }, dayIdx) => {
-            const isToday = dayIdx === 0
-            return (
-              <div
-                key={dateStr}
-                className={cn(
-                  "flex flex-col gap-3 rounded-2xl p-4 min-w-0 flex-1",
-                  isToday
-                    ? "bg-primary/8 border-2 border-primary/30"
-                    : "bg-card border border-border",
-                )}
-              >
-                <div className={cn(
-                  "text-center font-bold text-sm uppercase tracking-wider",
-                  isToday ? "text-primary" : "text-muted-foreground",
-                )}>
-                  {formatDayLabel(date)}
-                </div>
-
-                {mealTypes.map((mt) => {
-                  const meal = meals[mt.key]
-                  const isNext = nextMeal?.dateStr === dateStr && nextMeal?.type === mt.key
-                  return (
-                    <MealSlot
-                      key={mt.key}
-                      label={mt.label}
-                      meal={meal}
-                      isNext={isNext}
-                      onSelect={(slug) => setSelectedSlug(slug)}
-                    />
-                  )
-                })}
-              </div>
-            )
-          })}
+          {days.map((day, dayIdx) => (
+            <DayCard
+              key={day.dateStr}
+              day={day}
+              isToday={dayIdx === 0}
+              isVertical={isVertical}
+              mealTypes={mealTypes}
+              nextMeal={nextMeal}
+              onSelect={(slug) => setSelectedSlug(slug)}
+            />
+          ))}
         </div>
       </div>
 
@@ -229,18 +225,77 @@ export function KioskPage() {
   )
 }
 
+type MealType = (typeof ALL_MEAL_TYPES)[number]
+
+interface DayCardProps {
+  day: DayGroup
+  isToday: boolean
+  isVertical: boolean
+  mealTypes: ReadonlyArray<MealType>
+  nextMeal: { dateStr: string; type: string } | null
+  onSelect: (slug: string) => void
+}
+
+function DayCard({ day, isToday, isVertical, mealTypes, nextMeal, onSelect }: DayCardProps) {
+  const { date, dateStr, meals } = day
+
+  const slots = mealTypes.map((mt) => (
+    <MealSlot
+      key={mt.key}
+      label={mt.label}
+      meal={meals[mt.key]}
+      isNext={nextMeal?.dateStr === dateStr && nextMeal?.type === mt.key}
+      isVertical={isVertical}
+      onSelect={onSelect}
+    />
+  ))
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2 rounded-2xl p-4 min-w-0 flex-1",
+        isVertical && "min-h-[150px]",
+        isToday
+          ? "bg-primary/8 border-2 border-primary/30"
+          : "bg-card border border-border",
+      )}
+    >
+      <div className={cn(
+        "font-bold text-sm uppercase tracking-wider shrink-0",
+        isVertical ? "text-left" : "text-center",
+        isToday ? "text-primary" : "text-muted-foreground",
+      )}>
+        {formatDayLabel(date)}
+      </div>
+
+      {isVertical ? (
+        <div
+          className="grid gap-3 flex-1 min-h-0"
+          style={{ gridTemplateColumns: `repeat(${mealTypes.length}, minmax(0, 1fr))` }}
+        >
+          {slots}
+        </div>
+      ) : (
+        slots
+      )}
+    </div>
+  )
+}
+
 interface MealSlotProps {
   label: string
   meal: MealieMealPlan | undefined
   isNext: boolean
+  isVertical: boolean
   onSelect: (slug: string) => void
 }
 
-function MealSlot({ label, meal, isNext, onSelect }: MealSlotProps) {
+function MealSlot({ label, meal, isNext, isVertical, onSelect }: MealSlotProps) {
   return (
     <div
       className={cn(
-        "flex-1 rounded-xl overflow-hidden flex flex-col min-h-[100px]",
+        "flex-1 rounded-xl overflow-hidden flex flex-col min-h-[100px] min-w-0",
+        isVertical && "min-h-0",
         isNext
           ? "ring-2 ring-primary shadow-md"
           : "bg-secondary/40 border border-border/50",
@@ -259,10 +314,10 @@ function MealSlot({ label, meal, isNext, onSelect }: MealSlotProps) {
       {meal?.recipe ? (
         <button
           type="button"
-          className="flex-1 flex flex-col text-left hover:brightness-95 transition-[filter] cursor-pointer w-full"
+          className="flex-1 min-h-0 flex flex-col text-left hover:brightness-95 transition-[filter] cursor-pointer w-full"
           onClick={() => meal.recipe?.slug && onSelect(meal.recipe.slug)}
         >
-          <RecipeCard meal={meal} />
+          <RecipeCard meal={meal} isVertical={isVertical} />
         </button>
       ) : (
         <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground/50 italic p-2">
@@ -273,14 +328,17 @@ function MealSlot({ label, meal, isNext, onSelect }: MealSlotProps) {
   )
 }
 
-function RecipeCard({ meal }: { meal: MealieMealPlan }) {
+function RecipeCard({ meal, isVertical }: { meal: MealieMealPlan; isVertical: boolean }) {
   const recipe = meal.recipe!
   const note = getMealVisibleNote(meal)
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Image */}
-      <div className="relative w-full aspect-video bg-secondary overflow-hidden">
+    <div className="flex-1 min-h-0 flex flex-col w-full">
+      {/* Image — ratio fixe en horizontal, absorbe la hauteur restante en vertical */}
+      <div className={cn(
+        "relative w-full bg-secondary overflow-hidden",
+        isVertical ? "flex-1 min-h-0" : "aspect-video",
+      )}>
         <RecipeImage
           recipe={recipe}
           alt={recipe.name}
@@ -290,7 +348,7 @@ function RecipeCard({ meal }: { meal: MealieMealPlan }) {
       </div>
 
       {/* Infos */}
-      <div className="px-3 py-2 space-y-0.5">
+      <div className="px-3 py-2 space-y-0.5 shrink-0">
         <p className="text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
         {note && (
           <p className="text-xs text-muted-foreground line-clamp-2">{note}</p>

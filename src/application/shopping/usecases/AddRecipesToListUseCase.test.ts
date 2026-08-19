@@ -22,7 +22,9 @@ function ingredient(name: string, note?: string) {
     food: { id: name, name },
     note: note ?? "",
     originalText: name,
-    quantity: 1,
+    // No quantity by default — these tests focus on the un-scaled fallback path.
+    // Cases that exercise scaling pass a fully-formed ingredient inline below.
+    quantity: 0,
   }
 }
 
@@ -113,5 +115,95 @@ describe("AddRecipesToListUseCase", () => {
       ingredients: [],
     }])
     expect(repo.addItems).toHaveBeenCalledWith("list-1", [])
+  })
+
+  // ─── Scaling (#14) ────────────────────────────────────────────────────────
+
+  it("scale les quantités quand quantity ET unit sont définis", async () => {
+    await useCase.execute("list-1", [{
+      recipeName: "Pâtes",
+      recipeSlug: "pates",
+      servingsRatio: 2,
+      ingredients: [{
+        referenceId: "farine",
+        food: { id: "farine", name: "farine" },
+        unit: { id: "g", name: "g" },
+        quantity: 250,
+        note: "",
+        originalText: "250g farine",
+      }],
+    }])
+    const items = repo.addItems.mock.calls[0][1]
+    expect(items[0].note).toBe("500 g farine — Pâtes")
+  })
+
+  it("scale les quantités quantity-only (food sans unit) — '2 oignon' pour ratio 2", async () => {
+    await useCase.execute("list-1", [{
+      recipeName: "Soupe",
+      recipeSlug: "soupe",
+      servingsRatio: 2,
+      ingredients: [{
+        referenceId: "oignon",
+        food: { id: "oignon", name: "oignon" },
+        quantity: 1,
+        note: "",
+        originalText: "1 oignon",
+      }],
+    }])
+    const items = repo.addItems.mock.calls[0][1]
+    expect(items[0].note).toBe("2 oignon — Soupe")
+  })
+
+  it("fallback nom brut quand quantity > 0 mais ni food ni unit (impossible à formater)", async () => {
+    await useCase.execute("list-1", [{
+      recipeName: "Pâtes",
+      recipeSlug: "pates",
+      servingsRatio: 3,
+      ingredients: [{
+        referenceId: "x",
+        food: null,
+        unit: null,
+        quantity: 1,
+        note: "1 cup farine",
+        originalText: "1 cup farine",
+      }],
+    }])
+    const items = repo.addItems.mock.calls[0][1]
+    expect(items[0].note).toBe("1 cup farine — Pâtes")
+  })
+
+  it("traite servingsRatio absent ou <= 0 comme 1 (pas de scaling)", async () => {
+    await useCase.execute("list-1", [{
+      recipeName: "R",
+      recipeSlug: "r",
+      ingredients: [{
+        referenceId: "lait",
+        food: { id: "lait", name: "lait" },
+        unit: { id: "ml", name: "ml" },
+        quantity: 100,
+        note: "",
+        originalText: "",
+      }],
+    }])
+    const items = repo.addItems.mock.calls[0][1]
+    expect(items[0].note).toBe("100 ml lait — R")
+  })
+
+  it("formate les quantités fractionnaires sans .0 superflu", async () => {
+    await useCase.execute("list-1", [{
+      recipeName: "R",
+      recipeSlug: "r",
+      servingsRatio: 1.5,
+      ingredients: [{
+        referenceId: "huile",
+        food: { id: "huile", name: "huile" },
+        unit: { id: "cl", name: "cl" },
+        quantity: 2,
+        note: "",
+        originalText: "",
+      }],
+    }])
+    const items = repo.addItems.mock.calls[0][1]
+    expect(items[0].note).toBe("3 cl huile — R")
   })
 })

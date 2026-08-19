@@ -11,7 +11,7 @@ import { Button } from "./ui/button.tsx"
 import { CookingMode } from "./CookingMode.tsx"
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
-import { parseServings } from "../../shared/utils/servings.ts"
+import { getRecipeServings } from "../../shared/utils/servings.ts"
 
 interface RecipeDetailModalProps {
   slug: string | null
@@ -47,7 +47,7 @@ export function RecipeDetailModal({ slug, targetServings, onOpenChange }: Recipe
       name: recipe.name,
       ingredients: recipe.recipeIngredient ?? [],
       instructions: recipe.recipeInstructions ?? [],
-      baseServings: parseServings(recipe.recipeYield),
+      baseServings: getRecipeServings(recipe),
       targetServings,
     })
     onOpenChange(false)
