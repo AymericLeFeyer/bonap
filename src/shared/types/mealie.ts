@@ -29,7 +29,18 @@ export interface MealieUnit {
 
 export interface MealieIngredient {
   quantity?: number
-  unit?: { id?: string; name: string }
+  /**
+   * L'API renvoie l'unité complète : les champs de formatage sont nécessaires
+   * pour l'afficher comme Mealie le fait (abréviation, pluriel).
+   */
+  unit?: {
+    id?: string
+    name: string
+    pluralName?: string | null
+    abbreviation?: string | null
+    pluralAbbreviation?: string | null
+    useAbbreviation?: boolean
+  }
   food?: { id?: string; name: string }
   note?: string
   display?: string

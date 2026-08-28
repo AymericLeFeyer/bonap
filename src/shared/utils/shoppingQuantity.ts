@@ -4,9 +4,10 @@
  */
 interface QuantityUnit {
   name: string
-  pluralName?: string
-  abbreviation?: string
-  pluralAbbreviation?: string
+  // L'API Mealie renvoie null (et non undefined) pour les champs non renseignés.
+  pluralName?: string | null
+  abbreviation?: string | null
+  pluralAbbreviation?: string | null
   useAbbreviation?: boolean
 }
 

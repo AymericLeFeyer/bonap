@@ -5,6 +5,7 @@ import { cn } from "../../lib/utils.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
 import { MarkdownContent } from "./MarkdownContent.tsx"
 import { formatQuantity } from "../../shared/utils/servings.ts"
+import { formatUnit } from "../../shared/utils/shoppingQuantity.ts"
 import { ingredientsForInstruction } from "../../shared/utils/instructionIngredients.ts"
 
 interface CookingModeProps {
@@ -148,10 +149,14 @@ function IngredientLine({
   servingsRatio: number
   compact?: boolean
 }) {
-  const scaledQuantity =
+  const scaledValue =
     ingredient.quantity != null && ingredient.quantity !== 0
-      ? formatQuantity(ingredient.quantity * servingsRatio)
+      ? ingredient.quantity * servingsRatio
       : null
+  const scaledQuantity = scaledValue != null ? formatQuantity(scaledValue) : null
+  // Même rendu d'unité que la liste de courses : abréviation quand l'unité en
+  // a une, et pluriel accordé sur la quantité mise à l'échelle.
+  const unitLabel = formatUnit(scaledValue ?? 1, ingredient.unit)
 
   return (
     <li className={cn("flex items-baseline gap-2", compact ? "text-lg" : "text-xl")}>
@@ -162,7 +167,7 @@ function IngredientLine({
         )}
       />
       {scaledQuantity && <span className="font-semibold tabular-nums">{scaledQuantity}</span>}
-      {ingredient.unit?.name && <span className="text-muted-foreground">{ingredient.unit.name}</span>}
+      {unitLabel && <span className="text-muted-foreground">{unitLabel}</span>}
       {ingredient.food?.name && <span className="font-medium">{ingredient.food.name}</span>}
       {ingredient.note && (
         <span className={cn("text-muted-foreground", compact ? "text-sm" : "text-base")}>
