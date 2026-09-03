@@ -78,4 +78,50 @@ describe("CookingMode", () => {
 
     expect(screen.queryByText("Pour cette étape")).not.toBeInTheDocument()
   })
+
+  it("affiche les unités comme Mealie : abréviation et pluriel accordé", () => {
+    // L'API renvoie l'unité complète ; `pluralName` et `abbreviation` valent
+    // null quand ils ne sont pas renseignés.
+    renderCookingMode({
+      ingredients: [
+        {
+          referenceId: "u-1",
+          quantity: 200,
+          unit: { name: "gramme", abbreviation: "g", useAbbreviation: true, pluralName: null },
+          food: { name: "farine" },
+        },
+        {
+          referenceId: "u-2",
+          quantity: 4,
+          unit: { name: "gousse", pluralName: "gousses", abbreviation: "", useAbbreviation: false },
+          food: { name: "ail" },
+        },
+      ],
+      instructions: [{ id: "s1", text: "Mélanger" }],
+    })
+
+    expect(screen.getByText("g")).toBeInTheDocument()
+    expect(screen.queryByText("gramme")).not.toBeInTheDocument()
+    expect(screen.getByText("gousses")).toBeInTheDocument()
+  })
+
+  it("accorde le pluriel sur la quantité mise à l'échelle, pas sur celle de base", () => {
+    // 1 gousse pour 4 portions, portées à 8 : 2 gousses.
+    renderCookingMode({
+      baseServings: 4,
+      targetServings: 8,
+      ingredients: [
+        {
+          referenceId: "u-3",
+          quantity: 1,
+          unit: { name: "gousse", pluralName: "gousses", useAbbreviation: false },
+          food: { name: "ail" },
+        },
+      ],
+      instructions: [{ id: "s1", text: "Mélanger" }],
+    })
+
+    expect(screen.getByText("2")).toBeInTheDocument()
+    expect(screen.getByText("gousses")).toBeInTheDocument()
+  })
 })
