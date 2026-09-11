@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
+import { getEnv, getIngressBasename, isDockerRuntime } from "../../shared/utils/env.ts"
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders, ShoppingCart } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
@@ -793,8 +793,11 @@ export function SettingsPage() {
             </Label>
             <Input
               readOnly
-              type="password"
-              value={getEnv('VITE_MEALIE_TOKEN') || 'Non défini'}
+              type={getEnv('VITE_MEALIE_TOKEN') ? 'password' : 'text'}
+              value={
+                getEnv('VITE_MEALIE_TOKEN') ||
+                (isDockerRuntime() ? 'Géré côté serveur (non exposé au navigateur)' : 'Non défini')
+              }
               className="bg-secondary/40 font-mono text-xs"
             />
           </div>

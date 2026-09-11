@@ -18,6 +18,7 @@ services:
       # - LLM_PROVIDER = anthropic | openai | google | mistral | perplexity | ollama | openrouter (must be lowercase)
       - LLM_PROVIDER=${LLM_PROVIDER:-}
       # - LLM_API_KEY = clé API du provider (non requise pour ollama)
+      #   ⚠️ servie en clair à tout visiteur (/env-config.js) : ne la définir que derrière un reverse-proxy authentifié (voir SECURITY.md)
       - LLM_API_KEY=${LLM_API_KEY:-}
       # - LLM_MODEL = modèle à utiliser (ex : claude-sonnet-4-6, gpt-4o, mistral-large-latest…)
       - LLM_MODEL=${LLM_MODEL:-}

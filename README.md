@@ -144,15 +144,19 @@ Open [http://localhost:5173](http://localhost:5173).
 | Variable | Required | Description |
 |---|---|---|
 | `VITE_MEALIE_URL` | Yes | URL of your Mealie instance. In Docker, this is also used by the nginx proxy — use the internal service name if running full-stack (e.g. `http://mealie:9000`). |
-| `VITE_MEALIE_TOKEN` | Yes | Mealie API Bearer token (Profile → API Tokens) |
+| `VITE_MEALIE_TOKEN` | Yes | Mealie API Bearer token (Profile → API Tokens). In Docker it stays server-side: nginx adds it to `/api` requests, it is never sent to the browser. Use a dedicated, non-admin Mealie account. |
+| `BONAP_EXPOSE_MEALIE_TOKEN` | No | `true` to restore the legacy behaviour (token written to the public `env-config.js`). Not recommended. |
 | `VITE_THEME` | No | Bonapp theme |
 | `VITE_ACCENT_COLORS` | No | Bonapp Accent Color |
 | `LLM_PROVIDER` | No | AI provider (lowercase). Must be one of: `anthropic`, `openai`, `google`, `mistral`, `perplexity`, `ollama`, `openrouter`, `opencode`, `opencode-go`. If set, overrides the in-app setting on all devices. |
-| `LLM_API_KEY` | No | API key for the AI provider. If set, the key is shared across all devices automatically. |
+| `LLM_API_KEY` | No | API key for the AI provider. If set, the key is shared across all devices automatically — **and readable by anyone who can reach Bonap** (served in clear by `/env-config.js`). Prefer entering the key in Settings (per-browser storage) unless Bonap sits behind an authenticated reverse proxy. |
 | `LLM_MODEL` | No | AI model to use (e.g. `claude-sonnet-4-6`). If set, overrides the in-app model selector. |
-| `LLM_OLLAMA_URL` | No | Base URL of your Ollama instance (e.g. `http://ollama:11434`). Used when `LLM_PROVIDER=ollama`. |
+| `LLM_OLLAMA_URL` | No | Base URL of your Ollama instance (e.g. `http://ollama:11434`). Used when `LLM_PROVIDER=ollama`. When set, it is the only Ollama target the server-side proxy will reach. |
+| `BONAP_DYNAMIC_OLLAMA_PROXY` | No | `false` to forbid the server-side proxy from reaching an Ollama URL typed in Settings (local network only otherwise). |
 
 > In Docker, all variables are injected at **container startup** (not at build time) via `window.__ENV__`. This means a single image works for any configuration — no rebuild needed. LLM variables set here are applied on all devices/browsers automatically.
+
+> ⚠️ **Bonap has no authentication of its own.** Anyone who can reach it can use Mealie with the configured token's permissions. Never expose it to the Internet without an authenticating reverse proxy. See [SECURITY.md](SECURITY.md).
 
 ---
 

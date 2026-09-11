@@ -6,6 +6,8 @@ const os = require('os')
 const path = require('path')
 const { execFile } = require('child_process')
 const { promisify } = require('util')
+const { safeRequest, assertUrlAllowed, BlockedAddressError } = require('./bff-net-guard.cjs')
+const { sanitizeSettings, validateSettingsPatch } = require('./bff-settings.cjs')
 const app = express()
 const PORT = 3001
 const execFileAsync = promisify(execFile)
@@ -31,6 +33,10 @@ app.use(express.json({ limit: '1mb' }))
 // Ollama server-side (injected via env vars from run.sh)
 const OLLAMA_URL = (process.env.OLLAMA_URL || '').replace(/\/+$/, '')
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || ''
+// Cible Ollama choisie par le navigateur (Settings) : active par défaut pour
+// ne pas casser les installations existantes, désactivable côté serveur.
+// Ignorée dès qu'OLLAMA_URL est défini (la cible serveur fait foi).
+const DYNAMIC_OLLAMA_ENABLED = !/^(0|false|no|off)$/i.test(process.env.BONAP_DYNAMIC_OLLAMA_PROXY || '')
 
 const BASE_URL = 'https://www.marmiton.org'
 const SEARCH_URL = `${BASE_URL}/recettes/recherche.aspx`
@@ -980,9 +986,10 @@ function extractRecipeHeuristic(html, pageUrl) {
 // Fetch and parse a single recipe page → {ingredients, steps, tags, prepTime, cookTime, totalTime}
 async function fetchRecipeDetails(url) {
   try {
-    const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
-    const html = await res.text()
+    // L'URL vient du JSON-LD renvoyé par Marmiton : on ne lui fait pas confiance.
+    const res = await safeRequest(url, { headers: HEADERS, timeoutMs: 8000 })
+    if (res.status < 200 || res.status >= 300) return null
+    const html = res.body.toString('utf8')
     const schemas = parseJsonLd(html)
     const recipe = schemas.find(s => {
       const t = s['@type']
@@ -1223,10 +1230,12 @@ app.get('/health', (_req, res) => res.json({
 // are shared between http://ip:8123 and https://domain access.
 const SETTINGS_FILE = '/data/bonap-settings.json'
 
+// Toujours filtré (voir bff-settings.cjs) : un fichier écrit par une version
+// antérieure peut contenir des clés inconnues ou une clé API.
 function readSettings() {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
-      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))
+      return sanitizeSettings(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')))
     }
   } catch { /* ignore */ }
   return {}
@@ -1234,19 +1243,25 @@ function readSettings() {
 
 function writeSettings(data) {
   try {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8')
+    const tmp = `${SETTINGS_FILE}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8')
+    fs.renameSync(tmp, SETTINGS_FILE)
   } catch (e) {
     console.error('[Bonap] Failed to write settings:', e.message)
   }
 }
+
+// Purge au démarrage les secrets / clés inconnues laissés par une version antérieure.
+if (fs.existsSync(SETTINGS_FILE)) writeSettings(readSettings())
 
 app.get('/settings', (_req, res) => {
   res.json(readSettings())
 })
 
 app.patch('/settings', (req, res) => {
-  const current = readSettings()
-  const updated = { ...current, ...req.body }
+  const result = validateSettingsPatch(req.body)
+  if (!result.ok) return res.status(400).json({ error: result.error })
+  const updated = { ...readSettings(), ...result.patch }
   writeSettings(updated)
   res.json(updated)
 })
@@ -1390,7 +1405,7 @@ app.post('/marmiton/nutrition-estimate', handleNutritionEstimate)
 
 // Call Ollama server-side to extract a recipe from text
 // Returns { data, error } to provide explicit diagnostics back to the UI.
-async function callOllamaServerSide(ollamaUrl, ollamaModel, text) {
+async function callOllamaServerSide(ollamaUrl, ollamaModel, text, trusted) {
   if (!ollamaUrl || !ollamaModel) {
     return { data: null, error: 'Configuration Ollama manquante (URL ou modèle)' }
   }
@@ -1404,27 +1419,46 @@ async function callOllamaServerSide(ollamaUrl, ollamaModel, text) {
 Réponds UNIQUEMENT avec un objet JSON valide (sans markdown ni explication) de cette forme exacte:
 {"name":"Nom de la recette","ingredients":["ingrédient 1","ingrédient 2"],"steps":["Etape 1...","Etape 2..."],"tags":["tag1"],"imageUrl":"","prepTime":"","cookTime":"","totalTime":""}
 Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou tableau vide.`
+  const payload = JSON.stringify({
+    model: ollamaModel,
+    stream: false,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: text },
+    ],
+  })
+  // Keep this lower than nginx /api/bonap proxy_read_timeout to avoid gateway 504.
+  const timeoutMs = 45000
   try {
-    const r = await fetch(`${ollamaUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: ollamaModel,
-        stream: false,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: text },
-        ],
-      }),
-      // Keep this lower than nginx /api/bonap proxy_read_timeout to avoid gateway 504.
-      signal: AbortSignal.timeout(45000),
-    })
-    if (!r.ok) {
-      const errText = await r.text().catch(() => '')
-      const compact = errText.replace(/\s+/g, ' ').trim().slice(0, 220)
-      return { data: null, error: `Ollama HTTP ${r.status}${compact ? `: ${compact}` : ''}` }
+    let data
+    if (trusted) {
+      // URL fixée par l'administrateur (OLLAMA_URL) : aucune restriction.
+      const r = await fetch(`${ollamaUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '')
+        const compact = errText.replace(/\s+/g, ' ').trim().slice(0, 220)
+        return { data: null, error: `Ollama HTTP ${r.status}${compact ? `: ${compact}` : ''}` }
+      }
+      data = await r.json()
+    } else {
+      // URL venue du navigateur : réseau local uniquement, pas de redirection,
+      // et pas de corps d'erreur relayé (évite d'en faire un oracle réseau).
+      const r = await safeRequest(`${ollamaUrl}/api/chat`, {
+        policy: 'local',
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+        timeoutMs,
+        maxRedirects: 0,
+      })
+      if (r.status < 200 || r.status >= 300) return { data: null, error: `Ollama HTTP ${r.status}` }
+      data = JSON.parse(r.body.toString('utf8'))
     }
-    const data = await r.json()
     const content = data.message?.content ?? ''
     if (!content.trim()) {
       return { data: null, error: 'Réponse Ollama vide' }
@@ -1437,6 +1471,9 @@ Les durées au format "X min" ou "Xh" ou "XhXX". Si absent, laisse vide ou table
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[Bonap BFF] Ollama server-side error:', msg)
+    if (!trusted && !(e instanceof BlockedAddressError)) {
+      return { data: null, error: 'Ollama injoignable' }
+    }
     return { data: null, error: msg || 'Erreur inconnue lors de l\'appel Ollama' }
   }
 }
@@ -1450,23 +1487,24 @@ app.get('/marmiton/fetch-recipe', async (req, res) => {
   if (!rawUrl) return res.status(400).json({ error: 'Paramètre url manquant' })
 
   // Effective Ollama config: env vars take priority, then query params (in-app settings)
-  const effectiveOllamaUrl = (OLLAMA_URL || (req.query.ollamaUrl ?? '').trim()).replace(/\/+$/, '')
-  const effectiveOllamaModel = OLLAMA_MODEL || (req.query.ollamaModel ?? '').trim()
+  const ollamaFromEnv = !!OLLAMA_URL
+  const queryOllamaUrl = DYNAMIC_OLLAMA_ENABLED ? String(req.query.ollamaUrl ?? '').trim() : ''
+  const effectiveOllamaUrl = (OLLAMA_URL || queryOllamaUrl).replace(/\/+$/, '')
+  const effectiveOllamaModel = OLLAMA_MODEL || String(req.query.ollamaModel ?? '').trim()
 
-  // Basic security: only http/https, block private IPs
-  let parsed
-  try { parsed = new URL(rawUrl) } catch { return res.status(400).json({ error: 'URL invalide' }) }
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    return res.status(400).json({ error: 'Protocole non supporté' })
-  }
-  if (/^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(parsed.hostname)) {
-    return res.status(400).json({ error: 'URL non autorisée' })
+  // SSRF : seules les IP publiques sont joignables. La vérification porte sur
+  // l'IP résolue au moment de la connexion (et à chaque redirection), pas sur
+  // la chaîne du hostname — voir bff-net-guard.cjs.
+  try {
+    assertUrlAllowed(rawUrl, 'public')
+  } catch (e) {
+    return res.status(400).json({ error: e.message })
   }
 
   try {
-    const r = await fetch(rawUrl, { headers: HEADERS, signal: AbortSignal.timeout(12000) })
-    if (!r.ok) return res.status(400).json({ error: `Erreur HTTP ${r.status}` })
-    const html = await r.text()
+    const r = await safeRequest(rawUrl, { headers: HEADERS, timeoutMs: 12000 })
+    if (r.status < 200 || r.status >= 300) return res.status(400).json({ error: `Erreur HTTP ${r.status}` })
+    const html = r.body.toString('utf8')
 
     // ⓪ Dedicated extraction for lefigaro.fr (prefer HTML blocks over truncated JSON-LD)
     if (/lefigaro\.fr/i.test(rawUrl)) {
@@ -1572,7 +1610,7 @@ app.get('/marmiton/fetch-recipe', async (req, res) => {
     // ⑦ If no schema and Ollama is configured, call it server-side (avoids nginx timeout)
     if (!schema && effectiveOllamaUrl && effectiveOllamaModel) {
       console.log(`[Bonap BFF] No JSON-LD found, calling Ollama server-side (${effectiveOllamaUrl}, ${effectiveOllamaModel})...`)
-      const ollamaResult = await callOllamaServerSide(effectiveOllamaUrl, effectiveOllamaModel, text)
+      const ollamaResult = await callOllamaServerSide(effectiveOllamaUrl, effectiveOllamaModel, text, ollamaFromEnv)
       const llmResult = ollamaResult.data
       const ollamaError = ollamaResult.error
       if (llmResult && llmResult.name) {
@@ -1593,50 +1631,60 @@ app.get('/marmiton/fetch-recipe', async (req, res) => {
     // text is still returned for browser-side LLM fallback (e.g. Anthropic, OpenAI)
     res.json({ schema, text })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    if (e instanceof BlockedAddressError) return res.status(400).json({ error: e.message })
+    console.error('[Bonap BFF] fetch-recipe error:', e.message)
+    res.status(502).json({ error: 'Impossible de récupérer la page' })
   }
 })
 
 // GET /image?url=<encoded_url> — proxy pour télécharger l'image sans CORS
+// Seuls des formats raster sont relayés : servir du SVG ou du HTML distant
+// depuis l'origine de Bonap permettrait d'y exécuter du script (XSS).
+const PROXIED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+const MAX_PROXIED_IMAGE_BYTES = 10 * 1024 * 1024
+
 app.get('/marmiton/image', async (req, res) => {
-  const url = (req.query.url ?? '').trim()
-  let parsedImg
-  try { parsedImg = new URL(url) } catch { return res.status(400).json({ error: 'URL invalide' }) }
-  if (!['http:', 'https:'].includes(parsedImg.protocol)) {
-    return res.status(400).json({ error: 'URL invalide' })
+  const url = String(req.query.url ?? '').trim()
+  try {
+    assertUrlAllowed(url, 'public')
+  } catch (e) {
+    return res.status(400).json({ error: e.message })
   }
   try {
-    const r = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(10000) })
-    if (!r.ok) return res.status(r.status).end()
-    const buf = await r.arrayBuffer()
-    res.set('Content-Type', r.headers.get('content-type') ?? 'image/jpeg')
+    const r = await safeRequest(url, { headers: HEADERS, timeoutMs: 10000, maxBytes: MAX_PROXIED_IMAGE_BYTES })
+    if (r.status < 200 || r.status >= 300) return res.status(502).end()
+    const contentType = String(r.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    if (!PROXIED_IMAGE_TYPES.has(contentType)) {
+      return res.status(415).json({ error: 'Le contenu distant n\'est pas une image' })
+    }
+    res.set('Content-Type', contentType)
+    res.set('X-Content-Type-Options', 'nosniff')
+    res.set('Content-Security-Policy', "default-src 'none'; sandbox")
     res.set('Cache-Control', 'public, max-age=86400')
-    res.send(Buffer.from(buf))
+    res.send(r.body)
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    if (e instanceof BlockedAddressError) return res.status(400).json({ error: e.message })
+    console.error('[Bonap BFF] image proxy error:', e.message)
+    res.status(502).json({ error: 'Impossible de récupérer l\'image' })
   }
 })
 
-// ─── Dynamic Ollama proxy ─────────────────────────────────────────────────────
-// Allows the browser to reach a local Ollama instance via server-side forwarding,
-// avoiding mixed-content errors (HTTPS page → HTTP Ollama).
-// Restricted to private/local network addresses only (no SSRF to public internet).
+// ─── Ollama proxy ─────────────────────────────────────────────────────────────
+// Allows the browser to reach an Ollama instance via server-side forwarding,
+// avoiding mixed-content errors (HTTPS page → HTTP Ollama) and Ollama's CORS.
+//
+// Ce n'est PAS un proxy générique :
+//   - si OLLAMA_URL est défini, c'est la seule cible (l'en-tête est ignoré) ;
+//   - sinon, la cible X-Ollama-Target (réglage Settings) doit résoudre vers le
+//     réseau local (jamais link-local / métadonnées cloud), vérifié à la
+//     connexion ; désactivable via BONAP_DYNAMIC_OLLAMA_PROXY=false ;
+//   - seuls les endpoints Ollama utiles, en GET/POST JSON, sont relayés ;
+//   - seules les réponses JSON sont renvoyées, les erreurs réseau sont génériques
+//     (pas d'oracle de scan de ports).
 
-function isPrivateOrLocalUrl(rawUrl) {
-  try {
-    const u = new URL(rawUrl)
-    const h = u.hostname
-    return (
-      h === 'localhost' ||
-      h === '127.0.0.1' ||
-      /^10\./.test(h) ||
-      /^192\.168\./.test(h) ||
-      /^172\.(1[6-9]|2[0-9]|3[01])\./.test(h) ||
-      h.endsWith('.local')
-    )
-  } catch {
-    return false
-  }
+const OLLAMA_ROUTES = {
+  GET: new Set(['/api/tags', '/api/version', '/api/ps']),
+  POST: new Set(['/api/chat', '/api/generate', '/api/show', '/api/embed', '/api/embeddings']),
 }
 
 // Mounted with app.use() rather than a wildcard path: `/ollama-proxy/*path` is
@@ -1646,27 +1694,74 @@ function isPrivateOrLocalUrl(rawUrl) {
 // 404. A mount path behaves identically on both majors, and `req.url` then holds
 // the remaining subpath, query string included.
 app.use('/ollama-proxy', async (req, res) => {
-  const target = req.headers['x-ollama-target']
-  if (typeof target !== 'string' || !isPrivateOrLocalUrl(target)) {
-    return res
-      .status(400)
-      .json({ error: 'X-Ollama-Target manquant ou non autorisé (réseau local uniquement)' })
+  const subpath = new URL(req.url, 'http://localhost').pathname
+  if (!OLLAMA_ROUTES[req.method]?.has(subpath)) {
+    return res.status(404).json({ error: 'Endpoint Ollama non relayé' })
   }
-  const url = `${target.replace(/\/+$/, '')}${req.url}`
+
+  let target
+  let policy
+  if (OLLAMA_URL) {
+    target = OLLAMA_URL
+    policy = null
+  } else {
+    if (!DYNAMIC_OLLAMA_ENABLED) {
+      return res.status(403).json({ error: 'Proxy Ollama dynamique désactivé : définissez LLM_OLLAMA_URL côté serveur' })
+    }
+    target = req.headers['x-ollama-target']
+    policy = 'local'
+    try {
+      if (typeof target !== 'string') throw new BlockedAddressError('X-Ollama-Target manquant')
+      assertUrlAllowed(target, policy)
+    } catch (e) {
+      return res.status(400).json({ error: e.message })
+    }
+  }
+
+  const url = `${target.replace(/\/+$/, '')}${subpath}`
+  const body = req.method === 'POST' ? JSON.stringify(req.body ?? {}) : undefined
   try {
-    const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
-    const upstreamRes = await fetch(url, {
-      method: req.method,
-      headers: { 'content-type': 'application/json' },
-      body: hasBody ? JSON.stringify(req.body) : undefined,
-    })
-    res.status(upstreamRes.status)
-    const ct = upstreamRes.headers.get('content-type')
-    if (ct) res.set('content-type', ct)
-    const body = await upstreamRes.text()
-    res.send(body)
+    let status
+    let contentType
+    let payload
+    if (policy === null) {
+      // Cible fixée par l'administrateur : pas de filtrage d'IP.
+      const upstream = await fetch(url, {
+        method: req.method,
+        headers: { 'content-type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(115000),
+      })
+      status = upstream.status
+      contentType = upstream.headers.get('content-type') || ''
+      payload = Buffer.from(await upstream.arrayBuffer())
+    } else {
+      const upstream = await safeRequest(url, {
+        policy,
+        method: req.method,
+        headers: { 'content-type': 'application/json' },
+        body,
+        timeoutMs: 115000, // < proxy_read_timeout nginx (120s)
+        maxBytes: 20 * 1024 * 1024,
+        maxRedirects: 0,
+      })
+      status = upstream.status
+      contentType = String(upstream.headers['content-type'] || '')
+      payload = upstream.body
+    }
+    if (!/^application\/(x-)?(nd)?json\b/i.test(contentType)) {
+      return res.status(502).json({ error: 'Réponse inattendue : la cible ne semble pas être Ollama' })
+    }
+    res.status(status)
+    res.set('content-type', contentType)
+    res.set('X-Content-Type-Options', 'nosniff')
+    res.send(payload)
   } catch (e) {
-    res.status(502).json({ error: `Proxy Ollama dynamique : ${e.message}` })
+    if (e instanceof BlockedAddressError) {
+      return res.status(400).json({ error: e.message })
+    }
+    console.error('[Bonap BFF] Ollama proxy error:', e.message)
+    res.status(502).json({ error: 'Ollama injoignable' })
   }
 })
 

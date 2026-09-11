@@ -175,6 +175,13 @@ export default function DocsLLMPage() {
         ]}
       />
 
+      <Alert type="warning">
+        <strong>LLM_API_KEY est lisible par tout visiteur</strong> : les appels IA partant du navigateur,
+        la clé est servie en clair par <code>/env-config.js</code>. Bonap n'ayant pas d'authentification propre,
+        ne définissez cette variable que si Bonap est derrière un reverse-proxy authentifié (ou l'ingress
+        Home Assistant). Sinon, saisissez la clé dans les Paramètres : elle reste dans votre navigateur.
+      </Alert>
+
       <DocH2>Providers supportés</DocH2>
       <DocsTable
         headers={['Provider', 'Support', 'Notes', 'Modèles conseillés']}
