@@ -8,26 +8,15 @@ test.describe("Shopping — ajouter les ingrédients d'une recette planifiée au
     await mockAllApiRoutes(page)
   })
 
-  test("cliquer 'Ajouter au panier' déclenche POST /shopping/items/create-bulk avec les ingrédients des recettes planifiées", async ({ page }) => {
-    let createBulkCalled = false
-    let createBulkPayload: Array<{ isFood: boolean; note: string; shoppingListId: string }> = []
+  test("cliquer 'Ajouter au panier' envoie les recettes planifiées à l'endpoint d'expansion de Mealie", async ({ page }) => {
+    let addRecipeCalled = false
+    let payload: Array<{ recipeId: string; recipeIncrementQuantity: number }> = []
 
-    await page.route("**/api/households/shopping/items/create-bulk", async (route) => {
+    await page.route("**/api/households/shopping/lists/*/recipe", async (route) => {
       if (route.request().method() === "POST") {
-        createBulkCalled = true
-        const body = (route.request().postDataJSON() as unknown[]) ?? []
-        createBulkPayload = body as Array<{ isFood: boolean; note: string; shoppingListId: string }>
-        await route.fulfill({
-          json: body.map((_, i) => ({
-            id: `item-new-${i}`,
-            shoppingListId: "list-bonap",
-            checked: false,
-            position: 10 + i,
-            isFood: false,
-            note: "Nouvel article",
-            quantity: 1,
-          })),
-        })
+        addRecipeCalled = true
+        payload = (route.request().postDataJSON() as typeof payload) ?? []
+        await route.fulfill({ json: [] })
       } else {
         await route.continue()
       }
@@ -39,20 +28,17 @@ test.describe("Shopping — ajouter les ingrédients d'une recette planifiée au
     await expect(addToCartButton).toBeVisible()
     await addToCartButton.click()
 
-    await expect.poll(() => createBulkCalled).toBe(true)
+    await expect.poll(() => addRecipeCalled).toBe(true)
 
-    expect(createBulkPayload.length).toBeGreaterThan(0)
+    expect(payload.length).toBeGreaterThan(0)
 
-    for (const item of createBulkPayload) {
-      expect(item.isFood).toBe(false)
-      expect(item.note).toContain(" — ")
-      expect(item.shoppingListId).toBe("list-bonap")
+    for (const entry of payload) {
+      expect(entry.recipeId).toBeTruthy()
+      expect(entry.recipeIncrementQuantity).toBeGreaterThan(0)
     }
 
-    const notes = createBulkPayload.map((i) => i.note).join("\n")
-    expect(notes).toContain("farine")
-    expect(notes).toContain("mozzarella")
-    expect(notes).toContain("Pizza maison")
+    // Les recettes planifiées dans les fixtures doivent être transmises par id.
+    expect(payload.map((e) => e.recipeId)).toContain("abc123")
 
     await expect(page.getByText("Ajouté !", { exact: true })).toBeVisible({ timeout: 5000 })
   })
