@@ -20,6 +20,7 @@ test.describe("Suggestions — ajouter une suggestion IA au planning", () => {
 
   test("sélectionner un critère, générer, ajouter la suggestion à un créneau Déj. déclenche POST /mealplans avec recipeId et entryType", async ({ page }) => {
     let llmCalled = false
+    let llmRequestBody = ""
     let addMealCalled = false
     let addMealPayload: { date?: string; entryType?: string; recipeId?: string } = {}
 
@@ -27,6 +28,7 @@ test.describe("Suggestions — ajouter une suggestion IA au planning", () => {
     await page.route("**/api.anthropic.com/v1/messages", async (route) => {
       if (route.request().method() === "POST") {
         llmCalled = true
+        llmRequestBody = route.request().postData() ?? ""
         await route.fulfill({
           json: {
             content: [
@@ -38,7 +40,7 @@ test.describe("Suggestions — ajouter une suggestion IA au planning", () => {
           },
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -62,20 +64,27 @@ test.describe("Suggestions — ajouter une suggestion IA au planning", () => {
           },
         })
       } else {
-        await route.continue()
+        // fallback() et non continue() : continue() enverrait la requête au vrai
+        // réseau au lieu de la rendre aux mocks de mockAllApiRoutes.
+        await route.fallback()
       }
     })
 
     await page.goto("/suggestions")
 
     // Sélectionner un critère — le chip est un <div> avec onClick, on clique sur son texte.
-    await page.getByText("Rapide (≤ 30 min)", { exact: true }).click()
+    // Scopé au bloc « Critères prédéfinis » : WeeklyMealGenerator, plus bas sur la page,
+    // propose le même chip.
+    const predefinedCriteria = page.getByText("Critères prédéfinis", { exact: true }).locator("..")
+    await predefinedCriteria.getByText("Rapide (≤ 30 min)", { exact: true }).click()
 
     // Générer les suggestions.
     await page.getByRole("button", { name: "Suggérer 5 repas", exact: true }).click()
 
     // Attendre que l'IA mockée soit appelée et que la suggestion s'affiche.
     await expect.poll(() => llmCalled).toBe(true)
+    // Le critère sélectionné doit être transmis au LLM dans le prompt.
+    expect(llmRequestBody).toContain("Rapide (≤ 30 min)")
     await expect(page.getByText("Pizza maison", { exact: true })).toBeVisible({ timeout: 5000 })
 
     // Cliquer "Ajouter" sur la suggestion → ouvre PlanningSlotPicker.
