@@ -23,10 +23,25 @@ else
   OLLAMA_FRONTEND_URL=""
 fi
 
+# Le token Mealie reste côté serveur : nginx l'injecte sur /api pour les
+# requêtes du front (en-tête X-Bonap-Client). env-config.js est public.
+MEALIE_AUTH=""
+if [ -n "${MEALIE_TOKEN}" ] && [ "${MEALIE_TOKEN}" != "null" ]; then
+  if printf '%s' "${MEALIE_TOKEN}" | grep -Eq '^[A-Za-z0-9._~+/=-]+$'; then
+    MEALIE_AUTH="Bearer ${MEALIE_TOKEN}"
+  else
+    echo "[Bonap] ⚠️  mealie_token contient des caractères inattendus : token ignoré."
+  fi
+fi
+
+if [ -n "${LLM_API_KEY}" ]; then
+  echo "[Bonap] ⚠️  llm_api_key est défini : la clé est servie à tout visiteur via env-config.js."
+fi
+
 cat > /usr/share/nginx/html/env-config.js <<ENVEOF
 window.__ENV__ = {
   VITE_MEALIE_URL: "${MEALIE_URL_CLEAN}",
-  VITE_MEALIE_TOKEN: "${MEALIE_TOKEN}",
+  VITE_MEALIE_TOKEN: "",
   VITE_THEME: "",
   VITE_ACCENT_COLORS: "",
   LLM_PROVIDER: "${LLM_PROVIDER}",
@@ -56,6 +71,11 @@ fi
 
 # Build nginx config explicitly so HA ingress and BFF route stay consistent
 cat > /tmp/nginx_header.conf << 'NGINXEOF'
+map "$http_x_bonap_client:$http_authorization" $bonap_mealie_auth {
+    default $http_authorization;
+NGINXEOF
+printf '    "1:"    "%s";\n}\n\n' "${MEALIE_AUTH}" >> /tmp/nginx_header.conf
+cat >> /tmp/nginx_header.conf << 'NGINXEOF'
 server {
     listen 3000;
     server_name _;
@@ -114,6 +134,8 @@ NGINXEOF
 printf '\n    location ^~ /api/ {\n' >> /tmp/nginx_header.conf
 printf "        proxy_pass %s;\n" "${MEALIE_URL_CLEAN}" >> /tmp/nginx_header.conf
 cat >> /tmp/nginx_header.conf << 'NGINXEOF'
+        proxy_set_header Authorization $bonap_mealie_auth;
+        proxy_set_header X-Bonap-Client "";
         proxy_http_version 1.1;
         proxy_ssl_server_name on;
         proxy_set_header Host $proxy_host;
@@ -151,8 +173,7 @@ NGINXEOF
 
 cp /tmp/nginx_header.conf /etc/nginx/http.d/default.conf
 
-echo "[Bonap] nginx config:"
-cat /etc/nginx/http.d/default.conf
+# Pas de dump de la config dans les logs de l'addon : elle contient le token Mealie.
 
 nginx -t
 

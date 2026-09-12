@@ -29,7 +29,7 @@ RUN apk add --no-cache nginx gettext jq nodejs unzip
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY --from=marmiton-builder /proxy/node_modules /proxy/node_modules
 
-COPY ha-addon/bonap-bff.cjs /proxy/bonap-bff.cjs
+COPY ha-addon/bonap-bff.cjs ha-addon/bff-net-guard.cjs ha-addon/bff-settings.cjs /proxy/
 
 COPY ha-addon/nginx.conf /etc/nginx/templates/default.conf.template
 

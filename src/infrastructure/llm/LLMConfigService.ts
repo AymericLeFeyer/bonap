@@ -201,10 +201,11 @@ async function testGoogle(
   model: string,
 ): Promise<{ ok: boolean; message: string }> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    // Clé en en-tête (recommandation Google), jamais en query string.
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] }),
     },
   )
