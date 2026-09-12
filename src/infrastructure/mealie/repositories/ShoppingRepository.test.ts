@@ -32,7 +32,7 @@ function rawItem(overrides = {}) {
     isFood: true,
     note: "Lait",
     quantity: 2,
-    unit: { name: "L" },
+    unit: { id: "u-l", name: "litre", abbreviation: "L", useAbbreviation: true },
     food: { name: "lait" },
     label: { id: "label-1", name: "Produits laitiers", color: "#aaa" },
     display: "2 L lait",
@@ -99,7 +99,9 @@ describe("ShoppingRepository", () => {
       expect(items).toHaveLength(1)
       const item = items[0]
       expect(item.foodName).toBe("lait")
-      expect(item.unitName).toBe("L")
+      expect(item.unit?.name).toBe("litre")
+      expect(item.unit?.abbreviation).toBe("L")
+      expect(item.unit?.useAbbreviation).toBe(true)
       expect(item.label?.name).toBe("Produits laitiers")
       expect(item.source).toBe("mealie")
       expect(labels).toHaveLength(1)
@@ -192,6 +194,30 @@ describe("ShoppingRepository", () => {
       client.put.mockResolvedValue([])
       const result = await repo.updateItem("list-1", itemUpdate)
       expect(result.id).toBe("item-1")
+    })
+  })
+
+  // ── addRecipes — endpoint natif d'expansion des recettes ────────────────────
+
+  describe("addRecipes", () => {
+    it("poste sur l'endpoint natif avec le facteur d'échelle", async () => {
+      client.post.mockResolvedValue(undefined)
+      await repo.addRecipes("list-1", [
+        { recipeId: "r1", quantity: 1.5 },
+        { recipeId: "r2", quantity: 1 },
+      ])
+      expect(client.post).toHaveBeenCalledWith(
+        "/api/households/shopping/lists/list-1/recipe",
+        [
+          { recipeId: "r1", recipeIncrementQuantity: 1.5 },
+          { recipeId: "r2", recipeIncrementQuantity: 1 },
+        ],
+      )
+    })
+
+    it("n'appelle pas l'API sans entrée", async () => {
+      await repo.addRecipes("list-1", [])
+      expect(client.post).not.toHaveBeenCalled()
     })
   })
 })

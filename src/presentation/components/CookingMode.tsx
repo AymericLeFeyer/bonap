@@ -5,6 +5,8 @@ import { cn } from "../../lib/utils.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
 import { MarkdownContent } from "./MarkdownContent.tsx"
 import { formatQuantity } from "../../shared/utils/servings.ts"
+import { formatUnit } from "../../shared/utils/shoppingQuantity.ts"
+import { ingredientsForInstruction } from "../../shared/utils/instructionIngredients.ts"
 
 interface CookingModeProps {
   recipeName: string
@@ -101,6 +103,8 @@ export function CookingMode({
               step={step + 1}
               total={totalSteps}
               instruction={currentInstruction!}
+              ingredients={ingredients}
+              servingsRatio={servingsRatio}
             />
           )}
         </div>
@@ -133,6 +137,47 @@ export function CookingMode({
   )
 }
 
+// ─── Ligne d'ingrédient ───────────────────────────────────────────────────────
+
+/** Ingrédient formaté, quantité mise à l'échelle des portions demandées. */
+function IngredientLine({
+  ingredient,
+  servingsRatio,
+  compact = false,
+}: {
+  ingredient: MealieIngredient
+  servingsRatio: number
+  compact?: boolean
+}) {
+  const scaledValue =
+    ingredient.quantity != null && ingredient.quantity !== 0
+      ? ingredient.quantity * servingsRatio
+      : null
+  const scaledQuantity = scaledValue != null ? formatQuantity(scaledValue) : null
+  // Même rendu d'unité que la liste de courses : abréviation quand l'unité en
+  // a une, et pluriel accordé sur la quantité mise à l'échelle.
+  const unitLabel = formatUnit(scaledValue ?? 1, ingredient.unit)
+
+  return (
+    <li className={cn("flex items-baseline gap-2", compact ? "text-lg" : "text-xl")}>
+      <span
+        className={cn(
+          "shrink-0 rounded-full bg-primary",
+          compact ? "h-1.5 w-1.5 mt-2" : "h-2 w-2 mt-2.5",
+        )}
+      />
+      {scaledQuantity && <span className="font-semibold tabular-nums">{scaledQuantity}</span>}
+      {unitLabel && <span className="text-muted-foreground">{unitLabel}</span>}
+      {ingredient.food?.name && <span className="font-medium">{ingredient.food.name}</span>}
+      {ingredient.note && (
+        <span className={cn("text-muted-foreground", compact ? "text-sm" : "text-base")}>
+          {" "}— {ingredient.note}
+        </span>
+      )}
+    </li>
+  )
+}
+
 // ─── Ingrédients screen ───────────────────────────────────────────────────────
 
 function IngredientsScreen({
@@ -162,25 +207,9 @@ function IngredientsScreen({
         )}
       </div>
       <ul className="space-y-4">
-        {filtered.map((ing, i) => {
-          const scaledQuantity =
-            ing.quantity != null && ing.quantity !== 0
-              ? formatQuantity(ing.quantity * servingsRatio)
-              : null
-          return (
-            <li key={i} className="flex items-baseline gap-2 text-xl">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-primary mt-2.5" />
-              {scaledQuantity && (
-                <span className="font-semibold tabular-nums">{scaledQuantity}</span>
-              )}
-              {ing.unit?.name && (
-                <span className="text-muted-foreground">{ing.unit.name}</span>
-              )}
-              {ing.food?.name && <span className="font-medium">{ing.food.name}</span>}
-              {ing.note && <span className="text-muted-foreground text-base"> — {ing.note}</span>}
-            </li>
-          )
-        })}
+        {filtered.map((ing, i) => (
+          <IngredientLine key={i} ingredient={ing} servingsRatio={servingsRatio} />
+        ))}
       </ul>
     </div>
   )
@@ -192,11 +221,19 @@ function InstructionScreen({
   step,
   total,
   instruction,
+  ingredients,
+  servingsRatio,
 }: {
   step: number
   total: number
   instruction: MealieInstruction
+  ingredients: MealieIngredient[]
+  servingsRatio: number
 }) {
+  // Vide pour les recettes qui n'associent pas leurs ingrédients aux étapes :
+  // l'encart disparaît alors complètement.
+  const stepIngredients = ingredientsForInstruction(instruction, ingredients)
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -213,6 +250,19 @@ function InstructionScreen({
 
       {instruction.title && (
         <h3 className="font-heading text-2xl font-semibold">{instruction.title}</h3>
+      )}
+
+      {stepIngredients.length > 0 && (
+        <div className="rounded-[var(--radius-xl)] border border-border/60 bg-secondary/40 px-5 py-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            Pour cette étape
+          </p>
+          <ul className="space-y-2.5">
+            {stepIngredients.map((ing, i) => (
+              <IngredientLine key={i} ingredient={ing} servingsRatio={servingsRatio} compact />
+            ))}
+          </ul>
+        </div>
       )}
       <MarkdownContent className="text-2xl leading-relaxed text-foreground [&_p]:leading-relaxed [&_ul]:ml-6 [&_ol]:ml-6">
         {instruction.text ?? ""}

@@ -1,6 +1,13 @@
 import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../entities/ShoppingItem.ts"
 import type { MealieShoppingItemCreate, MealieShoppingItemUpdate } from "../../../shared/types/mealie.ts"
 
+/** A recipe to expand into the list, with a scaling factor for its quantities. */
+export interface ShoppingRecipeEntry {
+  recipeId: string
+  /** 1 = quantités de la recette telles quelles, 1.5 = une fois et demie. */
+  quantity: number
+}
+
 export interface IShoppingRepository {
   /** Fetches or creates the default shopping list */
   getOrCreateDefaultList(): Promise<ShoppingList>
@@ -16,6 +23,12 @@ export interface IShoppingRepository {
 
   /** Adds multiple items in a single bulk call */
   addItems(listId: string, items: MealieShoppingItemCreate[]): Promise<void>
+
+  /**
+   * Adds whole recipes to the list, letting Mealie expand their ingredients.
+   * `quantity` scales every ingredient of that recipe.
+   */
+  addRecipes(listId: string, entries: ShoppingRecipeEntry[]): Promise<void>
 
   /** Checks or unchecks an item */
   updateItem(listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem>

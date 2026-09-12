@@ -168,6 +168,9 @@ export const SHOPPING_LIST_BONAP_RESPONSE = {
   id: "list-bonap",
   name: "Bonap",
   listItems: [
+    // Mealie renvoie `unit` et `food` comme objets imbriqués, pas comme
+    // champs plats (vérifié sur une instance v3.22.0) — c'est cette forme
+    // que lit ShoppingRepository.mapItem().
     {
       id: "item1",
       shoppingListId: "list-bonap",
@@ -176,10 +179,8 @@ export const SHOPPING_LIST_BONAP_RESPONSE = {
       isFood: true,
       note: "farine",
       quantity: 500,
-      unitId: "u1",
-      unitName: "g",
-      foodId: "f1",
-      foodName: "farine",
+      unit: { id: "u1", name: "gramme", abbreviation: "g", useAbbreviation: true },
+      food: { id: "f1", name: "farine" },
       label: { id: "label1", name: "Féculents", color: "#ff0000" },
       display: "500 g farine",
     },
@@ -191,12 +192,24 @@ export const SHOPPING_LIST_BONAP_RESPONSE = {
       isFood: true,
       note: "mozzarella",
       quantity: 200,
-      unitId: "u3",
-      unitName: "g",
-      foodId: "f3",
-      foodName: "mozzarella",
+      unit: { id: "u1", name: "gramme", abbreviation: "g", useAbbreviation: true },
+      food: { id: "f3", name: "mozzarella" },
       label: { id: "label2", name: "Produits laitiers", color: "#00ff00" },
       display: "200 g mozzarella",
+    },
+    // Unité sans abréviation, au pluriel — le cas « 11 gousses d'ail » de #98.
+    {
+      id: "item3",
+      shoppingListId: "list-bonap",
+      checked: false,
+      position: 2,
+      isFood: true,
+      note: "ail",
+      quantity: 11,
+      unit: { id: "u5", name: "gousse", pluralName: "gousses", useAbbreviation: false },
+      food: { id: "f6", name: "ail" },
+      label: { id: "label1", name: "Féculents", color: "#ff0000" },
+      display: "11 gousses ail",
     },
   ],
   // Format attendu par ShoppingRepository.getItems() : { label: { id, name, color } }

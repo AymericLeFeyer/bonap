@@ -1,6 +1,6 @@
 import type { MealieMealPlan, MealieRecipe } from "../types/mealie.ts"
 import { getCaloriesFromTags } from "./calorie.ts"
-import { parseServings } from "./servings.ts"
+import { getRecipeServings } from "./servings.ts"
 
 export interface AutoPlanSlot {
   date: string
@@ -78,7 +78,7 @@ function normalizeKey(value: string): string {
 }
 
 function getNutritionProfile(recipe: MealieRecipe): NutritionProfile {
-  const servings = parseServings(recipe.recipeYield)
+  const servings = getRecipeServings(recipe)
   // Normalise par portion (valeurs par personne) pour comparer aux MEAL_TARGETS qui sont par personne.
   // On ignore familySize ici : on veut scorer la valeur nutritionnelle d'une portion adulte.
   const divisor = (servings && servings > 0) ? servings : 1

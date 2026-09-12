@@ -26,10 +26,7 @@ function getOllamaFetchConfig(
 }
 
 function getOpenCodeBaseUrl(go: boolean): string {
-  if (import.meta.env.DEV) {
-    return go ? '/api/opencode-go' : '/api/opencode'
-  }
-  return go ? 'https://opencode.ai/zen/go/v1' : 'https://opencode.ai/zen/v1'
+  return go ? '/api/opencode-go' : '/api/opencode'
 }
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -410,10 +407,11 @@ async function chatFallback(
       parts: [{ text: m.content }],
     }))
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`,
+      // Clé en en-tête (recommandation Google), jamais en query string.
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`,
       {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': config.apiKey },
         body: JSON.stringify({ contents }),
       },
     )

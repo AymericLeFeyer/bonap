@@ -1,5 +1,6 @@
 import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
 import type { ShoppingItem } from "../../../domain/shopping/entities/ShoppingItem.ts"
+import { toItemUpdate } from "../../../shared/utils/shoppingItemUpdate.ts"
 
 export class ToggleItemUseCase {
   private repository: IShoppingRepository
@@ -9,16 +10,6 @@ export class ToggleItemUseCase {
   }
 
   async execute(listId: string, item: ShoppingItem): Promise<ShoppingItem> {
-    return this.repository.updateItem(listId, {
-      id: item.id,
-      shoppingListId: listId,
-      checked: !item.checked,
-      position: item.position,
-      isFood: item.isFood,
-      note: item.note,
-      quantity: item.quantity,
-      labelId: item.label?.id,
-      display: item.display,
-    })
+    return this.repository.updateItem(listId, toItemUpdate(item, listId, { checked: !item.checked }))
   }
 }

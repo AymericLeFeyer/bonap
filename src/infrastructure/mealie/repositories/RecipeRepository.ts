@@ -195,12 +195,21 @@ export class RecipeRepository implements IRecipeRepository {
         return orig ? { ...orig, ...c } : c
       }),
       recipeIngredient: mappedIngredients,
+      // Fusion avec l'étape existante : le PUT remplace la recette entière, donc
+      // n'envoyer que { id, text } effacerait le titre et surtout les
+      // ingredientReferences (ingrédients associés à l'étape, affichés en mode cuisine).
       recipeInstructions: data.recipeInstructions
         .filter((step) => step.text.trim())
-        .map((step) => ({
-          id: step.id ?? generateId(),
-          text: step.text,
-        })),
+        .map((step) => {
+          const original = step.id
+            ? current.recipeInstructions?.find((s) => s.id === step.id)
+            : undefined
+          return {
+            ...(original ?? {}),
+            id: step.id ?? generateId(),
+            text: step.text,
+          }
+        }),
       tags: [...data.tags, ...seasonTags],
       extras: { ...(current.extras ?? {}), ...(data.extras ?? {}) },
     }

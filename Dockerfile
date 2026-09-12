@@ -43,7 +43,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Proxy Marmiton (hors addon HA)
 COPY --from=marmiton-builder /proxy/node_modules /proxy/node_modules
-COPY ha-addon/bonap-bff.cjs /proxy/bonap-bff.cjs
+COPY ha-addon/bonap-bff.cjs ha-addon/bff-net-guard.cjs ha-addon/bff-settings.cjs /proxy/
 
 # Script d'entrypoint : génère env-config.js et lance nginx
 COPY docker-entrypoint.sh /docker-entrypoint.sh

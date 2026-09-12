@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
+import { getEnv, getIngressBasename, isDockerRuntime } from "../../shared/utils/env.ts"
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders, ShoppingCart } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
@@ -13,6 +13,7 @@ import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
 import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
+import { useHomePage } from "../hooks/useHomePage.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
 import type { Theme } from "../../infrastructure/theme/ThemeService.ts"
 import { cn } from "../../lib/utils.ts"
@@ -124,6 +125,7 @@ export function SettingsPage() {
   const { familySize, setFamilySize } = useFamilySize()
   const { flags, setFlag } = useFeatureFlags()
   const { enabled: defaultHabituelsEnabled, toggle: toggleDefaultHabituels } = useDefaultHabituels()
+  const { homePage, setHomePage, available: homePageOptions } = useHomePage()
   const navigate = useNavigate()
   const [config, setConfig] = useState<LLMConfig>(() => llmConfigService.load())
   const envFields = getLLMEnvFields()
@@ -228,7 +230,7 @@ export function SettingsPage() {
         icon={<Palette className="h-4 w-4 text-primary" />}
         iconBg="bg-primary/8"
         title="Apparence"
-        subtitle="Thème et couleur d'accent"
+        subtitle="Thème, couleur d'accent et page d'accueil"
       >
         <div className="space-y-2.5">
           <Label>Thème</Label>
@@ -283,6 +285,35 @@ export function SettingsPage() {
                 {accentColor.id === color.id && (
                   <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
                 )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2.5">
+          <div>
+            <Label>Page d'accueil</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Page affichée à l'ouverture de Bonap
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {homePageOptions.map(({ to, label, icon: Icon }) => (
+              <button
+                key={to}
+                type="button"
+                onClick={() => setHomePage(to)}
+                aria-pressed={homePage === to}
+                className={cn(
+                  'flex items-center gap-2 rounded-[var(--radius-lg)] border px-3.5 py-2',
+                  'text-sm font-semibold transition-all duration-150',
+                  homePage === to
+                    ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_oklch(0.58_0.175_38/0.25)]'
+                    : 'border-border bg-card text-foreground hover:bg-secondary',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
               </button>
             ))}
           </div>
@@ -377,7 +408,9 @@ export function SettingsPage() {
         <div className="mt-4 space-y-3">
           <div>
             <p className="text-sm font-semibold">Mode kiosk</p>
-            <p className="text-xs text-muted-foreground">Paramètres de l'affichage tablette (<code className="font-mono">/kiosk</code>)</p>
+            <p className="text-xs text-muted-foreground">
+              Paramètres de l'affichage tablette (<code className="font-mono">/kiosk</code> en horizontal, <code className="font-mono">/kiosk-vertical</code> en portrait)
+            </p>
           </div>
           <div className="flex items-center justify-between py-2 px-1">
             <div>
@@ -760,8 +793,11 @@ export function SettingsPage() {
             </Label>
             <Input
               readOnly
-              type="password"
-              value={getEnv('VITE_MEALIE_TOKEN') || 'Non défini'}
+              type={getEnv('VITE_MEALIE_TOKEN') ? 'password' : 'text'}
+              value={
+                getEnv('VITE_MEALIE_TOKEN') ||
+                (isDockerRuntime() ? 'Géré côté serveur (non exposé au navigateur)' : 'Non défini')
+              }
               className="bg-secondary/40 font-mono text-xs"
             />
           </div>
