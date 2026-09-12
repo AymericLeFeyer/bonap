@@ -81,7 +81,8 @@ test.describe("Liste de courses", () => {
       await page.goto("/shopping")
       await expect(page.getByText("mozzarella")).toBeVisible({ timeout: 8000 })
 
-      const checkedItem = page.locator(".line-through")
+      // .first() car le nom ET l'unité de l'article sont barrés
+      const checkedItem = page.locator(".line-through").first()
       await expect(checkedItem).toBeVisible()
     })
   })
@@ -240,8 +241,30 @@ test.describe("Liste de courses", () => {
 
       await page.goto("/shopping")
       await expect(page.getByRole("heading", { name: "Liste de courses" })).toBeVisible()
-      // Un item coché est affiché avec line-through
-      await expect(page.locator(".line-through")).toBeVisible({ timeout: 8000 })
+      // Un item coché est affiché avec line-through (nom + unité)
+      await expect(page.locator(".line-through").first()).toBeVisible({ timeout: 8000 })
+    })
+  })
+
+  test.describe("Unités de mesure (issue #98)", () => {
+    test("affiche l'unité à côté de la quantité", async ({ page }) => {
+      await page.goto("/shopping")
+      await expect(page.getByText("farine")).toBeVisible({ timeout: 8000 })
+
+      // 500 g de farine : la quantité seule ne suffit pas, l'unité doit suivre.
+      const farineRow = page.locator("li").filter({ hasText: "farine" }).first()
+      await expect(farineRow.getByText("500", { exact: true })).toBeVisible()
+      await expect(farineRow.getByText("g", { exact: true })).toBeVisible()
+    })
+
+    test("utilise le pluriel des unités sans abréviation", async ({ page }) => {
+      await page.goto("/shopping")
+      await expect(page.getByText("ail")).toBeVisible({ timeout: 8000 })
+
+      // Cas rapporté dans #98 : « 11 gousses d'ail ».
+      const ailRow = page.locator("li").filter({ hasText: "ail" }).first()
+      await expect(ailRow.getByText("11", { exact: true })).toBeVisible()
+      await expect(ailRow.getByText("gousses", { exact: true })).toBeVisible()
     })
   })
 })

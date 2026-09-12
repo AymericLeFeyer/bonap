@@ -23,6 +23,18 @@ function getToken(): string {
   return getEnv("VITE_MEALIE_TOKEN")
 }
 
+// En Docker, le token Mealie n'est plus exposé au navigateur : nginx l'injecte
+// lui-même sur /api, mais uniquement si la requête porte l'en-tête X-Bonap-Client
+// (en-tête custom = preflight CORS obligatoire, donc pas de CSRF depuis un autre
+// site). Un token présent côté client (login, ancien mode) reste prioritaire.
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (isDockerRuntime()) headers["X-Bonap-Client"] = "1"
+  return headers
+}
+
 const TIMEOUTS = { GET: 15_000, POST: 30_000, PATCH: 30_000, PUT: 30_000, DELETE: 15_000 } as const
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 500
@@ -103,7 +115,7 @@ export class MealieApiClient implements IMealieApiClient {
       const response = await fetch(url, {
         method,
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          ...authHeaders(),
           "Content-Type": "application/json",
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -167,7 +179,7 @@ export class MealieApiClient implements IMealieApiClient {
     try {
       const response = await fetch(url, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: authHeaders(),
         body: formData,
         signal: controller.signal,
       })
@@ -184,7 +196,7 @@ export class MealieApiClient implements IMealieApiClient {
     const response = await fetch(`${getBaseUrl()}${path}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${getToken()}`,
+        ...authHeaders(),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

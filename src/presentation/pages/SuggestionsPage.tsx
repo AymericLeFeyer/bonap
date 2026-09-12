@@ -17,6 +17,7 @@ import type { MealieRecipe, MealieMealPlan } from "../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../shared/utils/season.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { cn } from "../../lib/utils.ts"
+import { WeeklyMealGenerator } from "../components/WeeklyMealGenerator.tsx"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -289,6 +290,9 @@ export function SuggestionsPage() {
           ))}
         </div>
       )}
+
+      {/* Weekly meal generator */}
+      <WeeklyMealGenerator />
 
       {/* Planning slot picker dialog */}
       <PlanningSlotPicker

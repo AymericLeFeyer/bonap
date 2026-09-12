@@ -1,11 +1,11 @@
 import type { MealieMealPlan, MealieRecipe } from "../../../shared/types/mealie.ts"
-import { decodeServingsFromText, parseServings } from "../../../shared/utils/servings.ts"
+import { decodeServingsFromText, getRecipeServings } from "../../../shared/utils/servings.ts"
 import { getRecipesUseCase } from "../../../infrastructure/container.ts"
 
 export function getMealServings(meal: MealieMealPlan): number | undefined {
   const fromText = decodeServingsFromText(meal.text).servings
   if (fromText && fromText > 0) return fromText
-  const base = parseServings(meal.recipe?.recipeYield)
+  const base = getRecipeServings(meal.recipe)
   return base && base > 0 ? base : undefined
 }
 
@@ -14,7 +14,7 @@ export function getMealVisibleNote(meal: MealieMealPlan): string {
 }
 
 export function getInitialServingsForNewMeal(recipe: MealieRecipe | undefined, familySize: number): number | undefined {
-  const recipeBase = parseServings(recipe?.recipeYield)
+  const recipeBase = getRecipeServings(recipe)
   if (!recipeBase || recipeBase <= 0) return undefined
   return familySize > 0 ? familySize : recipeBase
 }

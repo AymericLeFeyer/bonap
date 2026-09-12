@@ -1,21 +1,11 @@
 import { NavLink } from "react-router-dom"
-import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, ExternalLink, Settings, Sparkles, Globe } from "lucide-react"
+import { ExternalLink, Settings } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
 import { getEnv, getIngressBasename } from "../../shared/utils/env.ts"
 import { llmConfigService } from "../../infrastructure/llm/LLMConfigService.ts"
+import { visibleNavItems } from "./navItems.ts"
 
-const isAIEnabled = llmConfigService.isConfigured()
-
-const navItems = [
-  { to: "/planning", label: "Planning", icon: CalendarDays },
-  { to: "/shopping", label: "Courses", icon: ShoppingCart },
-  { to: "/recipes", label: "Recettes", icon: UtensilsCrossed },
-  ...(isAIEnabled
-    ? [{ to: "/suggestions", label: "Suggestions IA", icon: Sparkles }]
-    : []),
-  { to: "/explore", label: "Explorer", icon: Globe },
-  { to: "/stats", label: "Statistiques", icon: BarChart2 },
-]
+const navItems = visibleNavItems(llmConfigService.isConfigured())
 
 interface SidebarProps {
   collapsed: boolean

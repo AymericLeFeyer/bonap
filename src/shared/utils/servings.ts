@@ -6,6 +6,27 @@ export function parseServings(recipeYield?: string): number | undefined {
 }
 
 /**
+ * Reads the base servings of a Mealie recipe.
+ * Mealie exposes three related fields and Bonap historically only parsed the
+ * text one, which lost the count when the numeric fields were used.
+ *
+ * Priority:
+ *   1. recipeServings (numeric, written by Bonap and most modern Mealie clients)
+ *   2. recipeYieldQuantity (numeric, alternative yield count)
+ *   3. parseServings(recipeYield) (legacy text fallback for older recipes)
+ */
+export function getRecipeServings(recipe: {
+  recipeServings?: number
+  recipeYieldQuantity?: number
+  recipeYield?: string
+} | undefined | null): number | undefined {
+  if (!recipe) return undefined
+  if (recipe.recipeServings && recipe.recipeServings > 0) return recipe.recipeServings
+  if (recipe.recipeYieldQuantity && recipe.recipeYieldQuantity > 0) return recipe.recipeYieldQuantity
+  return parseServings(recipe.recipeYield)
+}
+
+/**
  * Encodes servings count as a prefix in the meal text field.
  * Format: "[s:4]user note here"
  */

@@ -1,4 +1,5 @@
 import type { ShoppingItem, ShoppingLabel } from "../../../domain/shopping/entities/ShoppingItem.ts"
+import { formatItemQuantity } from "../../../shared/utils/shoppingQuantity.ts"
 import { itemSortKey } from "./itemSortKey.ts"
 
 export function buildPrintHtml(items: ShoppingItem[], labels: ShoppingLabel[], date: string): string {
@@ -33,7 +34,16 @@ export function buildPrintHtml(items: ShoppingItem[], labels: ShoppingLabel[], d
         : ""
       const itemsHtml = group.items.map((item) => {
         const name = escape(item.foodName ?? (item.note?.split(" — ")[0]) ?? "Article")
-        const qty = item.quantity && item.quantity > 1 ? `<span style="font-size:9pt;color:#888;margin-left:8px">×${item.quantity}</span>` : ""
+        // With a unit, print the full measure ("700 g"); without one, keep the
+        // bare "×N" marker and only when it carries information.
+        const amount = item.unit
+          ? formatItemQuantity(item.quantity, item.unit)
+          : item.quantity && item.quantity > 1
+            ? `×${item.quantity}`
+            : ""
+        const qty = amount
+          ? `<span style="font-size:9pt;color:#888;margin-left:8px">${escape(amount)}</span>`
+          : ""
         const style = faded ? "opacity:0.35;text-decoration:line-through;color:#aaa" : ""
         return `<div style="display:flex;align-items:center;padding:3px 0;border-bottom:1px solid #eee;${style}">
           <span style="display:inline-block;width:12px;height:12px;border:1.5px solid ${faded ? "#bbb" : "#555"};margin-right:8px;flex-shrink:0"></span>

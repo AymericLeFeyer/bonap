@@ -26,10 +26,10 @@ export function useAddRecipesToCart() {
       const { list } = await getShoppingItemsUseCase.execute()
       const recipes = await getRecipesByIdsUseCase.execute(meals.map((m) => m.slug))
       const entries = meals
-        .map(({ slug, recipeName, date }) => {
+        .map(({ slug, recipeName, servingsRatio }) => {
           const recipe = recipes.find((r) => r.slug === slug)
           if (!recipe) return null
-          return { recipeName, recipeSlug: slug, ingredients: recipe.recipeIngredient ?? [], date }
+          return { recipeId: recipe.id, recipeName, recipeSlug: slug, servingsRatio }
         })
         .filter((e): e is NonNullable<typeof e> => e !== null)
       await addRecipesToListUseCase.execute(list.id, entries)

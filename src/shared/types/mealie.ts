@@ -29,7 +29,18 @@ export interface MealieUnit {
 
 export interface MealieIngredient {
   quantity?: number
-  unit?: { id?: string; name: string }
+  /**
+   * L'API renvoie l'unité complète : les champs de formatage sont nécessaires
+   * pour l'afficher comme Mealie le fait (abréviation, pluriel).
+   */
+  unit?: {
+    id?: string
+    name: string
+    pluralName?: string | null
+    abbreviation?: string | null
+    pluralAbbreviation?: string | null
+    useAbbreviation?: boolean
+  }
   food?: { id?: string; name: string }
   note?: string
   display?: string
@@ -38,10 +49,21 @@ export interface MealieIngredient {
   title?: string
 }
 
+/** Lien d'une étape vers un ingrédient de la recette (Mealie associe par `referenceId`). */
+export interface MealieIngredientReference {
+  referenceId: string
+}
+
 export interface MealieInstruction {
   id: string
   title?: string
+  summary?: string
   text: string
+  /**
+   * Ingrédients associés à l'étape dans Mealie. À préserver lors des PUT :
+   * réécrire une étape sans ce champ efface les associations côté serveur.
+   */
+  ingredientReferences?: MealieIngredientReference[]
 }
 
 export interface MealieCategory {
@@ -197,6 +219,15 @@ export interface MealieShoppingItemRecipeRef {
   recipe?: { id: string; name: string; slug: string }
 }
 
+export interface MealieShoppingItemUnit {
+  id: string
+  name: string
+  pluralName?: string | null
+  abbreviation?: string | null
+  pluralAbbreviation?: string | null
+  useAbbreviation?: boolean
+}
+
 export interface MealieShoppingItem {
   id: string
   shoppingListId: string
@@ -205,11 +236,23 @@ export interface MealieShoppingItem {
   isFood: boolean
   note?: string
   quantity?: number
-  unit?: { id: string; name: string }
+  unit?: MealieShoppingItemUnit
   food?: { id: string; name: string }
   label?: MealieShoppingLabel
   display?: string
   recipeReferences?: MealieShoppingItemRecipeRef[]
+}
+
+/**
+ * Payload de POST /api/households/shopping/lists/{id}/recipe.
+ * `recipeIncrementQuantity` multiplie les quantités de tous les ingrédients :
+ * 1.5 sur une recette de 4 portions en donne 6. Mealie applique le facteur,
+ * fusionne les articles par aliment et unité, hérite l'étiquette de l'aliment
+ * et conserve les références vers les recettes d'origine.
+ */
+export interface MealieShoppingListAddRecipe {
+  recipeId: string
+  recipeIncrementQuantity: number
 }
 
 export interface MealieShoppingItemCreate {

@@ -1,8 +1,9 @@
-import type { IShoppingRepository } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
+import type { IShoppingRepository, ShoppingRecipeEntry } from "../../../domain/shopping/repositories/IShoppingRepository.ts"
 import type { ShoppingItem, ShoppingLabel, ShoppingList } from "../../../domain/shopping/entities/ShoppingItem.ts"
 import type {
   MealieShoppingItem,
   MealieShoppingItemCreate,
+  MealieShoppingListAddRecipe,
   MealieShoppingItemUpdate,
   MealieShoppingList,
   MealieRawPaginatedShoppingLists,
@@ -24,8 +25,18 @@ function mapItem(raw: MealieShoppingItem, recipeById: Map<string, string> = new 
     isFood: raw.isFood,
     note: raw.note,
     quantity: raw.quantity,
-    unitName: raw.unit?.name,
+    unit: raw.unit
+      ? {
+          id: raw.unit.id,
+          name: raw.unit.name,
+          pluralName: raw.unit.pluralName ?? undefined,
+          abbreviation: raw.unit.abbreviation ?? undefined,
+          pluralAbbreviation: raw.unit.pluralAbbreviation ?? undefined,
+          useAbbreviation: raw.unit.useAbbreviation,
+        }
+      : undefined,
     foodName: raw.food?.name,
+    foodId: raw.food?.id,
     label: raw.label
       ? { id: raw.label.id, name: raw.label.name, color: raw.label.color }
       : undefined,
@@ -94,6 +105,15 @@ export class ShoppingRepository implements IShoppingRepository {
     )
   }
 
+  async addRecipes(listId: string, entries: ShoppingRecipeEntry[]): Promise<void> {
+    if (entries.length === 0) return
+    const payload: MealieShoppingListAddRecipe[] = entries.map((e) => ({
+      recipeId: e.recipeId,
+      recipeIncrementQuantity: e.quantity,
+    }))
+    await mealieApiClient.post(`/api/households/shopping/lists/${listId}/recipe`, payload)
+  }
+
   async updateItem(_listId: string, item: MealieShoppingItemUpdate): Promise<ShoppingItem> {
     const raw = await mealieApiClient.put<MealieShoppingItem[] | null>(
       "/api/households/shopping/items",
@@ -109,6 +129,7 @@ export class ShoppingRepository implements IShoppingRepository {
       isFood: item.isFood,
       note: item.note,
       quantity: item.quantity,
+      foodId: item.foodId,
       display: item.display,
       source: "mealie",
     }

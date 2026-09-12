@@ -14,6 +14,7 @@ import {
 } from "../../infrastructure/container.ts"
 import { extractFoodKey } from "../../shared/utils/food.ts"
 import { foodLabelStore } from "../../infrastructure/shopping/FoodLabelStore.ts"
+import { toItemUpdate } from "../../shared/utils/shoppingItemUpdate.ts"
 
 export function useShopping() {
   const [list, setList] = useState<ShoppingList | null>(null)
@@ -65,17 +66,10 @@ export function useShopping() {
     const effectiveLabelId = labelId ?? savedLabelId
     const existing = key ? findExisting(items, key) : undefined
     if (existing) {
-      await shoppingRepository.updateItem(list.id, {
-        id: existing.id,
-        shoppingListId: list.id,
-        checked: existing.checked,
-        position: existing.position,
-        isFood: existing.isFood,
-        note: existing.note,
-        quantity: (existing.quantity ?? 1) + 1,
-        labelId: existing.label?.id,
-        display: existing.display,
-      })
+      await shoppingRepository.updateItem(
+        list.id,
+        toItemUpdate(existing, list.id, { quantity: (existing.quantity ?? 1) + 1 }),
+      )
     } else {
       await addItemUseCase.execute(list.id, note, 1, effectiveLabelId)
     }
@@ -89,17 +83,7 @@ export function useShopping() {
     if (!list) return
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity } : i)))
     try {
-      await shoppingRepository.updateItem(list.id, {
-        id: item.id,
-        shoppingListId: list.id,
-        checked: item.checked,
-        position: item.position,
-        isFood: item.isFood,
-        note: item.note,
-        quantity,
-        labelId: item.label?.id,
-        display: item.display,
-      })
+      await shoppingRepository.updateItem(list.id, toItemUpdate(item, list.id, { quantity }))
     } catch (err) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i)))
       setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
@@ -110,17 +94,7 @@ export function useShopping() {
     if (!list) return
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note: newNote } : i)))
     try {
-      await shoppingRepository.updateItem(list.id, {
-        id: item.id,
-        shoppingListId: list.id,
-        checked: item.checked,
-        position: item.position,
-        isFood: item.isFood,
-        note: newNote,
-        quantity: item.quantity,
-        labelId: item.label?.id,
-        display: item.display,
-      })
+      await shoppingRepository.updateItem(list.id, toItemUpdate(item, list.id, { note: newNote }))
     } catch (err) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note: item.note } : i)))
       setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
@@ -139,17 +113,10 @@ export function useShopping() {
       else foodLabelStore.remove(foodKey)
     }
     try {
-      await shoppingRepository.updateItem(list.id, {
-        id: item.id,
-        shoppingListId: list.id,
-        checked: item.checked,
-        position: item.position,
-        isFood: item.isFood,
-        note: item.note,
-        quantity: item.quantity,
-        labelId: labelId || undefined,
-        display: item.display,
-      })
+      await shoppingRepository.updateItem(
+        list.id,
+        toItemUpdate(item, list.id, { labelId: labelId || undefined }),
+      )
     } catch (err) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: item.label } : i)))
       setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
@@ -174,17 +141,10 @@ export function useShopping() {
           const key = extractFoodKey(cleanNote) || cleanNote.toLowerCase()
           const existing = findExisting(currentItems, key)
           if (existing) {
-            const updated = await shoppingRepository.updateItem(list.id, {
-              id: existing.id,
-              shoppingListId: list.id,
-              checked: existing.checked,
-              position: existing.position,
-              isFood: existing.isFood,
-              note: existing.note,
-              quantity: (existing.quantity ?? 1) + 1,
-              labelId: existing.label?.id,
-              display: existing.display,
-            })
+            const updated = await shoppingRepository.updateItem(
+              list.id,
+              toItemUpdate(existing, list.id, { quantity: (existing.quantity ?? 1) + 1 }),
+            )
             currentItems = currentItems.map((i) => (i.id === existing.id ? updated : i))
           } else {
             await shoppingRepository.addItem(list.id, {
@@ -314,17 +274,10 @@ export function useShopping() {
     const newLabel = labelId ? labels.find((l) => l.id === labelId) : undefined
     setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: newLabel } : i)))
     try {
-      await shoppingRepository.updateItem(habituelsListId, {
-        id: item.id,
-        shoppingListId: habituelsListId,
-        checked: item.checked,
-        position: item.position,
-        isFood: item.isFood,
-        note: item.note,
-        quantity: item.quantity,
-        labelId: labelId || undefined,
-        display: item.display,
-      })
+      await shoppingRepository.updateItem(
+        habituelsListId,
+        toItemUpdate(item, habituelsListId, { labelId: labelId || undefined }),
+      )
     } catch (err) {
       setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, label: item.label } : i)))
       setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
@@ -335,17 +288,7 @@ export function useShopping() {
     if (!habituelsListId) return
     setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note } : i)))
     try {
-      await shoppingRepository.updateItem(habituelsListId, {
-        id: item.id,
-        shoppingListId: habituelsListId,
-        checked: item.checked,
-        position: item.position,
-        isFood: item.isFood,
-        note,
-        quantity: item.quantity,
-        labelId: item.label?.id,
-        display: item.display,
-      })
+      await shoppingRepository.updateItem(habituelsListId, toItemUpdate(item, habituelsListId, { note }))
     } catch (err) {
       setHabituelsItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note: item.note } : i)))
       setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour")
@@ -378,17 +321,10 @@ export function useShopping() {
 
     try {
       if (existing) {
-        await shoppingRepository.updateItem(list.id, {
-          id: existing.id,
-          shoppingListId: list.id,
-          checked: existing.checked,
-          position: existing.position,
-          isFood: existing.isFood,
-          note: existing.note,
-          quantity: (existing.quantity ?? 1) + 1,
-          labelId: existing.label?.id,
-          display: existing.display,
-        })
+        await shoppingRepository.updateItem(
+          list.id,
+          toItemUpdate(existing, list.id, { quantity: (existing.quantity ?? 1) + 1 }),
+        )
       } else {
         await shoppingRepository.addItem(list.id, {
           shoppingListId: list.id,

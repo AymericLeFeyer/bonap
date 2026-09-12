@@ -12,6 +12,7 @@ import { SuggestionsPage } from './presentation/pages/SuggestionsPage.tsx'
 import { ExploreRecipesPage } from './presentation/pages/ExploreRecipesPage.tsx'
 import { NutritionMappingPage } from './presentation/pages/NutritionMappingPage.tsx'
 import { KioskPage } from './presentation/pages/KioskPage.tsx'
+import { useHomePage } from './presentation/hooks/useHomePage.ts'
 
 const STORAGE_KEYS = {
   MEALIE_URL: 'bonap-mealie-url',
@@ -28,14 +29,21 @@ function ProtectedRoute() {
   return <Outlet />
 }
 
+/** Redirige `/` vers la page d'accueil choisie dans les paramètres. */
+function HomeRedirect() {
+  const { resolved } = useHomePage()
+  return <Navigate to={resolved} replace />
+}
+
 function App() {
   return (
     <Routes>
       {isProtectedRoute && <Route path="login" element={<AuthPage />} />}
-      <Route path="kiosk" element={<KioskPage />} />
+      <Route path="kiosk" element={<KioskPage orientation="horizontal" />} />
+      <Route path="kiosk-vertical" element={<KioskPage orientation="vertical" />} />
       <Route element={isProtectedRoute ? <ProtectedRoute /> : <Outlet />}>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/recipes" replace />} />
+          <Route index element={<HomeRedirect />} />
           <Route path="recipes" element={<RecipesPage />} />
           <Route path="recipes/new" element={<RecipeFormPage />} />
           <Route path="recipes/:slug" element={<RecipeDetailPage />} />

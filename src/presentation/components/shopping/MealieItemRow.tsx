@@ -2,6 +2,7 @@ import { useState, useRef } from "react"
 import { Minus, Plus, Trash2, Check } from "lucide-react"
 import type { ShoppingItem, ShoppingLabel } from "../../../domain/shopping/entities/ShoppingItem.ts"
 import { cn } from "../../../lib/utils.ts"
+import { formatAmount, formatUnit, normalizeQuantity, roundQuantity } from "../../../shared/utils/shoppingQuantity.ts"
 import { LabelDropdown } from "./LabelDropdown.tsx"
 
 interface MealieItemRowProps {
@@ -22,6 +23,12 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
   const recipeNamesFromNote = recipeSuffix ? [recipeSuffix] : []
   const allRecipeNames = item.recipeNames?.length ? item.recipeNames : recipeNamesFromNote
   const qty = item.quantity ?? 0
+  // Mealie stores the quantity in the recipe's own unit, so three batches of a
+  // 500 g recipe land here as 1500 g. Display switches to the readable metric
+  // rung (1.5 kg) and the stepper follows suit, moving by one displayed unit.
+  const { quantity: displayQty, unit: displayUnit, step } = normalizeQuantity(qty, item.unit)
+  // The stepper badge stays purely numeric, so the unit is rendered beside it.
+  const unitLabel = qty > 0 ? formatUnit(displayQty, displayUnit) : ""
 
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(displayName)
@@ -66,7 +73,7 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
       <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
-          onClick={() => onUpdateQuantity(item, Math.max(0, qty - 1))}
+          onClick={() => onUpdateQuantity(item, Math.max(0, roundQuantity(qty - step)))}
           aria-label="Diminuer"
           className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
         >
@@ -74,7 +81,7 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
         </button>
         {qty > 0 ? (
           <span className="rounded-full bg-secondary px-2 py-0.5 text-xs tabular-nums font-semibold min-w-[1.5rem] text-center">
-            {qty}
+            {formatAmount(displayQty)}
           </span>
         ) : (
           <span className="opacity-0 group-hover:opacity-100 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground transition-all min-w-[1.5rem] text-center">
@@ -83,13 +90,24 @@ export function MealieItemRow({ item, labels, onToggle, onDelete, onUpdateQuanti
         )}
         <button
           type="button"
-          onClick={() => onUpdateQuantity(item, qty + 1)}
+          onClick={() => onUpdateQuantity(item, roundQuantity(qty + step))}
           aria-label="Augmenter"
           className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
         >
           <Plus className="h-3 w-3" />
         </button>
       </div>
+
+      {unitLabel && (
+        <span
+          className={cn(
+            "shrink-0 text-xs text-muted-foreground tabular-nums",
+            item.checked && "line-through opacity-40",
+          )}
+        >
+          {unitLabel}
+        </span>
+      )}
 
       {editing ? (
         <input

@@ -17,6 +17,7 @@ import { Autocomplete } from "../components/ui/autocomplete.tsx"
 import {
   InlineEditText,
   InlineEditDuration,
+  InlineEditServings,
 } from "../components/RecipeEditorShared.tsx"
 import { formatDuration } from "../../shared/utils/duration.ts"
 import {
@@ -47,7 +48,7 @@ import type {
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
-import { parseServings } from "../../shared/utils/servings.ts"
+import { parseServings, getRecipeServings } from "../../shared/utils/servings.ts"
 import { cn } from "../../lib/utils.ts"
 import { MarkdownContent } from "../components/MarkdownContent.tsx"
 
@@ -97,7 +98,7 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
     tags: (recipe.tags ?? [])
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
-    recipeYield: recipe.recipeServings ? String(recipe.recipeServings) : "",
+    recipeYield: getRecipeServings(recipe) ? String(getRecipeServings(recipe)) : "",
     extras: recipe.extras ? { ...recipe.extras } : {},
   }
 }
@@ -442,7 +443,7 @@ export function RecipeDetailPage() {
           recipeName={recipe.name}
           ingredients={recipe.recipeIngredient ?? []}
           instructions={recipe.recipeInstructions ?? []}
-          baseServings={parseServings(recipe.recipeYield)}
+          baseServings={getRecipeServings(recipe)}
           targetServings={parseServings(formData.recipeYield)}
           onClose={() => setCookingMode(false)}
         />
@@ -750,15 +751,10 @@ export function RecipeDetailPage() {
                   onChange={(v) => patch({ totalTime: v })}
                   disabled={saving}
                 />
-                <InlineEditText
+                <InlineEditServings
                   value={formData.recipeYield ?? ""}
-                  displayValue={
-                    <span className="text-sm text-muted-foreground">
-                      Portions : {formData.recipeYield ? `${formData.recipeYield} pers.` : "—"}
-                    </span>
-                  }
+                  baseServings={getRecipeServings(recipe)}
                   onChange={(v) => patch({ recipeYield: v || undefined })}
-                  placeholder="ex : 4"
                   disabled={saving}
                 />
               </div>
