@@ -188,6 +188,7 @@ async function callPerplexity(
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
       'content-type': 'application/json',
+      'X-Pplx-Integration': 'bonap',
     },
     body: JSON.stringify({
       model: config.model,
