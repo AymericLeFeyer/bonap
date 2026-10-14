@@ -1,0 +1,102 @@
+@startuml
+title Classification d'un ingrédient vers un aliment CIQUAL
+
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam ArrowColor #555555
+
+legend right
+  |= Couleur |= Signification |
+  |<#FFF3CD>| Étape IA (optionnelle) |
+  |<#D4EDDA>| Aliment résolu |
+  |<#F8D7DA>| À vérifier par l'utilisateur |
+endlegend
+
+start
+:Ingrédient de recette
+(quantité, unité, nom);
+
+if (Négligeable ?
+sel, poivre, eau, QS, pincée) then (oui)
+  #E2E3E5:Exclu du calcul
+  statut « négligeable »;
+  stop
+endif
+
+:Normaliser le nom
+(minuscules, accents, pluriels,
+articles, mots de préparation);
+
+partition "1. Trouver l'équivalent CIQUAL" {
+  if (Fiche dans le dictionnaire ?) then (oui)
+    #D4EDDA:Reprendre la fiche
+    (équivalent + poids pièce + densité);
+  elseif (Correspondance exacte
+  en forme « cru » ?) then (oui)
+    #D4EDDA:Fiche « automatique »;
+  elseif (Synonyme connu ?) then (oui)
+    #D4EDDA:Fiche « automatique »;
+  else (non)
+    :Recherche approchée CIQUAL
+    → 10 meilleurs candidats
+    (entrées « cru » favorisées);
+    if (IA configurée
+    ET activée dans Paramètres ?) then (oui)
+      #FFF3CD:Prompt : choisir UN candidat
+      ou proposer un terme de recherche;
+      if (Terme proposé
+      (aucun candidat adapté) ?) then (oui)
+        :Nouvelle recherche CIQUAL
+        avec le terme (une seule fois);
+        #FFF3CD:Prompt : choisir UN candidat;
+      endif
+      if (Code choisi présent
+      dans les candidats ?) then (oui)
+        #D4EDDA:Fiche « proposée par l'IA »;
+      else (non)
+        #F8D7DA:Statut « à vérifier »;
+        stop
+      endif
+    else (non)
+      if (Meilleur score
+      ≥ seuil de confiance ?) then (oui)
+        #D4EDDA:Fiche « automatique (approchée) »;
+      else (non)
+        #F8D7DA:Statut « à vérifier »
+        + 3 suggestions;
+        stop
+      endif
+    endif
+  endif
+}
+
+partition "2. Convertir la quantité en grammes" {
+  if (Unité de masse
+  (g, kg, mg) ?) then (oui)
+    :Grammes directs;
+  elseif (Unité de volume
+  (ml, cl, l, c. à soupe…) ?) then (oui)
+    :Volume × densité de la fiche
+    (défaut : 1, comme l'eau);
+  elseif (Poids pièce connu
+  dans la fiche ?) then (oui)
+    :Nombre × poids d'une pièce;
+  elseif (IA configurée et activée ?) then (oui)
+    #FFF3CD:Prompt : estimer le poids
+    moyen d'une pièce crue;
+    :Nombre × poids estimé
+    (enregistré dans la fiche);
+  else (non)
+    #F8D7DA:Statut « à vérifier »
+    (poids pièce manquant);
+    stop
+  endif
+}
+
+:Nutriments CIQUAL pour 100 g × grammes / 100;
+:Ajouter au total de la recette
+et à la couverture (% du poids estimé);
+stop
+@enduml

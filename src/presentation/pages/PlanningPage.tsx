@@ -19,7 +19,7 @@ import { MobileMealSection } from "../components/planning/MobileMealSection.tsx"
 import { MealCell } from "../components/planning/MealCell.tsx"
 import {
   getMealServings, getMealVisibleNote, getInitialServingsForNewMeal,
-  formatDayDate, formatDateRange, addDays, fetchAllRecipes,
+  formatDayDate, formatDateRange, addDays, fetchAllRecipeDetails,
 } from "../components/planning/planningUtils.ts"
 import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
@@ -193,7 +193,7 @@ export function PlanningPage() {
         return
       }
 
-      const recipes = await fetchAllRecipes()
+      const recipes = await fetchAllRecipeDetails()
       const plannedMeals = generateBalancedMealPlan(recipes, mealPlans, emptySlots)
 
       if (plannedMeals.length === 0) {

@@ -33,7 +33,18 @@ import { UpdateRecipeUseCase } from "../application/recipe/usecases/UpdateRecipe
 import { DeleteRecipeUseCase } from "../application/recipe/usecases/DeleteRecipeUseCase.ts"
 import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeasonsUseCase.ts"
 import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
-import { UpdateNutritionUseCase } from "../application/recipe/usecases/UpdateNutritionUseCase.ts"
+import { GetAllRecipeDetailsUseCase } from "../application/recipe/usecases/GetAllRecipeDetailsUseCase.ts"
+import { ClassifyIngredientsUseCase } from "../application/nutrition/usecases/ClassifyIngredientsUseCase.ts"
+import { ClassifyRecipeIngredientsUseCase } from "../application/nutrition/usecases/ClassifyRecipeIngredientsUseCase.ts"
+import { CompleteAllRecipesNutritionUseCase } from "../application/nutrition/usecases/CompleteAllRecipesNutritionUseCase.ts"
+import { CompleteRecipeNutritionUseCase } from "../application/nutrition/usecases/CompleteRecipeNutritionUseCase.ts"
+import { EstimateRecipeNutritionUseCase } from "../application/nutrition/usecases/EstimateRecipeNutritionUseCase.ts"
+import { GetNutritionFoodsUseCase } from "../application/nutrition/usecases/GetNutritionFoodsUseCase.ts"
+import { SaveRecipeNutritionUseCase } from "../application/nutrition/usecases/SaveRecipeNutritionUseCase.ts"
+import { SearchCiqualFoodsUseCase } from "../application/nutrition/usecases/SearchCiqualFoodsUseCase.ts"
+import { UpdateNutritionFoodUseCase } from "../application/nutrition/usecases/UpdateNutritionFoodUseCase.ts"
+import { NutritionRepository } from "./nutrition/NutritionRepository.ts"
+import { LlmCiqualMatcher } from "./nutrition/LlmCiqualMatcher.ts"
 import { UpdateCategoriesUseCase } from "../application/recipe/usecases/UpdateCategoriesUseCase.ts"
 import { FetchAiImageUseCase } from "../application/recipe/usecases/FetchAiImageUseCase.ts"
 
@@ -97,10 +108,30 @@ export const updateRecipeUseCase = new UpdateRecipeUseCase(
 )
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
 export const updateCalorieTagUseCase = new UpdateCalorieTagUseCase(recipeRepository)
-export const updateNutritionUseCase = new UpdateNutritionUseCase(recipeRepository)
 export const updateCategoriesUseCase = new UpdateCategoriesUseCase(recipeRepository)
 export const deleteRecipeUseCase = new DeleteRecipeUseCase(recipeRepository)
 export const fetchAiImageUseCase = new FetchAiImageUseCase()
+
+export const getAllRecipeDetailsUseCase = new GetAllRecipeDetailsUseCase(recipeRepository)
+
+// --- Singleton use case instances — nutrition ---
+const nutritionRepository = new NutritionRepository()
+const classifyIngredientsUseCase = new ClassifyIngredientsUseCase(nutritionRepository, new LlmCiqualMatcher())
+export const estimateRecipeNutritionUseCase = new EstimateRecipeNutritionUseCase(nutritionRepository)
+export const saveRecipeNutritionUseCase = new SaveRecipeNutritionUseCase(estimateRecipeNutritionUseCase, recipeRepository)
+export const classifyRecipeIngredientsUseCase = new ClassifyRecipeIngredientsUseCase(classifyIngredientsUseCase)
+export const completeRecipeNutritionUseCase = new CompleteRecipeNutritionUseCase(
+  classifyRecipeIngredientsUseCase,
+  saveRecipeNutritionUseCase,
+)
+export const completeAllRecipesNutritionUseCase = new CompleteAllRecipesNutritionUseCase(
+  getAllRecipeDetailsUseCase,
+  classifyIngredientsUseCase,
+  saveRecipeNutritionUseCase,
+)
+export const getNutritionFoodsUseCase = new GetNutritionFoodsUseCase(nutritionRepository)
+export const updateNutritionFoodUseCase = new UpdateNutritionFoodUseCase(nutritionRepository)
+export const searchCiqualFoodsUseCase = new SearchCiqualFoodsUseCase(nutritionRepository)
 
 // --- Singleton use case instances — User ---
 export const updateRatingUseCase = new UpdateRatingUseCase(recipeRepository)

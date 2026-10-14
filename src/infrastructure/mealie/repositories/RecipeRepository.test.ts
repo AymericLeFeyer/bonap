@@ -16,6 +16,7 @@ vi.mock("../../../shared/utils/env.ts", () => ({
 import { mealieApiClient } from "../api/index.ts"
 import { AuthService } from "../auth/AuthService.ts"
 import { RecipeRepository } from "./RecipeRepository.ts"
+import { MealieApiError } from "../../../shared/types/errors.ts"
 
 function makeClient(overrides = {}) {
   return {
@@ -332,6 +333,39 @@ describe("RecipeRepository", () => {
       })
       const putBody = client.put.mock.calls[0][1]
       expect(putBody.recipeInstructions).toHaveLength(1)
+    })
+  })
+
+  // ── updateNutrition — nutrition par portion + couverture ────────────────────
+
+  describe("updateNutrition", () => {
+    const metadata = { source: "ANSES CIQUAL 2020", coverage: 0.85, perServing: true }
+
+    it("enregistre la couverture et le marqueur « par portion » dans les extras", async () => {
+      client.get.mockResolvedValue({ slug: "gratin", name: "Gratin", extras: { autre: "x" } })
+      client.patch.mockResolvedValue({ slug: "gratin" })
+
+      await repo.updateNutrition("gratin", { calories: "320 kcal" }, metadata)
+
+      const body = client.patch.mock.calls[0][1]
+      expect(body.nutrition.calories).toBe("320")
+      expect(body.extras).toMatchObject({
+        autre: "x",
+        nutritionSource: "ANSES CIQUAL 2020",
+        nutritionCoverage: "0.85",
+        nutritionPerServing: "true",
+      })
+    })
+
+    it("retombe sur un PUT complet avec extras si le PATCH échoue en 500", async () => {
+      client.get.mockResolvedValue({ slug: "gratin", name: "Gratin" })
+      client.patch.mockRejectedValue(new MealieApiError("boom", 500))
+      client.put.mockResolvedValue({ slug: "gratin" })
+
+      await repo.updateNutrition("gratin", { calories: "320" }, metadata)
+
+      expect(client.patch).toHaveBeenCalledTimes(1)
+      expect(client.put.mock.calls[0][1].extras.nutritionPerServing).toBe("true")
     })
   })
 })

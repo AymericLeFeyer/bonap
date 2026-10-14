@@ -1,125 +1,70 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, CheckCircle2, Loader2, Search } from "lucide-react"
+import { ArrowLeft, Loader2, Save, Sparkles } from "lucide-react"
+import type { NutritionEstimate, NutritionEstimateLine } from "../../domain/nutrition/entities/NutritionFood.ts"
 import { Button } from "../components/ui/button.tsx"
-import { Input } from "../components/ui/input.tsx"
+import { NutritionCoverageBadge } from "../components/nutrition/NutritionBadges.tsx"
+import { NutritionFoodEditor } from "../components/nutrition/NutritionFoodEditor.tsx"
 import { useRecipe } from "../hooks/useRecipe.ts"
-import { useUpdateNutrition } from "../hooks/useUpdateNutrition.ts"
-import {
-  estimateRecipeNutrition,
-  searchCiqualFoods,
-  type CiqualFoodOption,
-  type NutritionEstimateResult,
-} from "../../infrastructure/nutrition/estimateRecipeNutrition.ts"
-import type { RecipeFormIngredient } from "../../shared/types/mealie.ts"
+import { useNutritionFoods, type FoodEdit } from "../hooks/useNutritionFoods.ts"
+import { useRecipeNutritionMapping } from "../hooks/useRecipeNutritionMapping.ts"
 
-type IngredientRow = {
-  id: string
+interface IngredientGroup {
   key: string
-  display: string
-  payload: RecipeFormIngredient
+  labels: string[]
+  grams: number | null
+  line: NutritionEstimateLine
 }
 
-function quantityToString(quantity?: number): string {
-  if (quantity == null) return ""
-  return String(quantity)
+function groupLinesByFood(lines: NutritionEstimateLine[]): IngredientGroup[] {
+  const groups = new Map<string, IngredientGroup>()
+  for (const line of lines) {
+    const group = groups.get(line.key)
+    if (!group) {
+      groups.set(line.key, { key: line.key, labels: [line.ingredient], grams: line.grams, line })
+      continue
+    }
+    if (!group.labels.includes(line.ingredient)) group.labels.push(line.ingredient)
+    group.grams = group.grams !== null && line.grams !== null ? group.grams + line.grams : group.grams ?? line.grams
+    if (!group.line.reason && line.reason) group.line = line
+  }
+  return [...groups.values()]
+}
+
+function EstimateSummary({ estimate }: { estimate: NutritionEstimate }) {
+  const { nutrition } = estimate
+  return (
+    <div className="space-y-2 rounded-xl border border-border/60 bg-card px-3 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold">Aperçu par portion</p>
+        <NutritionCoverageBadge coverage={estimate.coverage} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {estimate.estimatedGrams} g estimés sur {estimate.totalGrams} g · {estimate.servings} portion{estimate.servings > 1 ? "s" : ""} · {estimate.source}
+      </p>
+      <p className="text-sm">
+        {[nutrition.calories, nutrition.proteinContent && `${nutrition.proteinContent} protéines`, nutrition.carbohydrateContent && `${nutrition.carbohydrateContent} glucides`, nutrition.fatContent && `${nutrition.fatContent} lipides`]
+          .filter(Boolean)
+          .join(" · ") || "Aucune valeur estimée"}
+      </p>
+    </div>
+  )
 }
 
 export function NutritionMappingPage() {
   const { slug } = useParams<{ slug: string }>()
   const { recipe, setRecipe, loading, error } = useRecipe(slug)
-  const { updateNutrition, loading: savingNutrition, error: savingError } = useUpdateNutrition()
+  const { foods, savingKey, error: foodsError, reload: reloadFoods, updateFood } = useNutritionFoods()
+  const mapping = useRecipeNutritionMapping(recipe, setRecipe)
+  const groups = useMemo(() => groupLinesByFood(mapping.preview?.lines ?? []), [mapping.preview])
+  const busy = mapping.completing || mapping.saving
 
-  const [selectedCiqual, setSelectedCiqual] = useState<Record<string, string>>({})
-  const [searchText, setSearchText] = useState<Record<string, string>>({})
-  const [optionsByRow, setOptionsByRow] = useState<Record<string, CiqualFoodOption[]>>({})
-  const [loadingSearchByRow, setLoadingSearchByRow] = useState<Record<string, boolean>>({})
-  const [estimate, setEstimate] = useState<NutritionEstimateResult | null>(null)
-  const [estimating, setEstimating] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [localError, setLocalError] = useState<string | null>(null)
-
-  const ingredientRows = useMemo<IngredientRow[]>(() => {
-    if (!recipe?.recipeIngredient?.length) return []
-
-    return recipe.recipeIngredient
-      .map((ing, index) => {
-        const food = (ing.food?.name || "").trim()
-        const note = (ing.note || "").trim()
-        const key = food || note
-        if (!key) return null
-
-        const qty = quantityToString(ing.quantity)
-        const unit = (ing.unit?.name || "").trim()
-        const display = [qty, unit, key].filter(Boolean).join(" ").trim()
-
-        return {
-          id: `${ing.referenceId || index}-${key}`,
-          key,
-          display,
-          payload: {
-            quantity: qty,
-            unit,
-            food,
-            note,
-          },
-        }
-      })
-      .filter((row): row is IngredientRow => row !== null)
-  }, [recipe])
-
-  const runCiqualSearch = async (row: IngredientRow) => {
-    const query = (searchText[row.id] || selectedCiqual[row.key] || row.key).trim()
-    if (!query) return
-
-    setLoadingSearchByRow((prev) => ({ ...prev, [row.id]: true }))
-    setLocalError(null)
-
-    try {
-      const items = await searchCiqualFoods(query, 12)
-      setOptionsByRow((prev) => ({ ...prev, [row.id]: items }))
-    } catch (e) {
-      setLocalError(e instanceof Error ? e.message : "Impossible de rechercher dans CIQUAL")
-    } finally {
-      setLoadingSearchByRow((prev) => ({ ...prev, [row.id]: false }))
-    }
+  const handleComplete = async () => {
+    if (await mapping.complete()) await reloadFoods()
   }
 
-  const estimateAndSave = async () => {
-    if (!recipe || !slug || ingredientRows.length === 0) return
-
-    setEstimating(true)
-    setLocalError(null)
-    setMessage(null)
-
-    try {
-      const hints: Record<string, string> = {}
-      for (const row of ingredientRows) {
-        const selected = selectedCiqual[row.key]?.trim()
-        if (selected) hints[row.key] = selected
-      }
-
-      const result = await estimateRecipeNutrition(
-        ingredientRows.map((row) => row.payload),
-        hints,
-      )
-      setEstimate(result)
-
-      const updated = await updateNutrition(
-        slug,
-        result.nutrition,
-        result.source,
-        result.ciqualMappings,
-      )
-      if (updated) {
-        setRecipe(updated)
-        setMessage("Nutrition mise à jour avec succès.")
-      }
-    } catch (e) {
-      setLocalError(e instanceof Error ? e.message : "Erreur pendant le recalcul nutrition")
-    } finally {
-      setEstimating(false)
-    }
+  const handleEdit = async (key: string, edit: FoodEdit) => {
+    if (await updateFood(key, edit)) await mapping.refreshPreview()
   }
 
   if (loading) {
@@ -140,115 +85,75 @@ export function NutritionMappingPage() {
     )
   }
 
+  const displayedError = mapping.error || foodsError
+
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Nutrition</p>
-          <h1 className="text-2xl font-semibold">Compléter les correspondances CIQUAL</h1>
+          <h1 className="text-2xl font-semibold">Correspondances CIQUAL</h1>
           <p className="text-sm text-muted-foreground">{recipe.name}</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
             <Link to={`/recipes/${recipe.slug}`}>
               <ArrowLeft className="mr-1.5 h-4 w-4" />
               Retour recette
             </Link>
           </Button>
-          <Button
-            type="button"
-            onClick={() => void estimateAndSave()}
-            disabled={estimating || savingNutrition || ingredientRows.length === 0}
-            className="gap-1.5"
-          >
-            {estimating || savingNutrition ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : null}
+          <Button type="button" variant="secondary" size="sm" onClick={() => void handleComplete()} disabled={busy} className="gap-1.5">
+            {mapping.completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Compléter avec CIQUAL
+          </Button>
+          <Button type="button" size="sm" onClick={() => void mapping.save()} disabled={busy || groups.length === 0} className="gap-1.5">
+            {mapping.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Recalculer et enregistrer
           </Button>
         </div>
       </div>
 
-      {(localError || savingError) && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {localError || savingError}
+      <p className="text-xs text-muted-foreground">
+        {mapping.aiEnabled
+          ? "L'IA choisit l'aliment CIQUAL des ingrédients ambigus et estime le poids des pièces. Elle ne fournit jamais de nutriments."
+          : <>Sans IA, les ingrédients ambigus restent « à vérifier ». <Link to="/settings" className="underline">Configurer l'IA</Link></>}
+        {" "}Chaque correction s'applique à toutes les recettes.
+      </p>
+
+      {displayedError && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{displayedError}</p>
+      )}
+
+      {mapping.message && (
+        <p className="rounded-md border border-emerald-300/50 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+          {mapping.message}
         </p>
       )}
 
-      {message && (
-        <p className="rounded-md border border-emerald-300/50 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {message}
-        </p>
+      {mapping.preview && <EstimateSummary estimate={mapping.preview} />}
+
+      {mapping.previewing && !mapping.preview && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Calcul de l'aperçu...
+        </div>
       )}
 
       <div className="space-y-3">
-        {ingredientRows.map((row) => (
-          <div key={row.id} className="space-y-2 rounded-xl border border-border/60 bg-card px-3 py-3">
-            <p className="text-sm font-medium">{row.display}</p>
-
-            <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-              <Input
-                value={searchText[row.id] ?? selectedCiqual[row.key] ?? row.key}
-                onChange={(e) => setSearchText((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                placeholder="Rechercher un aliment CIQUAL"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => void runCiqualSearch(row)}
-                disabled={!!loadingSearchByRow[row.id]}
-              >
-                {loadingSearchByRow[row.id] ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Rechercher
-              </Button>
-            </div>
-
-            {selectedCiqual[row.key] && (
-              <p className="text-xs text-muted-foreground">Sélection actuelle: {selectedCiqual[row.key]}</p>
-            )}
-
-            {optionsByRow[row.id]?.length ? (
-              <div className="flex flex-wrap gap-1.5">
-                {optionsByRow[row.id].map((option) => (
-                  <button
-                    key={`${row.id}-${option.code}`}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCiqual((prev) => ({ ...prev, [row.key]: option.name }))
-                      setSearchText((prev) => ({ ...prev, [row.id]: option.name }))
-                    }}
-                    className="rounded-full border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
-                  >
-                    {option.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+        {groups.map((group) => (
+          <NutritionFoodEditor
+            key={group.key}
+            foodKey={group.key}
+            label={group.labels.join(" · ")}
+            entry={foods[group.key] ?? null}
+            reason={group.line.reason}
+            grams={group.grams}
+            saving={savingKey === group.key}
+            onEdit={(edit) => void handleEdit(group.key, edit)}
+          />
         ))}
       </div>
-
-      {estimate && (
-        <div className="space-y-2 rounded-xl border border-border/60 bg-card px-3 py-3">
-          <p className="text-sm font-semibold">Dernière estimation</p>
-          <p className="text-xs text-muted-foreground">
-            {estimate.source} · {estimate.matchedCount} pris en compte · {estimate.unmatchedCount} non pris en compte
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {estimate.matches.slice(0, 12).map((item, idx) => (
-              <span key={`${item.ingredient}-${idx}`} className="rounded-full border border-emerald-300/40 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                <CheckCircle2 className="mr-1 inline h-3 w-3" />
-                {item.ingredient}{" -> "}{item.ciqualFood}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

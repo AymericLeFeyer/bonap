@@ -160,6 +160,12 @@ export interface MealieNutrition {
   unsaturatedFatContent?: string
 }
 
+export interface NutritionMetadata {
+  source: string
+  coverage: number
+  perServing: boolean
+}
+
 export interface MealieRawPaginatedRecipes {
   items: MealieRecipe[]
   total: number

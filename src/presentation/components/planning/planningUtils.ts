@@ -1,6 +1,6 @@
 import type { MealieMealPlan, MealieRecipe } from "../../../shared/types/mealie.ts"
 import { decodeServingsFromText, getRecipeServings } from "../../../shared/utils/servings.ts"
-import { getRecipesUseCase } from "../../../infrastructure/container.ts"
+import { getAllRecipeDetailsUseCase } from "../../../infrastructure/container.ts"
 
 export function getMealServings(meal: MealieMealPlan): number | undefined {
   const fromText = decodeServingsFromText(meal.text).servings
@@ -37,12 +37,6 @@ export function addDays(date: Date, n: number): Date {
   return d
 }
 
-export async function fetchAllRecipes(): Promise<MealieRecipe[]> {
-  const first = await getRecipesUseCase.execute(1, 100)
-  const all = [...first.items]
-  for (let page = 2; page <= first.totalPages; page += 1) {
-    const chunk = await getRecipesUseCase.execute(page, 100)
-    all.push(...chunk.items)
-  }
-  return all
+export async function fetchAllRecipeDetails(): Promise<MealieRecipe[]> {
+  return getAllRecipeDetailsUseCase.execute()
 }

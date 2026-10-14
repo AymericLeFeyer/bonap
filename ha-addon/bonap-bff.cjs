@@ -8,8 +8,17 @@ const { execFile } = require('child_process')
 const { promisify } = require('util')
 const { safeRequest, assertUrlAllowed, BlockedAddressError } = require('./bff-net-guard.cjs')
 const { sanitizeSettings, validateSettingsPatch } = require('./bff-settings.cjs')
+const { normalizeFoodKey } = require('./bff-nutrition-text.cjs')
+const { MAX_PATCHES_PER_REQUEST, createFoodStore, validateFoodPatch } = require('./bff-nutrition-foods.cjs')
+const {
+  buildCiqualIndex,
+  classifyIngredients,
+  estimateRecipe,
+  findCandidates,
+  refreshItems,
+} = require('./bff-nutrition-classify.cjs')
 const app = express()
-const PORT = 3001
+const PORT = Number(process.env.BONAP_BFF_PORT) || 3001
 const execFileAsync = promisify(execFile)
 // Pure-JS windows-1252 decoder (Alpine Node uses small-icu which lacks extended encodings)
 function decodeWindows1252(buffer) {
@@ -57,13 +66,6 @@ const CIQUAL_CODES = {
   sodium: '10110',
 }
 const OPEN_FOOD_FACTS_SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl'
-const INGREDIENT_ALIASES = [
-  { pattern: /\bpaleron\b/g, value: 'boeuf' },
-  { pattern: /\btomates? pelee?s?\b/g, value: 'tomate en conserve' },
-  { pattern: /\bmais\b/g, value: 'mais en conserve' },
-  { pattern: /\bmais doux\b/g, value: 'mais en conserve' },
-  { pattern: /\bboite\s+de\s+mais\b/g, value: 'mais en conserve' },
-]
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
   'Accept-Language': 'fr-FR,fr;q=0.9',
@@ -141,39 +143,11 @@ function normalizeSpace(s) {
   return String(s ?? '').replace(/\s+/g, ' ').trim()
 }
 
-function normalizeNutritionText(s) {
-  return String(s ?? '')
-    .toLowerCase()
-    .replace(/œ/g, 'oe')
-    .replace(/æ/g, 'ae')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
 function parseNutritionNumber(value) {
   const raw = String(value ?? '').trim()
   if (!raw) return null
   const normalized = raw.replace(',', '.')
   const num = Number.parseFloat(normalized)
-  return Number.isFinite(num) ? num : null
-}
-
-function parseQuantityString(value) {
-  const raw = String(value ?? '').trim()
-    .replace(/\u00BC/g, '1/4')
-    .replace(/\u00BD/g, '1/2')
-    .replace(/\u00BE/g, '3/4')
-  if (!raw) return null
-  const frac = raw.match(/^(\d+)\s*\/\s*(\d+)$/)
-  if (frac) {
-    const num = Number.parseFloat(frac[1])
-    const den = Number.parseFloat(frac[2])
-    if (den > 0) return num / den
-  }
-  const num = Number.parseFloat(raw.replace(',', '.'))
   return Number.isFinite(num) ? num : null
 }
 
@@ -218,127 +192,13 @@ async function ensureCiqualDataset() {
   return { foodFile, compositionFile }
 }
 
-function buildCiqualTokenIndex(foods) {
-  const tokenIndex = new Map()
-  for (const food of foods) {
-    for (const token of new Set(food.tokens)) {
-      if (!tokenIndex.has(token)) tokenIndex.set(token, new Set())
-      tokenIndex.get(token).add(food.code)
-    }
-  }
-  return tokenIndex
-}
-
-function simplifyIngredientName(value) {
-  let normalized = normalizeNutritionText(value)
-    .replace(/\b(demi|moitie)\b/g, ' ')
-    .replace(/\b(en|au|a la|a l)\s+conserve\b/g, ' conserve ')
-    .replace(/\b(en|au|a la|a l)\s+bocal\b/g, ' conserve ')
-    .replace(/\bboite?s?\s+de\b/g, ' ')
-    .replace(/\bboite?s?\b/g, ' ')
-    .replace(/\bcannette?s?\b/g, ' ')
-    .replace(/\bconserve?s?\b/g, ' conserve ')
-    .replace(/\begouttee?s?\b/g, ' ')
-    .replace(/\begoutter\b/g, ' ')
-    .replace(/\b(de|du|des|d|la|le|les|un|une|a|au|aux)\b/g, ' ')
-    .replace(/\b(bio|frais|fraiche|fraiches|frais|frais?e?s?|hache|hachee|emince|emincee|rape|rapee|cuit|cuite|maison|extra vierge|vierge|entier|entiere|concasse|concassee|moulu|moulue)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  for (const alias of INGREDIENT_ALIASES) {
-    normalized = normalized.replace(alias.pattern, alias.value)
-  }
-
-  return normalized.replace(/\s+/g, ' ').trim()
-}
-
-function normalizeUnitForNutrition(value) {
-  const key = normalizeNutritionText(value)
-  if (!key) return ''
-  if (/^(g|gramme|grammes)$/.test(key)) return 'g'
-  if (/^(kg|kilogramme|kilogrammes)$/.test(key)) return 'kg'
-  if (/^(mg|milligramme|milligrammes)$/.test(key)) return 'mg'
-  if (/^(ml|millilitre|millilitres)$/.test(key)) return 'ml'
-  if (/^(cl|centilitre|centilitres)$/.test(key)) return 'cl'
-  if (/^(l|litre|litres)$/.test(key)) return 'l'
-  if (/^(c a c|c cafe|cc|cuillere a cafe|cuilleree a cafe)$/.test(key)) return 'tsp'
-  if (/^(c a s|c soupe|cs|cuillere a soupe|cuilleree a soupe)$/.test(key)) return 'tbsp'
-  if (/^(boite|boites|conserve|conserves|can|cans)$/.test(key)) return 'can'
-  if (/^(pincee|pincees)$/.test(key)) return 'pinch'
-  if (/^(gousse|gousses)$/.test(key)) return 'clove'
-  return key
-}
-
-function inferCanWeight(foodName) {
-  const name = simplifyIngredientName(foodName)
-  if (/tomate/.test(name)) return 400
-  if (/mais/.test(name)) return 285
-  if (/thon/.test(name)) return 140
-  if (/pois chiche|haricot|lentille/.test(name)) return 250
-  return 300
-}
-
-function inferDensity(foodName) {
-  const name = simplifyIngredientName(foodName)
-  if (/huile/.test(name)) return 0.92
-  if (/miel|sirop/.test(name)) return 1.3
-  if (/lait|creme|yaourt/.test(name)) return 1.03
-  if (/farine/.test(name)) return 0.53
-  if (/sucre/.test(name)) return 0.85
-  return 1
-}
-
-function inferCountWeight(foodName) {
-  const name = simplifyIngredientName(foodName)
-  if (/oeuf/.test(name)) return 60
-  if (/oignon/.test(name)) return 110
-  if (/echalote/.test(name)) return 35
-  if (/carotte/.test(name)) return 125
-  if (/pomme de terre/.test(name)) return 150
-  if (/tomate/.test(name)) return 120
-  if (/citron/.test(name)) return 120
-  if (/courgette/.test(name)) return 200
-  if (/poivron/.test(name)) return 150
-  return null
-}
-
-function gramsFromIngredient(ingredient, matchedFoodName) {
-  const quantity = parseQuantityString(ingredient.quantity)
-  if (quantity === null || quantity <= 0) return null
-  const foodName = ingredient.food || ingredient.note || matchedFoodName || ''
-  const unit = normalizeUnitForNutrition(ingredient.unit)
-
-  if (!unit) {
-    const countWeight = inferCountWeight(foodName)
-    return countWeight ? quantity * countWeight : null
-  }
-  if (unit === 'g') return quantity
-  if (unit === 'kg') return quantity * 1000
-  if (unit === 'mg') return quantity / 1000
-
-  const density = inferDensity(foodName)
-  if (unit === 'ml') return quantity * density
-  if (unit === 'cl') return quantity * 10 * density
-  if (unit === 'l') return quantity * 1000 * density
-  if (unit === 'tsp') return quantity * 5 * density
-  if (unit === 'tbsp') return quantity * 15 * density
-  if (unit === 'can') return quantity * inferCanWeight(foodName)
-  if (unit === 'pinch') return quantity * 0.36
-  if (unit === 'clove') return quantity * 6
-
-  return null
-}
-
 function parseCiqualFoods(xml) {
   const foods = []
   for (const [, block] of xml.matchAll(/<ALIM>([\s\S]*?)<\/ALIM>/gi)) {
     const code = extractXmlValue(block, 'alim_code')
     const name = extractXmlValue(block, 'alim_nom_fr')
-    const indexName = extractXmlValue(block, 'ALIM_NOM_INDEX_FR') || name
     if (!code || !name) continue
-    const normalized = simplifyIngredientName(indexName)
-    const tokens = normalized.split(' ').filter((token) => token.length >= 2)
-    foods.push({ code, name, normalized, tokens })
+    foods.push({ code, name })
   }
   return foods
 }
@@ -374,8 +234,7 @@ async function loadCiqualDatabase() {
     const nutrientsByFood = parseCiqualComposition(decodeCiqualFile(compositionFile))
     const foodsWithNutrition = foods.filter((food) => nutrientsByFood.has(food.code))
     return {
-      foods: foodsWithNutrition,
-      tokenIndex: buildCiqualTokenIndex(foodsWithNutrition),
+      index: buildCiqualIndex(foodsWithNutrition),
       nutrientsByFood,
     }
   })().catch((err) => {
@@ -385,125 +244,10 @@ async function loadCiqualDatabase() {
   return ciqualCachePromise
 }
 
-function scoreCiqualFoodCandidate(food, ingredientTokens, ingredientText, rawIngredientName = '') {
-  const tokenOverlap = ingredientTokens.filter((token) => food.tokens.includes(token)).length
-  if (tokenOverlap === 0) return -Infinity
-  let score = tokenOverlap * 8
-  if (food.normalized === ingredientText) score += 20
-  if (food.normalized.startsWith(ingredientText) || ingredientText.startsWith(food.normalized)) score += 8
-  score -= Math.abs(food.tokens.length - ingredientTokens.length)
-  
-  // Bonus for matching cooking methods (friteuse, four, vapeur, poele, braiseе, grille, etc.)
-  const cookingMethods = [
-    { pattern: /friteuse|frit.?es?/i, food: /friteuse/ },
-    { pattern: /four|roti|roties|au four|cuisson four/i, food: /four|roti/ },
-    { pattern: /vapeur|cuit a la vapeur/i, food: /vapeur/ },
-    { pattern: /poele|a la poele|poele/i, food: /poele/ },
-    { pattern: /braiseе|braisee|braise/i, food: /braise/ },
-    { pattern: /grille|grilles?/i, food: /grille/ },
-    { pattern: /feu doux|doux/i, food: /doux/ },
-  ]
-  
-  for (const method of cookingMethods) {
-    const hasMethodInRaw = method.pattern.test(rawIngredientName)
-    const hasMethodInFood = method.food.test(food.name)
-    if (hasMethodInRaw && hasMethodInFood) {
-      score += 6  // Strong bonus: cooking method matches
-    } else if (hasMethodInRaw && !hasMethodInFood) {
-      score -= 4  // Penalty: user specifies cooking method but food doesn't have it
-    }
-  }
-  
-  return score
-}
-
-function findBestCiqualFood(ingredientName, db) {
-  const normalized = simplifyIngredientName(ingredientName)
-  const tokens = normalized.split(' ').filter((token) => token.length >= 2)
-  if (!tokens.length) return null
-
-  const candidateCodes = new Set()
-  for (const token of tokens) {
-    const codes = db.tokenIndex.get(token)
-    if (!codes) continue
-    for (const code of codes) candidateCodes.add(code)
-  }
-
-  let candidates = candidateCodes.size
-    ? db.foods.filter((food) => candidateCodes.has(food.code))
-    : db.foods
-
-  let best = null
-  let bestScore = -Infinity
-  for (const food of candidates) {
-    const score = scoreCiqualFoodCandidate(food, tokens, normalized, ingredientName)
-    if (score > bestScore) {
-      best = food
-      bestScore = score
-    }
-  }
-
-  return bestScore >= 8 ? best : null
-}
-
-function findTopCiqualFoods(ingredientName, db, limit = 5) {
-  const normalized = simplifyIngredientName(ingredientName)
-  const tokens = normalized.split(' ').filter((token) => token.length >= 2)
-  if (!tokens.length) return []
-
-  const candidateCodes = new Set()
-  for (const token of tokens) {
-    const codes = db.tokenIndex.get(token)
-    if (!codes) continue
-    for (const code of codes) candidateCodes.add(code)
-  }
-
-  const candidates = candidateCodes.size
-    ? db.foods.filter((food) => candidateCodes.has(food.code))
-    : db.foods
-
-  return candidates
-    .map((food) => ({ food, score: scoreCiqualFoodCandidate(food, tokens, normalized, ingredientName) }))
-    .filter((entry) => entry.score >= 4)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((entry) => entry.food.name)
-}
-
-function searchCiqualFoods(query, db, limit = 20) {
-  const normalized = simplifyIngredientName(query)
-  const tokens = normalized.split(' ').filter((token) => token.length >= 2)
-  if (!tokens.length) return []
-
-  const candidateCodes = new Set()
-  for (const token of tokens) {
-    const codes = db.tokenIndex.get(token)
-    if (!codes) continue
-    for (const code of codes) candidateCodes.add(code)
-  }
-
-  const candidates = candidateCodes.size
-    ? db.foods.filter((food) => candidateCodes.has(food.code))
-    : db.foods
-
-  return candidates
-    .map((food) => ({
-      food,
-      score: scoreCiqualFoodCandidate(food, tokens, normalized, query),
-    }))
-    .filter((entry) => entry.score >= 2)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((entry) => ({
-      code: entry.food.code,
-      name: entry.food.name,
-    }))
-}
-
 function scoreOpenFoodFactsProduct(product, ingredientText, ingredientTokens) {
-  const name = simplifyIngredientName(product?.product_name || '')
+  const name = normalizeFoodKey(product?.product_name || '')
   if (!name) return -Infinity
-  const category = simplifyIngredientName(Array.isArray(product?.categories_tags) ? product.categories_tags.join(' ') : '')
+  const category = normalizeFoodKey(Array.isArray(product?.categories_tags) ? product.categories_tags.join(' ') : '')
   const haystack = `${name} ${category}`.trim()
   let overlap = 0
   for (const token of ingredientTokens) {
@@ -552,7 +296,7 @@ function parseOpenFoodFactsNutrition(nutriments) {
 }
 
 async function findOpenFoodFactsFallback(ingredientName) {
-  const key = simplifyIngredientName(ingredientName)
+  const key = normalizeFoodKey(ingredientName)
   if (!key) return null
   if (openFoodFactsCache.has(key)) return openFoodFactsCache.get(key)
 
@@ -596,14 +340,6 @@ async function findOpenFoodFactsFallback(ingredientName) {
     openFoodFactsCache.set(key, null)
     return null
   }
-}
-
-function roundNutrition(value, digits = 1) {
-  return Number((value || 0).toFixed(digits))
-}
-
-function formatNutritionField(value, unit) {
-  return value > 0 ? `${roundNutrition(value)} ${unit}` : undefined
 }
 
 function normalizeSearchText(s) {
@@ -1266,14 +1002,52 @@ app.patch('/settings', (req, res) => {
   res.json(updated)
 })
 
+// ─── Dictionnaire d'aliments (docs/superpowers/specs/2026-10-05-calcul-nutrition-ciqual.md) ──────────────────────
+// Fichier dédié : /settings est limité à 16 Ko par clé.
+const NUTRITION_FOODS_FILE = process.env.BONAP_NUTRITION_FOODS_FILE
+  || (fs.existsSync('/data') ? '/data/bonap-nutrition-foods.json' : path.join(os.tmpdir(), 'bonap-nutrition-foods.json'))
+const foodStore = createFoodStore({ filePath: NUTRITION_FOODS_FILE })
+const MAX_INGREDIENTS_PER_REQUEST = 2000
+const MAX_INGREDIENT_TEXT_LENGTH = 300
+
+function sanitizeIngredientText(value) {
+  return typeof value === 'string' || typeof value === 'number'
+    ? String(value).slice(0, MAX_INGREDIENT_TEXT_LENGTH)
+    : ''
+}
+
+function readIngredientsBody(body) {
+  const raw = Array.isArray(body?.ingredients) ? body.ingredients : null
+  if (!raw || raw.length > MAX_INGREDIENTS_PER_REQUEST) return null
+  return raw
+    .filter((ingredient) => ingredient && typeof ingredient === 'object')
+    .map((ingredient) => ({
+      quantity: sanitizeIngredientText(ingredient.quantity),
+      unit: sanitizeIngredientText(ingredient.unit),
+      unitAbbreviation: sanitizeIngredientText(ingredient.unitAbbreviation),
+      food: sanitizeIngredientText(ingredient.food),
+      note: sanitizeIngredientText(ingredient.note),
+    }))
+}
+
+function readLegacyMappings(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  return Object.fromEntries(
+    Object.entries(raw)
+      .slice(0, MAX_INGREDIENTS_PER_REQUEST)
+      .filter(([, value]) => typeof value === 'string')
+      .map(([key, value]) => [normalizeSpace(key), value.slice(0, MAX_INGREDIENT_TEXT_LENGTH)]),
+  )
+}
+
 app.get('/ciqual/search', async (req, res) => {
   try {
-    const q = normalizeSpace(req.query.q || '')
+    const q = normalizeSpace(req.query.q || '').slice(0, MAX_INGREDIENT_TEXT_LENGTH)
     const limit = Math.min(parseInt(req.query.limit ?? '20', 10) || 20, 50)
     if (!q) return res.json({ items: [] })
 
     const db = await loadCiqualDatabase()
-    const items = searchCiqualFoods(q, db, limit)
+    const items = findCandidates(q, db.index, limit).map(({ code, name }) => ({ code, name }))
     return res.json({ items })
   } catch (e) {
     console.error('[CIQUAL] Search error:', e.message)
@@ -1281,126 +1055,79 @@ app.get('/ciqual/search', async (req, res) => {
   }
 })
 
+function sendNutritionError(res, scope, e) {
+  console.error(`[Nutrition] ${scope} error:`, e.message)
+  res.status(500).json({ error: e.message })
+}
+
+app.get('/nutrition/foods', async (_req, res) => {
+  try {
+    const db = await loadCiqualDatabase()
+    res.json({ foods: foodStore.all(db.index) })
+  } catch (e) {
+    sendNutritionError(res, 'Foods', e)
+  }
+})
+
+app.post('/nutrition/foods', async (req, res) => {
+  try {
+    const entries = Array.isArray(req.body?.entries) ? req.body.entries : null
+    if (!entries || entries.length > MAX_PATCHES_PER_REQUEST) {
+      return res.status(400).json({ error: `Liste de fiches manquante ou trop longue (max ${MAX_PATCHES_PER_REQUEST})` })
+    }
+    const db = await loadCiqualDatabase()
+    const patches = []
+    for (const entry of entries) {
+      const result = validateFoodPatch(entry, db.index)
+      if (!result.ok) return res.status(400).json({ error: result.error })
+      patches.push(result.patch)
+    }
+    res.json(foodStore.upsert(patches, db.index))
+  } catch (e) {
+    sendNutritionError(res, 'Foods update', e)
+  }
+})
+
+app.post('/nutrition/classify', async (req, res) => {
+  try {
+    const ingredients = readIngredientsBody(req.body)
+    if (!ingredients) return res.status(400).json({ error: 'Liste d\'ingrédients manquante ou trop longue' })
+    const db = await loadCiqualDatabase()
+    const { items, patches } = classifyIngredients(ingredients, {
+      store: foodStore,
+      index: db.index,
+      aiEnabled: req.body?.aiEnabled === true,
+      legacyMappings: readLegacyMappings(req.body?.legacyMappings),
+    })
+    if (patches.length > 0) foodStore.upsert(patches, db.index)
+    res.json({ items: refreshItems(items, foodStore, db.index) })
+  } catch (e) {
+    sendNutritionError(res, 'Classify', e)
+  }
+})
+
 async function handleNutritionEstimate(req, res) {
   try {
-    const ingredients = Array.isArray(req.body?.ingredients) ? req.body.ingredients : []
-    const rawMatchHints = (req.body?.matchHints && typeof req.body.matchHints === 'object') ? req.body.matchHints : {}
-    const matchHints = Object.fromEntries(
-      Object.entries(rawMatchHints)
-        .map(([k, v]) => [normalizeSpace(k), normalizeSpace(v)])
-        .filter(([k, v]) => !!k && !!v),
-    )
-    if (!ingredients.length) {
+    const ingredients = readIngredientsBody(req.body)
+    if (!ingredients || ingredients.length === 0) {
       return res.status(400).json({ error: 'Liste d\'ingrédients manquante' })
     }
-
+    const servings = Number(req.body?.servings)
     const db = await loadCiqualDatabase()
-    const totals = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0,
-      sodium: 0,
-      saturatedFat: 0,
-    }
-    const matches = []
-    const unmatched = []
-
-    for (const ingredient of ingredients) {
-      const label = normalizeSpace(ingredient.food || ingredient.note || '')
-      if (!label) continue
-      const hinted = matchHints[label] || ''
-      const searchLabel = hinted || label
-
-      const match = findBestCiqualFood(searchLabel, db)
-      const ciqualName = match?.name || label
-      const grams = gramsFromIngredient(ingredient, ciqualName)
-      if (grams === null || grams <= 0) {
-        unmatched.push({ ingredient: label, matchedFood: ciqualName, reason: 'Quantité ou unité non exploitable' })
-        continue
-      }
-
-      let nutrients = null
-      let matchedFoodName = ''
-      let dataSource = 'ciqual'
-
-      if (match) {
-        nutrients = db.nutrientsByFood.get(match.code) || null
-        matchedFoodName = match.name
-      }
-
-      if (!nutrients) {
-        const offFallback = await findOpenFoodFactsFallback(searchLabel)
-        if (offFallback) {
-          nutrients = offFallback.nutrition
-          matchedFoodName = `[OFF] ${offFallback.name}`
-          dataSource = 'off'
-        }
-      }
-
-      if (!nutrients) {
-        const suggestions = findTopCiqualFoods(searchLabel, db, 6)
-        unmatched.push({
-          ingredient: label,
-          reason: 'Aucun aliment proche trouvé (CIQUAL/OFF)',
-          suggestions,
-        })
-        continue
-      }
-
-      const factor = grams / 100
-      totals.calories += (nutrients.calories || 0) * factor
-      totals.protein += (nutrients.protein || 0) * factor
-      totals.carbs += (nutrients.carbs || 0) * factor
-      totals.fat += (nutrients.fat || 0) * factor
-      totals.fiber += (nutrients.fiber || 0) * factor
-      totals.sugar += (nutrients.sugar || 0) * factor
-      totals.sodium += (nutrients.sodium || 0) * factor
-      totals.saturatedFat += (nutrients.saturatedFat || 0) * factor
-
-      matches.push({
-        ingredient: label,
-        ciqualFood: matchedFoodName,
-        amountGrams: roundNutrition(grams),
-        source: dataSource,
-        viaHint: !!hinted,
-      })
-    }
-
-    // Build ciqualMappings object for storing in recipe extras
-    const ciqualMappings = Object.fromEntries(
-      matches.map((m) => [m.ingredient, m.ciqualFood])
-    )
-
-    return res.json({
-      source: 'ANSES CIQUAL 2020 (+ fallback Open Food Facts)',
-      matchedCount: matches.length,
-      unmatchedCount: unmatched.length,
-      matches,
-      unmatched,
-      ciqualMappings,
-      nutrition: {
-        calories: formatNutritionField(totals.calories, 'kcal'),
-        proteinContent: formatNutritionField(totals.protein, 'g'),
-        carbohydrateContent: formatNutritionField(totals.carbs, 'g'),
-        fatContent: formatNutritionField(totals.fat, 'g'),
-        fiberContent: formatNutritionField(totals.fiber, 'g'),
-        sugarContent: formatNutritionField(totals.sugar, 'g'),
-        sodiumContent: formatNutritionField(totals.sodium, 'mg'),
-        saturatedFatContent: formatNutritionField(totals.saturatedFat, 'g'),
-      },
+    const estimate = await estimateRecipe(ingredients, servings, {
+      store: foodStore,
+      index: db.index,
+      nutrientsOf: (code) => db.nutrientsByFood.get(code) ?? null,
+      fallbackNutrients: async (label) => (await findOpenFoodFactsFallback(label))?.nutrition ?? null,
     })
+    res.json(estimate)
   } catch (e) {
-    console.error('[Nutrition] Estimate error:', e.message)
-    res.status(500).json({ error: e.message })
+    sendNutritionError(res, 'Estimate', e)
   }
 }
 
-// Current path used by the frontend
 app.post('/nutrition-estimate', handleNutritionEstimate)
-// Backwards-compatible alias: old frontend builds used /marmiton/nutrition-estimate
+// Alias historique : les anciens builds appelaient /marmiton/nutrition-estimate
 app.post('/marmiton/nutrition-estimate', handleNutritionEstimate)
 
 // Call Ollama server-side to extract a recipe from text

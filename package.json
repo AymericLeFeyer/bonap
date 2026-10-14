@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run && npm run test:bff",
-    "test:bff": "node --test ha-addon/bff-net-guard.test.cjs",
+    "test:bff": "node --test ha-addon/bff-net-guard.test.cjs ha-addon/bff-nutrition.test.cjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

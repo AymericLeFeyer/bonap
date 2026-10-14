@@ -7,12 +7,14 @@ export interface FeatureFlags {
   nutrition: boolean
   servings: boolean
   autoPlan: boolean
+  ciqualAi: boolean
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   nutrition: true,
   servings: true,
   autoPlan: true,
+  ciqualAi: true,
 }
 
 function loadFlags(): FeatureFlags {

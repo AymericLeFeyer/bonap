@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { getEnv, getIngressBasename, isDockerRuntime } from "../../shared/utils/env.ts"
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, Sliders, ShoppingCart } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check, Sun, Moon, Monitor, Palette, Bot, Server, Info, Lock, AlertTriangle, LogOut, ExternalLink, Globe, ChevronDown, Calendar, RefreshCw, Minus, Plus, ShoppingCart, Apple } from "lucide-react"
 import { Button } from "../components/ui/button.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { Label } from "../components/ui/label.tsx"
@@ -12,6 +12,7 @@ import { useTheme } from "../hooks/useTheme.ts"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { useFamilySize } from "../hooks/useFamilySize.ts"
 import { useFeatureFlags } from "../hooks/useFeatureFlags.ts"
+import { useCiqualAi } from "../hooks/useCiqualAi.ts"
 import { useDefaultHabituels } from "../hooks/useDefaultHabituels.ts"
 import { useHomePage } from "../hooks/useHomePage.ts"
 import { ACCENT_COLORS } from "../../infrastructure/theme/ThemeService.ts"
@@ -97,9 +98,9 @@ function CollapsibleSection({ icon, iconBg, title, subtitle, defaultOpen = false
 
 // ─── FeatureRow ───────────────────────────────────────────────────────────────
 
-function FeatureRow({ label, description, enabled, onChange }: { label: string; description: string; enabled: boolean; onChange: (v: boolean) => void }) {
+function FeatureRow({ label, description, enabled, onChange, disabled = false }: { label: string; description: React.ReactNode; enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 px-1">
+    <div className={cn("flex items-center justify-between gap-4 py-3 px-1", disabled && "opacity-60")}>
       <div className="min-w-0">
         <p className="text-sm font-medium">{label}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
@@ -108,8 +109,9 @@ function FeatureRow({ label, description, enabled, onChange }: { label: string; 
         type="button"
         role="switch"
         aria-checked={enabled}
+        disabled={disabled}
         onClick={() => onChange(!enabled)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${enabled ? "bg-primary" : "bg-input"}`}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed ${enabled ? "bg-primary" : "bg-input"}`}
       >
         <span className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
       </button>
@@ -124,6 +126,7 @@ export function SettingsPage() {
   const { showBreakfast, setShowBreakfast, kioskDays, setKioskDays } = usePlanningPreferences()
   const { familySize, setFamilySize } = useFamilySize()
   const { flags, setFlag } = useFeatureFlags()
+  const ciqualAi = useCiqualAi()
   const { enabled: defaultHabituelsEnabled, toggle: toggleDefaultHabituels } = useDefaultHabituels()
   const { homePage, setHomePage, available: homePageOptions } = useHomePage()
   const navigate = useNavigate()
@@ -438,12 +441,12 @@ export function SettingsPage() {
         </div>
       </CollapsibleSection>
 
-      {/* ── Recettes ── */}
+      {/* ── Nutrition ── */}
       <CollapsibleSection
-        icon={<Sliders className="h-4 w-4 text-[oklch(0.50_0.14_160)] dark:text-[oklch(0.72_0.14_160)]" />}
-        iconBg="bg-[oklch(0.93_0.04_160)] dark:bg-[oklch(0.22_0.04_160)]"
-        title="Recettes"
-        subtitle="Options d'affichage des recettes"
+        icon={<Apple className="h-4 w-4 text-[oklch(0.50_0.14_130)] dark:text-[oklch(0.72_0.14_130)]" />}
+        iconBg="bg-[oklch(0.93_0.04_130)] dark:bg-[oklch(0.22_0.04_130)]"
+        title="Nutrition"
+        subtitle="Calcul nutritionnel et correspondances CIQUAL"
       >
         <div className="divide-y divide-border">
           <FeatureRow
@@ -452,6 +455,24 @@ export function SettingsPage() {
             enabled={flags.nutrition}
             onChange={(v) => setFlag("nutrition", v)}
           />
+          <FeatureRow
+            label="Correspondance CIQUAL assistée par l'IA"
+            description={ciqualAi.available
+              ? "L'IA choisit l'aliment CIQUAL des ingrédients ambigus et estime le poids des pièces. Elle ne fournit jamais de nutriments."
+              : "Configurez d'abord un fournisseur IA (section Fournisseur IA ci-dessous)."}
+            enabled={ciqualAi.enabled}
+            disabled={!ciqualAi.available}
+            onChange={ciqualAi.setEnabled}
+          />
+          <div className="flex items-center justify-between gap-4 py-3 px-1">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Compléter toutes les recettes avec CIQUAL</p>
+              <p className="text-xs text-muted-foreground">Classe chaque ingrédient distinct puis recalcule la nutrition de toutes les recettes</p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/nutrition/ciqual">Ouvrir</Link>
+            </Button>
+          </div>
         </div>
       </CollapsibleSection>
 

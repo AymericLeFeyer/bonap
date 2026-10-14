@@ -3,6 +3,7 @@ import type {
   MealieRecipe,
   MealieCategory,
   MealieNutrition,
+  NutritionMetadata,
   MealieFavoritesResponse,
   RecipeFilters,
   RecipeFormData,
@@ -22,8 +23,7 @@ export interface IRecipeRepository {
   updateNutrition(
     slug: string,
     nutrition: MealieNutrition,
-    source?: string,
-    ciqualMappings?: Record<string, string>,
+    metadata: NutritionMetadata,
   ): Promise<MealieRecipe>
   updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe>
   updateCategories(slug: string, categories: MealieCategory[]): Promise<MealieRecipe>

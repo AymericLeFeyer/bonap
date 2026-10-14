@@ -11,6 +11,7 @@ import { SettingsPage } from './presentation/pages/SettingsPage.tsx'
 import { SuggestionsPage } from './presentation/pages/SuggestionsPage.tsx'
 import { ExploreRecipesPage } from './presentation/pages/ExploreRecipesPage.tsx'
 import { NutritionMappingPage } from './presentation/pages/NutritionMappingPage.tsx'
+import { NutritionBulkPage } from './presentation/pages/NutritionBulkPage.tsx'
 import { KioskPage } from './presentation/pages/KioskPage.tsx'
 import { useHomePage } from './presentation/hooks/useHomePage.ts'
 
@@ -48,6 +49,7 @@ function App() {
           <Route path="recipes/new" element={<RecipeFormPage />} />
           <Route path="recipes/:slug" element={<RecipeDetailPage />} />
           <Route path="recipes/:slug/nutrition" element={<NutritionMappingPage />} />
+          <Route path="nutrition/ciqual" element={<NutritionBulkPage />} />
           <Route path="planning" element={<PlanningPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="shopping" element={<ShoppingPage />} />

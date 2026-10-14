@@ -16,6 +16,8 @@ import { getRecipeSeasonsFromTags } from "../../shared/utils/season"
 import { recipeImageUrl } from "../../shared/utils/image"
 import { getRecipeEmoji } from "../../shared/utils/recipeEmoji"
 import { formatDuration } from "../../shared/utils/duration"
+import { nutritionForServings } from "../../shared/utils/nutritionDisplay"
+import { NutritionFactBadges } from "./nutrition/NutritionFactBadges"
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
 
 import { cn } from "../../lib/utils"
@@ -73,14 +75,10 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
             setRatings(data.ratings)
         })()
 
-        const caloriesString = recipe.nutrition?.calories
-        if (!caloriesString) return
+        const caloriesPerServing = nutritionForServings(recipe, 1).calories
+        if (caloriesPerServing === undefined) return
 
-        const match = caloriesString.match(/[\d.]+/)
-        if (!match) return
-
-        const calories = Math.round(Number(match[0]))
-        if (isNaN(calories)) return
+        const calories = Math.round(caloriesPerServing)
 
         // Already synced this calorie value for this recipe → stop
         if (calorieTagSyncedRef.current === calories) return
@@ -457,38 +455,10 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                         )}
                                     >
                                         <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
-                                            Nutrition
+                                            Nutrition · par portion
                                         </p>
 
-                                        <div className="flex flex-wrap gap-1.5">
-                                            <Badge variant="outline">
-                                                {recipe.nutrition.calories} kcal
-                                            </Badge>
-
-                                            {recipe.nutrition.proteinContent && (
-                                                <Badge variant="outline">
-                                                    {recipe.nutrition.proteinContent}g protéines
-                                                </Badge>
-                                            )}
-
-                                            {recipe.nutrition.carbohydrateContent && (
-                                                <Badge variant="outline">
-                                                    {recipe.nutrition.carbohydrateContent}g glucides
-                                                </Badge>
-                                            )}
-
-                                            {recipe.nutrition.fatContent && (
-                                                <Badge variant="outline">
-                                                    {recipe.nutrition.fatContent}g lipides
-                                                </Badge>
-                                            )}
-
-                                            {recipe.nutrition.fiberContent && (
-                                                <Badge variant="outline">
-                                                    {recipe.nutrition.fiberContent}g fibres
-                                                </Badge>
-                                            )}
-                                        </div>
+                                        <NutritionFactBadges nutrition={nutritionForServings(recipe, 1)} />
                                     </div>
                                 )}
 

@@ -354,6 +354,13 @@ npm run preview  # Prévisualisation prod
 - **Tri IA** (`useCategorizeItems`) : applique d'abord les labels connus du `FoodLabelStore`, puis un seul appel `llmChat` pour le reste. Chaque affectation passe par `updateItemLabel` → `toItemUpdate` (voir piège PUT ci-dessus).
 - **Habituels** : créés avec `isFood: true` et un `foodId` résolu (création à la volée si l'aliment n'existe pas dans Mealie). Évite l'enregistrement en simple texte (note) qui empêchait le typage.
 
+### Nutrition CIQUAL (docs/superpowers/specs/2026-10-05-calcul-nutrition-ciqual.md)
+- **Dictionnaire d'aliments** côté BFF (`/data/bonap-nutrition-foods.json`, modules `ha-addon/bff-nutrition-*.cjs`) : une fiche par nom normalisé (`normalizeFoodKey`), partagée par toutes les recettes. Une fiche `validated` n'est jamais modifiée par l'automatique ou l'IA (`mergeFoodEntry`). Le nom CIQUAL est toujours relu côté serveur, jamais repris du client.
+- **IA dans le navigateur** (`llmChat`, clé API locale) : elle choisit un code parmi les candidats, jamais de nutriments. Garde-fous dans `ClassifyIngredientsUseCase` (code hors liste ou confiance basse → « à vérifier »).
+- **Nutrition par portion** : `extras.nutritionPerServing = "true"` + `extras.nutritionCoverage`. Sans le marqueur, la nutrition est un total de recette (anciennes données) : `balancedMealPlanner` divise alors par les portions. Couverture < 70 % → ignorée par l'auto-planification. **La liste `GET /api/recipes` ne renvoie ni `nutrition` ni `extras`** : Auto-planifier charge le détail de chaque recette (`GetAllRecipeDetailsUseCase`). Le tag `calorie-N` (écrit par `RecipeDrawer`, utilisé par le filtre calories) vaut les kcal **par portion**. `updateNutrition` ne doit jamais retomber sur un PATCH sans extras.
+- **Affichage fiche recette** : `nutritionForServings(recipe, portions)` (`shared/utils/nutritionDisplay.ts`) multiplie la nutrition par portion par la valeur du sélecteur « Portions » (anciens totaux ramenés d'abord à une portion).
+- Feature flag `ciqualAi` (`useCiqualAi` = flag + `llmConfigService.isConfigured()`). Lancement global : `/nutrition/ciqual`.
+
 ### Mode cuisine
 - **Ingrédients par étape** (issue #38) : Mealie relie une étape à ses ingrédients via `instruction.ingredientReferences[].referenceId` ↔ `ingredient.referenceId`. `ingredientsForInstruction()` (`shared/utils/instructionIngredients.ts`) fait la jointure ; `CookingMode` affiche l'encart « Pour cette étape » avec les quantités mises à l'échelle des portions. L'encart disparaît si la recette n'associe rien.
 - **L'association se crée dans Mealie**, pas dans Bonap — le formulaire Bonap ne l'édite pas, mais ne l'écrase plus (voir piège PUT recette).
