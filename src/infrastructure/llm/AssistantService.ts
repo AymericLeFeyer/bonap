@@ -392,6 +392,7 @@ async function chatFallback(
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
         'content-type': 'application/json',
+        ...(config.provider === 'perplexity' ? { 'X-Pplx-Integration': 'bonap' } : {}),
       },
       body: JSON.stringify({ model: config.model, messages }),
     })
