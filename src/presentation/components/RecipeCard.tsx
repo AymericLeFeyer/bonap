@@ -2,7 +2,9 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { SeasonBadge } from "./SeasonBadge.tsx"
 import type { MealieRecipe } from "../../shared/types/mealie.ts"
+import { COURSE_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
+import { getRecipeCourses } from "../../shared/utils/course.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { getRecipeEmoji, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
@@ -35,6 +37,8 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
     return () => { cancelled = true }
   }, [imgError, emoji, recipe.slug])
   const seasons = getRecipeSeasonsFromTags(recipe.tags)
+  // Plat = cas par défaut, seuls les autres types sont signalés.
+  const courses = getRecipeCourses(recipe).filter((c) => c !== "plat")
   const categories = recipe.recipeCategory ?? []
 
   return (
@@ -75,6 +79,20 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {seasons.map((season) => (
                 <SeasonBadge key={season} season={season} size="sm" />
+              ))}
+            </div>
+          )}
+
+          {/* Type entrée / dessert — top right */}
+          {courses.length > 0 && (
+            <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+              {courses.map((course) => (
+                <span
+                  key={course}
+                  className="rounded-full bg-black/45 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-sm"
+                >
+                  {COURSE_LABELS[course]}
+                </span>
               ))}
             </div>
           )}

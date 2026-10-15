@@ -13,7 +13,8 @@ export class AddMealUseCase {
     entryType: string,
     recipeId?: string,
     title?: string,
+    text?: string,
   ): Promise<MealieMealPlan> {
-    return this.planningRepository.addMeal({ date, entryType, recipeId, title })
+    return this.planningRepository.addMeal({ date, entryType, recipeId, title, text })
   }
 }

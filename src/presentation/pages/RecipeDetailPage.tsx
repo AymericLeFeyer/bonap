@@ -1,6 +1,8 @@
 import { Link, useParams, useNavigate } from "react-router-dom"
 import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
+import { useUpdateCourses } from "../hooks/useUpdateCourses.ts"
+import { CourseToggleGroup } from "../components/CourseToggleGroup.tsx"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useFoods } from "../hooks/useFoods.ts"
@@ -41,6 +43,7 @@ import type {
   MealieRecipe,
   MealieCategory,
   Season,
+  Course,
   RecipeFormData,
   RecipeFormIngredient,
   RecipeFormInstruction,
@@ -48,6 +51,7 @@ import type {
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags, isSeasonTag } from "../../shared/utils/season.ts"
+import { getRecipeCourses, isCourseTag, toggleCourse, withCourseTags } from "../../shared/utils/course.ts"
 import { parseServings, getRecipeServings } from "../../shared/utils/servings.ts"
 import { cn } from "../../lib/utils.ts"
 import { MarkdownContent } from "../components/MarkdownContent.tsx"
@@ -98,8 +102,9 @@ function buildFormData(recipe: MealieRecipe): RecipeFormData {
       name: c.name,
       slug: c.slug,
     })),
+    // Les tags type- sont gérés à part (CourseToggleGroup) et conservés par update().
     tags: (recipe.tags ?? [])
-      .filter((t) => !isSeasonTag(t))
+      .filter((t) => !isSeasonTag(t) && !isCourseTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
     recipeYield: getRecipeServings(recipe) ? String(getRecipeServings(recipe)) : "",
     extras: recipe.extras ? { ...recipe.extras } : {},
@@ -139,6 +144,7 @@ export function RecipeDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { recipe, loading, error, setRecipe } = useRecipe(slug)
   const { updateSeasons } = useUpdateSeasons()
+  const { updateCourses, loading: coursesLoading } = useUpdateCourses()
   const { updateCategories } = useUpdateCategories()
   const { categories: allCategories } = useCategories()
   const { foods } = useFoods()
@@ -263,6 +269,15 @@ export function RecipeDetailPage() {
     )
     const updated = await updateSeasons(recipe.slug, newSeasons)
     if (updated) setRecipe(updated)
+  }
+
+  const handleToggleCourse = async (course: Course) => {
+    if (!recipe) return
+    const previous = recipe
+    const next = toggleCourse(getRecipeCourses(recipe), course)
+    setRecipe(withCourseTags(recipe, next))
+    const updated = await updateCourses(recipe.slug, next)
+    setRecipe(updated ?? previous)
   }
 
   const { updateRating } = useUpdateRating()
@@ -639,6 +654,14 @@ export function RecipeDetailPage() {
                   })}
                 </div>
               )}
+
+              {/* Type : entrée / plat / dessert */}
+              <CourseToggleGroup
+                value={getRecipeCourses(recipe)}
+                onToggle={(c) => void handleToggleCourse(c)}
+                disabled={coursesLoading}
+                label
+              />
 
               {/* Saisons */}
               <div className="space-y-1.5">

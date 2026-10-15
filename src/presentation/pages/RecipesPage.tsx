@@ -8,8 +8,9 @@ import { useGridColumns } from "../hooks/useGridColumns.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
 import { Button } from "../components/ui/button.tsx"
 import {Loader2, AlertCircle, UtensilsCrossed, Plus, PenLine, ChefHat } from "lucide-react"
-import type { MealieRecipe, Season } from "../../shared/types/mealie.ts"
+import type { Course, MealieRecipe, Season } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
+import { getRecipeCourses } from "../../shared/utils/course.ts"
 import { isSimpleRecipe } from "../../shared/utils/recipeEmoji.ts"
 import { getEnv } from "../../shared/utils/env.ts"
 import { getRecipesUseCase, getRecipeUseCase } from "../../infrastructure/container.ts"
@@ -26,6 +27,7 @@ export function RecipesPage() {
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
   const [maxCalories, setMaxCalories] = useState<number | undefined>(undefined)
   const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([])
+  const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
   const [showSimple, setShowSimple] = useState(false)
   const [noIngredients, setNoIngredients] = useState(false)
   const [noIngredientRecipes, setNoIngredientRecipes] = useState<MealieRecipe[] | null>(null)
@@ -109,6 +111,12 @@ export function RecipesPage() {
     )
   }
 
+  const toggleCourseFilter = (course: Course) => {
+    setSelectedCourses((prev) =>
+      prev.includes(course) ? prev.filter((c) => c !== course) : [...prev, course],
+    )
+  }
+
   const handleTimeFilter = (value: number | undefined) => {
     setMaxTotalTime((prev) => (prev === value ? undefined : value))
   }
@@ -124,6 +132,7 @@ export function RecipesPage() {
     maxTotalTime !== undefined ||
     maxCalories !== undefined ||
     selectedSeasons.length > 0 ||
+    selectedCourses.length > 0 ||
     noIngredients
 
   const resetFilters = () => {
@@ -133,6 +142,7 @@ export function RecipesPage() {
     setMaxTotalTime(undefined)
     setMaxCalories(undefined)
     setSelectedSeasons([])
+    setSelectedCourses([])
     setNoIngredients(false)
     setNoIngredientRecipes(null)
   }
@@ -190,6 +200,14 @@ export function RecipesPage() {
       }
 
       // =====================
+      // TYPE (entrée / plat / dessert)
+      // =====================
+      if (selectedCourses.length > 0) {
+        const recipeCourses = getRecipeCourses(recipe)
+        if (!selectedCourses.some((c) => recipeCourses.includes(c))) return false
+      }
+
+      // =====================
       // TAGS
       // =====================
       if (selectedTags.length > 0) {
@@ -231,6 +249,7 @@ export function RecipesPage() {
     noIngredients,
     noIngredientRecipes,
     selectedSeasons,
+    selectedCourses,
     selectedTags,
     maxTotalTime,
     maxCalories,
@@ -368,6 +387,8 @@ export function RecipesPage() {
 
           selectedSeasons={selectedSeasons}
           toggleSeason={toggleSeason}
+          selectedCourses={selectedCourses}
+          toggleCourseFilter={toggleCourseFilter}
 
           maxTotalTime={maxTotalTime}
           handleTimeFilter={handleTimeFilter}

@@ -5,6 +5,9 @@ import { cn } from "../../lib/utils.ts"
 import { Button } from "../components/ui/button.tsx"
 import { PlanningSlotPicker } from "../components/PlanningSlotPicker.tsx"
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
+import type { Course } from "../../shared/types/mealie.ts"
+import { getPrimaryCourse } from "../../shared/utils/course.ts"
+import { mealTextForCourse } from "../../shared/utils/mealText.ts"
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: "30d", label: "30 jours" },
@@ -218,7 +221,7 @@ function NeverPlannedList({
 
 export function StatsPage() {
   const { period, setPeriod, stats, loading, error } = useStats()
-  const [planningFor, setPlanningFor] = useState<{ recipeId: string; recipeName: string } | null>(null)
+  const [planningFor, setPlanningFor] = useState<{ recipeId: string; recipeName: string; course: Course } | null>(null)
   const [planError, setPlanError] = useState<string | null>(null)
 
   const handleSlotSelect = async (date: string, entryType: string, existingMealId?: number) => {
@@ -228,7 +231,7 @@ export function StatsPage() {
       if (existingMealId !== undefined) {
         await deleteMealUseCase.execute(existingMealId)
       }
-      await addMealUseCase.execute(date, entryType, planningFor.recipeId)
+      await addMealUseCase.execute(date, entryType, planningFor.recipeId, undefined, mealTextForCourse(planningFor.course))
       setPlanningFor(null)
     } catch (e) {
       setPlanError(e instanceof Error ? e.message : "Erreur lors de l'ajout au planning")
@@ -375,7 +378,11 @@ export function StatsPage() {
                   slug: r.slug,
                   name: r.name,
                 }))}
-                onPlan={(recipeId, recipeName) => setPlanningFor({ recipeId, recipeName })}
+                onPlan={(recipeId, recipeName) => setPlanningFor({
+                  recipeId,
+                  recipeName,
+                  course: getPrimaryCourse(stats.neverPlannedRecipes.find((r) => r.id === recipeId)),
+                })}
               />
             </>
           )}
@@ -386,6 +393,7 @@ export function StatsPage() {
         open={planningFor !== null}
         onOpenChange={(v) => { if (!v) setPlanningFor(null) }}
         recipeName={planningFor?.recipeName ?? ""}
+        course={planningFor?.course}
         onSelect={handleSlotSelect}
       />
     </div>

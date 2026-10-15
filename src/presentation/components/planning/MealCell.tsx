@@ -4,16 +4,18 @@ import {
   Plus, Minus, Copy, Eye, Trash2, Check,
   MessageSquarePlus, MessageSquare,
 } from "lucide-react"
-import type { MealieMealPlan } from "../../../shared/types/mealie.ts"
+import type { Course, MealieMealPlan } from "../../../shared/types/mealie.ts"
 import { cn } from "../../../lib/utils.ts"
 import { RecipeImage } from "../RecipeImage.tsx"
 import { getRecipeServings } from "../../../shared/utils/servings.ts"
-import { getMealServings, getMealVisibleNote } from "./planningUtils.ts"
+import { getMealCourse, getMealServings, getMealVisibleNote } from "./planningUtils.ts"
+import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
 
 export interface MealCellProps {
+  /** Repas du créneau, déjà triés entrée → plat → dessert. */
   meals: MealieMealPlan[]
   lastMeals: MealieMealPlan[]
-  onAdd: () => void
+  onAdd: (course: Course) => void
   onDelete: (id: number) => void
   onSelectLeftover: (meal: MealieMealPlan) => void
   onNote: (meal: MealieMealPlan) => void
@@ -38,7 +40,7 @@ export function MealCell({
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const copyBtnRef = useRef<HTMLButtonElement>(null)
-  const isEmpty = meals.length === 0
+  const hasMain = meals.some((m) => getMealCourse(m) === "plat")
 
   const DROPDOWN_WIDTH = 200
   const handleCopyClick = () => {
@@ -98,9 +100,11 @@ export function MealCell({
           const mealServings = getMealServings(meal)
           const baseServings = getRecipeServings(meal.recipe)
           const isSelected = selectionMode && (selectedMealIds?.has(meal.id) ?? false)
+          const course = getMealCourse(meal)
           return (
             <div
               key={meal.id}
+              data-course={course}
               draggable={!selectionMode}
               onDragStart={(e) => {
                 if (selectionMode) return
@@ -132,7 +136,12 @@ export function MealCell({
                   {isSelected && <Check className="h-3 w-3 text-primary-foreground stroke-[3]" />}
                 </div>
               )}
-              <div className="flex items-center gap-2 p-2">
+              {course !== "plat" && (
+                <div className="px-2 pt-1.5">
+                  <CourseLabel course={course} />
+                </div>
+              )}
+              <div className={cn("flex items-center gap-2 p-2", course !== "plat" && "pt-1")}>
                 {meal.recipe && (
                   <RecipeImage
                     recipe={meal.recipe}
@@ -230,8 +239,9 @@ export function MealCell({
         <div className="flex gap-1">
           <button
             type="button"
-            onClick={onAdd}
+            onClick={() => onAdd("plat")}
             aria-label="Ajouter un repas"
+            title="Ajouter un plat"
             className={cn(
               "flex flex-1 items-center justify-center rounded-[var(--radius-md)]",
               "border border-dashed border-border/50 py-2",
@@ -242,7 +252,7 @@ export function MealCell({
             <Plus className="h-3.5 w-3.5" />
           </button>
 
-          {isEmpty && (
+          {!hasMain && (
             <>
               <button
                 ref={copyBtnRef}
@@ -302,6 +312,7 @@ export function MealCell({
             </>
           )}
         </div>
+        <OptionalCourseButtons onAdd={onAdd} />
       </div>
     </td>
   )

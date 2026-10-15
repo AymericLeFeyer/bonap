@@ -9,10 +9,12 @@ import type {
   RecipeFilters,
   RecipeFormData,
   Season,
+  Course,
   MealieNutrition,
   NutritionMetadata,
 } from "../../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../../shared/utils/season.ts"
+import { courseTagNamesToWrite, isCourseTag } from "../../../shared/utils/course.ts"
 import { isCalorieTag, buildCalorieTag } from "../../../shared/utils/calorie.ts"
 import { generateId } from "../../../shared/utils/id.ts"
 import { NUTRITION_EXTRAS } from "../../../shared/utils/nutritionCoverage.ts"
@@ -41,6 +43,19 @@ export class RecipeRepository implements IRecipeRepository {
         : { name: tagName, slug: tagName }
     })
   }
+
+  /** Résout des tags par nom (id existant si le tag est déjà dans Mealie). */
+  private async resolveTagsByName(names: string[]): Promise<MealieTagObject[]> {
+    if (names.length === 0) return []
+    const response = await mealieApiClient.get<{ items: MealieTag[] }>("/api/organizers/tags?page=1&perPage=-1")
+    return names.map((name) => {
+      const found = response.items.find((t) => t.slug === name || t.name === name)
+      return found
+        ? { id: found.id, name: found.name, slug: found.slug }
+        : { name, slug: name }
+    })
+  }
+
   async getAll(
     page = 1,
     perPage = 30,
@@ -158,6 +173,12 @@ export class RecipeRepository implements IRecipeRepository {
       this.getBySlug(slug),
       this.resolveSeasonTags(data.seasons),
     ])
+    const courseTags: MealieTagObject[] = data.courses
+      ? await this.resolveTagsByName(courseTagNamesToWrite(data.courses, {
+          recipeCategory: data.categories,
+          tags: data.tags.filter((t) => !isSeasonTag(t)),
+        }))
+      : (current.tags ?? []).filter(isCourseTag).map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
 
     const mappedIngredients = data.recipeIngredient
       .filter((ing) => ing.food || ing.note || ing.unit || (ing.quantity && ing.quantity !== "1"))
@@ -212,7 +233,7 @@ export class RecipeRepository implements IRecipeRepository {
             text: step.text,
           }
         }),
-      tags: [...data.tags, ...seasonTags],
+      tags: [...data.tags.filter((t) => !isCourseTag(t)), ...courseTags, ...seasonTags],
       extras: { ...(current.extras ?? {}), ...(data.extras ?? {}) },
     }
     return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, payload)
@@ -262,6 +283,26 @@ export class RecipeRepository implements IRecipeRepository {
       .filter((t) => !isSeasonTag(t))
       .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
     const newTags = [...nonSeasonTags, ...seasonTags]
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { tags: newTags })
+    } catch {
+      return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+        ...this.simplifyRecipeForPut(current),
+        tags: newTags,
+      })
+    }
+  }
+
+  async updateCourses(slug: string, courses: Course[]): Promise<MealieRecipe> {
+    const current = await this.getBySlug(slug)
+    const otherTags = (current.tags ?? [])
+      .filter((t) => !isCourseTag(t))
+      .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+    const courseTags = await this.resolveTagsByName(courseTagNamesToWrite(courses, {
+      recipeCategory: current.recipeCategory,
+      tags: otherTags,
+    }))
+    const newTags = [...otherTags, ...courseTags]
     try {
       return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { tags: newTags })
     } catch {
