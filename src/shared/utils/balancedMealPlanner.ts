@@ -2,6 +2,7 @@ import type { MealieMealPlan, MealieRecipe } from "../types/mealie.ts"
 import { getCaloriesFromTags } from "./calorie.ts"
 import { getRecipeServings } from "./servings.ts"
 import { isNutritionPerServing, isNutritionPlannable } from "./nutritionCoverage.ts"
+import { recipeHasCourse } from "./course.ts"
 
 export interface AutoPlanSlot {
   date: string
@@ -179,6 +180,9 @@ export function generateBalancedMealPlan(
   slots: AutoPlanSlot[],
   _familySize = 1,
 ): AutoPlannedMeal[] {
+  // Les créneaux sont des plats : jamais d'entrée ni de dessert seuls (tarte aux fraises en plat…).
+  recipes = recipes.filter((recipe) => recipeHasCourse(recipe, "plat"))
+
   // Pool principal : recettes avec nutrition. Pool secondaire : toutes les recettes (variété seulement).
   const withNutrition = recipes
     .map((recipe) => ({ recipe, nutrition: getNutritionProfile(recipe) }))

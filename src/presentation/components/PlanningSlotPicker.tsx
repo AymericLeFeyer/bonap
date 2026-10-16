@@ -2,7 +2,8 @@ import { useState, useEffect } from "react"
 import { Loader2, Plus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.tsx"
 import { getPlanningRangeUseCase } from "../../infrastructure/container.ts"
-import type { MealieMealPlan } from "../../shared/types/mealie.ts"
+import type { Course, MealieMealPlan } from "../../shared/types/mealie.ts"
+import { decodeMealText } from "../../shared/utils/mealText.ts"
 import { cn } from "../../lib/utils.ts"
 import { toDateStr, formatDayFr } from "../../shared/utils/date.ts"
 
@@ -13,10 +14,18 @@ export interface PlanningSlotPickerProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   recipeName: string
+  /** Type sous lequel la recette est ajoutée : seuls les repas de ce type sont proposés au remplacement. */
+  course?: Course
   onSelect: (date: string, entryType: string, existingMealId?: number) => Promise<void>
 }
 
-export function PlanningSlotPicker({ open, onOpenChange, recipeName, onSelect }: PlanningSlotPickerProps) {
+const PICKER_TITLES: Record<Course, string> = {
+  entree: "Où placer cette entrée ?",
+  plat: "Où placer ce plat ?",
+  dessert: "Où placer ce dessert ?",
+}
+
+export function PlanningSlotPicker({ open, onOpenChange, recipeName, course = "plat", onSelect }: PlanningSlotPickerProps) {
   const [slots, setSlots] = useState<MealieMealPlan[]>([])
   const [loading, setLoading] = useState(false)
   const [addingSlot, setAddingSlot] = useState<string | null>(null)
@@ -40,7 +49,11 @@ export function PlanningSlotPicker({ open, onOpenChange, recipeName, onSelect }:
     return toDateStr(d)
   })
 
-  const mealMap = new Map(slots.map((m) => [`${m.date}-${m.entryType}`, m]))
+  const mealMap = new Map(
+    slots
+      .filter((m) => decodeMealText(m.text).course === course)
+      .map((m) => [`${m.date}-${m.entryType}`, m]),
+  )
 
   const handleSlotClick = async (date: string, entryType: string) => {
     const key = `${date}-${entryType}`
@@ -58,7 +71,7 @@ export function PlanningSlotPicker({ open, onOpenChange, recipeName, onSelect }:
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-heading text-base">
-            Où placer ce plat ?
+            {PICKER_TITLES[course]}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">{recipeName}</p>
         </DialogHeader>

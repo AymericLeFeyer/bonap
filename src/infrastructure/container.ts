@@ -32,6 +32,7 @@ import { CreateRecipeUseCase } from "../application/recipe/usecases/CreateRecipe
 import { UpdateRecipeUseCase } from "../application/recipe/usecases/UpdateRecipeUseCase.ts"
 import { DeleteRecipeUseCase } from "../application/recipe/usecases/DeleteRecipeUseCase.ts"
 import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeasonsUseCase.ts"
+import { UpdateCoursesUseCase } from "../application/recipe/usecases/UpdateCoursesUseCase.ts"
 import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
 import { GetAllRecipeDetailsUseCase } from "../application/recipe/usecases/GetAllRecipeDetailsUseCase.ts"
 import { ClassifyIngredientsUseCase } from "../application/nutrition/usecases/ClassifyIngredientsUseCase.ts"
@@ -107,6 +108,7 @@ export const updateRecipeUseCase = new UpdateRecipeUseCase(
   unitRepository,
 )
 export const updateSeasonsUseCase = new UpdateSeasonsUseCase(recipeRepository)
+export const updateCoursesUseCase = new UpdateCoursesUseCase(recipeRepository)
 export const updateCalorieTagUseCase = new UpdateCalorieTagUseCase(recipeRepository)
 export const updateCategoriesUseCase = new UpdateCategoriesUseCase(recipeRepository)
 export const deleteRecipeUseCase = new DeleteRecipeUseCase(recipeRepository)

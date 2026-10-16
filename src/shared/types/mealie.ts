@@ -10,6 +10,19 @@ export const SEASON_LABELS: Record<Season, string> = {
   sans: "Sans Saison",
 }
 
+/** Place d'une recette dans le repas. Une recette sans indication est un plat. */
+export type Course = "entree" | "plat" | "dessert"
+
+export const COURSES: Course[] = ["entree", "plat", "dessert"]
+
+export const DEFAULT_COURSE: Course = "plat"
+
+export const COURSE_LABELS: Record<Course, string> = {
+  entree: "Entrée",
+  plat: "Plat",
+  dessert: "Dessert",
+}
+
 export interface MealieFood {
   id: string
   name: string
@@ -118,6 +131,8 @@ export interface RecipeFormData {
   recipeIngredient: RecipeFormIngredient[]
   recipeInstructions: RecipeFormInstruction[]
   seasons: Season[]
+  /** Absent : les tags `type-` actuels de la recette sont conservés tels quels. */
+  courses?: Course[]
   categories: Array<{ id: string; name: string; slug: string }>
   tags: Array<{ id: string; name: string; slug: string }>
   extras?: Record<string, string>

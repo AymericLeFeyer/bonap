@@ -9,6 +9,8 @@ import { Button } from "../components/ui/button.tsx"
 import { Badge } from "../components/ui/badge.tsx"
 import { Input } from "../components/ui/input.tsx"
 import { SeasonBadge } from "../components/SeasonBadge.tsx"
+import { CourseToggleGroup } from "../components/CourseToggleGroup.tsx"
+import { getRecipeCourses, toggleCourse } from "../../shared/utils/course.ts"
 import { Autocomplete } from "../components/ui/autocomplete.tsx"
 import {
   InlineEditText,
@@ -27,6 +29,7 @@ import type {
   RecipeFormIngredient,
   RecipeFormInstruction,
   Season,
+  Course,
 } from "../../shared/types/mealie.ts"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie.ts"
 
@@ -84,6 +87,14 @@ export function RecipeFormPage() {
         ? formData.categories.filter((c) => c.id !== cat.id)
         : [...formData.categories, { id: cat.id, name: cat.name, slug: cat.slug }],
     })
+  }
+
+  // ─── Type (entrée / plat / dessert) ─────────────────────────────────────────
+
+  // Tant que l'utilisateur n'a rien choisi, le type suit les catégories (sinon plat).
+  const courses = formData.courses ?? getRecipeCourses({ recipeCategory: formData.categories, tags: formData.tags })
+  const handleToggleCourse = (course: Course) => {
+    patch({ courses: toggleCourse(courses, course) })
   }
 
   // ─── Saisons ────────────────────────────────────────────────────────────────
@@ -280,6 +291,9 @@ export function RecipeFormPage() {
               })}
             </div>
           )}
+
+          {/* Type : entrée / plat / dessert */}
+          <CourseToggleGroup value={courses} onToggle={handleToggleCourse} label />
 
           {/* Saisons */}
           <div className="space-y-1.5">

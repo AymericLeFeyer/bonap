@@ -9,7 +9,9 @@ import {
 } from "./ui/dialog.tsx"
 import { Input } from "./ui/input.tsx"
 import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
-import type { MealieRecipe } from "../../shared/types/mealie.ts"
+import type { Course, MealieRecipe } from "../../shared/types/mealie.ts"
+import { COURSES, COURSE_LABELS } from "../../shared/types/mealie.ts"
+import { recipeHasCourse } from "../../shared/utils/course.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { getRecipeEmoji } from "../../shared/utils/recipeEmoji.ts"
 import { SimpleRecipePicker } from "./SimpleRecipePicker.tsx"
@@ -17,14 +19,31 @@ import { cn } from "../../lib/utils.ts"
 
 // ─── Isolated list ────────────────────────────────────────────────────────────
 
+const COURSE_FILTER_LABELS: Record<Course, string> = {
+  entree: "Entrées",
+  plat: "Plats",
+  dessert: "Desserts",
+}
+
+const EMPTY_COURSE_MESSAGES: Record<Course, string> = {
+  entree: "Aucune entrée trouvée.",
+  plat: "Aucun plat trouvé.",
+  dessert: "Aucun dessert trouvé.",
+}
+
 function RecipeList({
   search,
+  course,
   onSelect,
 }: {
   search: string
+  course: Course | null
   onSelect: (recipe: MealieRecipe) => void
 }) {
-  const { recipes, loading, hasMore, loadMore } = useRecipesInfinite({ search })
+  const { recipes: allRecipes, loading, hasMore, loadMore } = useRecipesInfinite({ search })
+  // Filtrage côté client (comme les saisons) : la sentinelle continue de charger
+  // les pages suivantes tant que la liste filtrée ne remplit pas l'écran.
+  const recipes = course ? allRecipes.filter((r) => recipeHasCourse(r, course)) : allRecipes
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,11 +59,16 @@ function RecipeList({
     return () => observer.disconnect()
   }, [hasMore, loading, loadMore])
 
-  if (recipes.length === 0 && !loading) {
+  if (recipes.length === 0 && !loading && !hasMore) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
         <UtensilsCrossed className="h-8 w-8" />
-        <p className="text-sm">Aucune recette trouvée.</p>
+        <p className="text-sm">{course ? EMPTY_COURSE_MESSAGES[course] : "Aucune recette trouvée."}</p>
+        {course && course !== "plat" && (
+          <p className="max-w-xs text-center text-xs">
+            Indiquez le type « {COURSE_LABELS[course]} » sur la fiche d'une recette pour la retrouver ici.
+          </p>
+        )}
       </div>
     )
   }
@@ -110,14 +134,22 @@ interface RecipePickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelect: (recipe: MealieRecipe) => void
+  /** Type du créneau : pré-filtre la liste (l'utilisateur peut afficher toutes les recettes). */
+  course?: Course
 }
 
 export function RecipePickerDialog({
   open,
   onOpenChange,
   onSelect,
+  course,
 }: RecipePickerDialogProps) {
   const [tab, setTab] = useState<Tab>("recipes")
+  // Choix manuel du filtre, valable tant que le créneau visé ne change pas.
+  const [courseOverride, setCourseOverride] = useState<{ for?: Course; value: Course | null } | null>(null)
+  const courseFilter = courseOverride && courseOverride.for === course
+    ? courseOverride.value
+    : course ?? null
   const [inputValue, setInputValue] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [dialogContentEl, setDialogContentEl] = useState<HTMLDivElement | null>(null)
@@ -132,6 +164,7 @@ export function RecipePickerDialog({
       setInputValue("")
       setDebouncedSearch("")
       setTab("recipes")
+      setCourseOverride(null)
     }
     onOpenChange(value)
   }
@@ -162,7 +195,9 @@ export function RecipePickerDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Choisir un repas</DialogTitle>
+          <DialogTitle>
+            {course === "entree" ? "Choisir une entrée" : course === "dessert" ? "Choisir un dessert" : "Choisir un repas"}
+          </DialogTitle>
           <DialogDescription>
             Sélectionnez une recette existante ou créez un repas simple à la volée.
           </DialogDescription>
@@ -202,8 +237,27 @@ export function RecipePickerDialog({
               )}
             </div>
 
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Type de recette">
+              {([null, ...COURSES] as const).map((c) => (
+                <button
+                  key={c ?? "all"}
+                  type="button"
+                  aria-pressed={courseFilter === c}
+                  onClick={() => setCourseOverride({ for: course, value: c })}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                    courseFilter === c
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  {c ? COURSE_FILTER_LABELS[c] : "Toutes"}
+                </button>
+              ))}
+            </div>
+
             <div className="flex-1 overflow-y-auto">
-              <RecipeList search={debouncedSearch} onSelect={handleSelect} />
+              <RecipeList search={debouncedSearch} course={courseFilter} onSelect={handleSelect} />
             </div>
           </>
         ) : (

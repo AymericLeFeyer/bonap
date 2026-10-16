@@ -1,15 +1,17 @@
 import { useState, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Plus, Copy, Check } from "lucide-react"
-import type { MealieMealPlan } from "../../../shared/types/mealie.ts"
+import type { Course, MealieMealPlan } from "../../../shared/types/mealie.ts"
 import { cn } from "../../../lib/utils.ts"
 import { RecipeImage } from "../RecipeImage.tsx"
-import { getMealServings } from "./planningUtils.ts"
+import { getMealCourse, getMealServings } from "./planningUtils.ts"
+import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
 
 export interface MobileMealSectionProps {
+  /** Repas du créneau, déjà triés entrée → plat → dessert. */
   meals: MealieMealPlan[]
   lastMeals: MealieMealPlan[]
-  onAdd: () => void
+  onAdd: (course: Course) => void
   onSelectLeftover: (meal: MealieMealPlan) => void
   onMealTouchStart: (meal: MealieMealPlan, e: React.TouchEvent) => void
   servingsEnabled: boolean
@@ -22,7 +24,7 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const copyBtnRef = useRef<HTMLButtonElement>(null)
-  const isEmpty = meals.length === 0
+  const hasMain = meals.some((m) => getMealCourse(m) === "plat")
 
   const DROPDOWN_WIDTH = 200
   const handleCopyClick = () => {
@@ -41,9 +43,11 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
       {meals.map((meal) => {
         const mealServings = getMealServings(meal)
         const isSelected = selectionMode && (selectedMealIds?.has(meal.id) ?? false)
+        const course = getMealCourse(meal)
         return (
           <div
             key={meal.id}
+            data-course={course}
             onTouchStart={(e) => !selectionMode && onMealTouchStart(meal, e)}
             onClick={() => selectionMode && onToggleSelect?.(meal.id)}
             className={cn(
@@ -89,7 +93,8 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
                 </span>
               </div>
             )}
-            <div className="border-t border-border/40 bg-secondary/20 px-2 py-1">
+            <div className="flex items-center gap-2 border-t border-border/40 bg-secondary/20 px-2 py-1">
+              <CourseLabel course={course} />
               {servingsEnabled && (
                 mealServings && mealServings > 0 ? (
                   <span className="text-[10px] font-semibold text-muted-foreground">{mealServings} pers.</span>
@@ -106,8 +111,9 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
       <div className="flex gap-1.5">
         <button
           type="button"
-          onClick={onAdd}
+          onClick={() => onAdd("plat")}
           aria-label="Ajouter un repas"
+          title="Ajouter un plat"
           className={cn(
             "flex flex-1 items-center justify-center rounded-[var(--radius-lg)]",
             "border border-dashed border-border/60 py-3",
@@ -118,7 +124,7 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
           <Plus className="h-4 w-4" />
         </button>
 
-        {isEmpty && (
+        {!hasMain && (
           <>
             <button
               ref={copyBtnRef}
@@ -178,6 +184,7 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
           </>
         )}
       </div>
+      <OptionalCourseButtons onAdd={onAdd} size="md" />
     </div>
   )
 }

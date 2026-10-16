@@ -8,11 +8,15 @@ import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, H
 
 import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"
+import { useUpdateCourses } from "../hooks/useUpdateCourses"
+import { CourseToggleGroup } from "./CourseToggleGroup"
 import { useUpdateCategories } from "../hooks/useUpdateCategories"
 import { useFeatureFlags } from "../hooks/useFeatureFlags"
 import { useUpdateCalorieTag } from "../../presentation/hooks/useUpdateCalorieTag"
 
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season"
+import { getPrimaryCourse, getRecipeCourses, toggleCourse, withCourseTags } from "../../shared/utils/course"
+import { mealTextForCourse } from "../../shared/utils/mealText"
 import { recipeImageUrl } from "../../shared/utils/image"
 import { getRecipeEmoji } from "../../shared/utils/recipeEmoji"
 import { formatDuration } from "../../shared/utils/duration"
@@ -25,7 +29,7 @@ import { cn } from "../../lib/utils"
 import { RecipeIngredientsList } from "./RecipeIngredientsList"
 import { RecipeInstructionsList } from "./RecipeInstructionsList"
 
-import type { MealieCategory, MealieRatings, MealieRecipe, Season } from "../../shared/types/mealie"
+import type { Course, MealieCategory, MealieRatings, MealieRecipe, Season } from "../../shared/types/mealie"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
 
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container"
@@ -50,6 +54,7 @@ interface RecipeDrawerProps {
 export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDrawerProps) {
     const { recipe, setRecipe, loading } = useRecipe(slug)
     const { updateSeasons, loading: seasonsLoading } = useUpdateSeasons()
+    const { updateCourses, loading: coursesLoading } = useUpdateCourses()
     const { updateCategories, loading: categoriesLoading } = useUpdateCategories()
     const { updateCalorieTag } = useUpdateCalorieTag()
     const { flags } = useFeatureFlags()
@@ -121,7 +126,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
         if (existingMealId !== undefined) {
             await deleteMealUseCase.execute(existingMealId)
         }
-        await addMealUseCase.execute(date, entryType, recipe.id)
+        await addMealUseCase.execute(date, entryType, recipe.id, undefined, mealTextForCourse(getPrimaryCourse(recipe)))
         setPlanningPickerOpen(false)
     }
 
@@ -133,6 +138,15 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
             : [...current, season]
         const updated = await updateSeasons(recipe.slug, newSeasons)
         if (updated) setRecipe(updated)
+    }
+
+    const handleToggleCourse = async (course: Course) => {
+        if (!recipe) return
+        const previous = recipe
+        const next = toggleCourse(getRecipeCourses(recipe), course)
+        setRecipe(withCourseTags(recipe, next))
+        const updated = await updateCourses(recipe.slug, next)
+        setRecipe(updated ?? previous)
     }
 
     const handleToggleCategory = async (cat: MealieCategory) => {
@@ -193,6 +207,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                 open={planningPickerOpen}
                 onOpenChange={setPlanningPickerOpen}
                 recipeName={recipe?.name ?? ""}
+                course={getPrimaryCourse(recipe)}
                 onSelect={handleSlotSelect}
             />
             <div
@@ -421,6 +436,21 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Type : entrée / plat / dessert */}
+                                <div className={cn(
+                                    "space-y-2.5 rounded-[var(--radius-xl)]",
+                                    "border border-border/50 bg-secondary/30 p-3.5",
+                                )}>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                                        Type
+                                    </p>
+                                    <CourseToggleGroup
+                                        value={getRecipeCourses(recipe)}
+                                        onToggle={(c) => void handleToggleCourse(c)}
+                                        disabled={coursesLoading}
+                                    />
+                                </div>
 
                                 {/* Toggle saisons */}
                                 <div className={cn(

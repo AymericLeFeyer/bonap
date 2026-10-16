@@ -4,8 +4,10 @@ import { Input } from "../components/ui/input"
 import { Search, X, RotateCcw } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
-import type { MealieCategory, MealieTag, Season } from "../../shared/types/mealie"
+import type { Course, MealieCategory, MealieTag, Season } from "../../shared/types/mealie"
+import { COURSES, COURSE_LABELS } from "../../shared/types/mealie"
 import { isSeasonTag } from "../../shared/utils/season"
+import { isCourseTag } from "../../shared/utils/course"
 import { isCalorieTag } from "../../shared/utils/calorie"
 
 const TIME_OPTIONS = [
@@ -52,6 +54,9 @@ type Props = {
     selectedSeasons: Season[]
     toggleSeason: (season: Season) => void
 
+    selectedCourses: Course[]
+    toggleCourseFilter: (course: Course) => void
+
     maxTotalTime?: number
     handleTimeFilter: (value: number | undefined) => void
 
@@ -84,6 +89,8 @@ export function RecipeFilters({
     toggleTag,
     selectedSeasons,
     toggleSeason,
+    selectedCourses,
+    toggleCourseFilter,
     maxTotalTime,
     handleTimeFilter,
     maxCalories,
@@ -201,7 +208,33 @@ export function RecipeFilters({
                     {/* ===================== */}
                     {/* 1. CONTEXTE */}
                     {/* ===================== */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+
+                        {/* ================= */}
+                        {/* TYPE */}
+                        {/* ================= */}
+                        <div className="flex flex-col gap-2">
+
+                            <div className="text-xs text-muted-foreground font-medium">
+                                Type
+                            </div>
+
+                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 min-w-0">
+                                {COURSES.map((course) => {
+                                    const active = selectedCourses.includes(course)
+                                    return (
+                                        <Badge
+                                            key={course}
+                                            variant={active ? "default" : "outline"}
+                                            className="cursor-pointer whitespace-nowrap shrink-0"
+                                            onClick={() => toggleCourseFilter(course)}
+                                        >
+                                            {COURSE_LABELS[course]}
+                                        </Badge>
+                                    )
+                                })}
+                            </div>
+                        </div>
 
                         {/* ================= */}
                         {/* SAISON */}
@@ -374,7 +407,7 @@ export function RecipeFilters({
                             <div className="flex items-center gap-2 min-w-max">
 
                                 {tags
-                                    .filter(t => !isSeasonTag(t))
+                                    .filter(t => !isSeasonTag(t) && !isCourseTag(t))
                                     .filter(t => !isCalorieTag(t))
                                     .filter(t =>
                                         t.name.toLowerCase().includes(tagSearch.toLowerCase())
@@ -394,7 +427,7 @@ export function RecipeFilters({
                                     })}
 
                                 {tags
-                                    .filter(t => !isSeasonTag(t))
+                                    .filter(t => !isSeasonTag(t) && !isCourseTag(t))
                                     .filter(t => !isCalorieTag(t))
                                     .filter(t =>
                                         t.name.toLowerCase().includes(tagSearch.toLowerCase())

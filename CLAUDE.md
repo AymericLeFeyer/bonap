@@ -365,6 +365,11 @@ npm run preview  # Prévisualisation prod
 - **Ingrédients par étape** (issue #38) : Mealie relie une étape à ses ingrédients via `instruction.ingredientReferences[].referenceId` ↔ `ingredient.referenceId`. `ingredientsForInstruction()` (`shared/utils/instructionIngredients.ts`) fait la jointure ; `CookingMode` affiche l'encart « Pour cette étape » avec les quantités mises à l'échelle des portions. L'encart disparaît si la recette n'associe rien.
 - **L'association se crée dans Mealie**, pas dans Bonap — le formulaire Bonap ne l'édite pas, mais ne l'écrase plus (voir piège PUT recette).
 
+### Entrée / plat / dessert
+- **Recette** : tags `type-entree` / `type-plat` / `type-dessert` (comme les saisons), plusieurs possibles. Lecture via `getRecipeCourses()` (`shared/utils/course.ts`) : tags `type-` > catégories/tags évocateurs (« Desserts », « Entrées »…) > plat par défaut. Écriture via `updateCourses()` ou `RecipeFormData.courses` (absent = tags `type-` conservés) ; `courseTagNamesToWrite()` n'écrit aucun tag quand les catégories donnent déjà le bon type.
+- **Repas du planning** : `entryType` reste lunch/dinner, le type est un marqueur dans la note : `[s:4][c:dessert]note` (`shared/utils/mealText.ts`, absent = plat). Toujours réécrire la note via `buildMealText(meal, patch)` (`planningUtils.ts`), jamais `encodeServingsInText` à la main — sinon le type est perdu.
+- **Auto-planifier** et Suggestions IA ne tirent que des recettes `plat`. Un créneau « vide » = sans plat.
+
 ### Portions / scaling
 - **Lecture** : toujours `getRecipeServings(recipe)`, jamais `parseServings(recipe.recipeYield)` — voir `shared/utils/servings.ts`. Le bug #14 venait précisément de cette confusion.
 - **Scaling à l'ajout au panier** : `AddRecipesToListUseCase` multiplie `quantity` par `servingsRatio` quand l'ingrédient a `quantity > 0` ET au moins l'un de `unit` ou `food` (sinon impossible à formater proprement). Output : `"500 g farine"`, `"2 oignon"`, ou fallback texte brut. Évite les artefacts type `3 1 cup farine` car ce cas (quantité dans la note libre, pas dans `quantity`) tombe en fallback.

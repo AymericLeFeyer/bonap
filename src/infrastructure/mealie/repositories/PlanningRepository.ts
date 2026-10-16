@@ -21,11 +21,14 @@ export class PlanningRepository implements IPlanningRepository {
     entryType: string
     recipeId?: string
     title?: string
+    text?: string
   }): Promise<MealieMealPlan> {
-    return mealieApiClient.post<MealieMealPlan>(
+    const created = await mealieApiClient.post<MealieMealPlan>(
       "/api/households/mealplans",
       entry,
     )
+    // La note porte le type et les portions : on la garde même si la réponse ne la renvoie pas.
+    return entry.text && !created.text ? { ...created, text: entry.text } : created
   }
 
   async deleteMeal(id: number): Promise<void> {

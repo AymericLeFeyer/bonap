@@ -10,6 +10,8 @@ import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { Button } from "./ui/button.tsx"
 import { CookingMode } from "./CookingMode.tsx"
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container.ts"
+import { getPrimaryCourse } from "../../shared/utils/course.ts"
+import { mealTextForCourse } from "../../shared/utils/mealText.ts"
 import type { MealieIngredient, MealieInstruction } from "../../shared/types/mealie.ts"
 import { getRecipeServings } from "../../shared/utils/servings.ts"
 
@@ -37,7 +39,7 @@ export function RecipeDetailModal({ slug, targetServings, onOpenChange }: Recipe
     if (existingMealId !== undefined) {
       await deleteMealUseCase.execute(existingMealId)
     }
-    await addMealUseCase.execute(date, entryType, recipe.id)
+    await addMealUseCase.execute(date, entryType, recipe.id, undefined, mealTextForCourse(getPrimaryCourse(recipe)))
     setPlanningPickerOpen(false)
   }
 
@@ -70,6 +72,7 @@ export function RecipeDetailModal({ slug, targetServings, onOpenChange }: Recipe
         open={planningPickerOpen}
         onOpenChange={setPlanningPickerOpen}
         recipeName={recipe?.name ?? ""}
+        course={getPrimaryCourse(recipe)}
         onSelect={handleSlotSelect}
       />
 
