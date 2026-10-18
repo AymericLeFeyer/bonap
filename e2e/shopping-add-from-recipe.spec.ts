@@ -47,6 +47,8 @@ test.describe("Shopping — ajouter les ingrédients d'une recette planifiée au
   test("recipeIncrementQuantity porte le ratio des portions planifiées sur la base de la recette", async ({ page }) => {
     // Pizza de 4 portions planifiée pour 6 (préfixe [s:6] dans la note du repas) → ratio 1.5.
     // La salade, sans portions définies, reste à 1.
+    // La salade est ramenée au jour de la pizza : la fixture la place demain, ce qui
+    // tombe hors de la semaine affichée (lundi → dimanche) quand le test tourne un dimanche.
     const [pizzaMeal, saladeMeal] = MEALPLANS_RESPONSE.items
     await page.route("**/api/households/mealplans**", async (route) => {
       if (route.request().method() === "GET") {
@@ -55,7 +57,7 @@ test.describe("Shopping — ajouter les ingrédients d'une recette planifiée au
             ...MEALPLANS_RESPONSE,
             items: [
               { ...pizzaMeal, text: "[s:6]", recipe: { ...pizzaMeal.recipe, recipeServings: 4 } },
-              saladeMeal,
+              { ...saladeMeal, date: pizzaMeal.date },
             ],
           },
         })
