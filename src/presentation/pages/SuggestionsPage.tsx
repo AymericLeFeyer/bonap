@@ -15,6 +15,7 @@ import {
 } from "../../infrastructure/container.ts"
 import type { MealieRecipe, MealieMealPlan } from "../../shared/types/mealie.ts"
 import { isSeasonTag } from "../../shared/utils/season.ts"
+import { isCourseTag, recipeHasCourse } from "../../shared/utils/course.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { cn } from "../../lib/utils.ts"
 import { WeeklyMealGenerator } from "../components/WeeklyMealGenerator.tsx"
@@ -63,7 +64,7 @@ function buildPrompt(recipes: MealieRecipe[], planning: MealieMealPlan[], criter
   const recipesContext = recipes
     .map((r) => {
       const cats = (r.recipeCategory ?? []).map((c) => c.name).join(", ")
-      const tags = (r.tags ?? []).filter((t) => !isSeasonTag(t)).map((t) => t.name).join(", ")
+      const tags = (r.tags ?? []).filter((t) => !isSeasonTag(t) && !isCourseTag(t)).map((t) => t.name).join(", ")
       const prep = r.prepTime ? ` (${r.prepTime})` : ""
       return `- ${r.name} [${r.slug}]${prep}${cats ? ` | catégories: ${cats}` : ""}${tags ? ` | tags: ${tags}` : ""}`
     })
@@ -136,9 +137,11 @@ export function SuggestionsPage() {
     setAddedSlug(null)
     try {
       const [recipes, planning] = await Promise.all([fetchAllRecipes(), fetchRecentPlanning()])
-      const map = new Map(recipes.map((r) => [r.slug, r]))
+      // On suggère des repas : les entrées et desserts seuls n'en sont pas.
+      const mains = recipes.filter((r) => recipeHasCourse(r, "plat"))
+      const map = new Map(mains.map((r) => [r.slug, r]))
       setRecipeMap(map)
-      const { system, user } = buildPrompt(recipes, planning, selectedCriteria, freeText)
+      const { system, user } = buildPrompt(mains, planning, selectedCriteria, freeText)
       const response = await llmChat(system, user)
       const parsed = parseResponse(response)
       const valid = parsed.filter((s) => map.has(s.slug))

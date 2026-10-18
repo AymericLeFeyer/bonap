@@ -7,7 +7,8 @@ import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
 import { RecipeImage } from "../components/RecipeImage.tsx"
 import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
-import { getMealVisibleNote } from "../components/planning/planningUtils.ts"
+import { getMealCourse, getMealVisibleNote, sortMealsByCourse } from "../components/planning/planningUtils.ts"
+import { CourseLabel } from "../components/planning/CourseControls.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000
@@ -64,6 +65,8 @@ interface DayGroup {
   date: Date
   dateStr: string
   meals: Record<string, MealieMealPlan | undefined>
+  /** Entrées et desserts du créneau, affichés sous le plat. */
+  extras: Record<string, MealieMealPlan[]>
 }
 
 export type KioskOrientation = "horizontal" | "vertical"
@@ -129,10 +132,13 @@ export function KioskPage({ orientation = "horizontal" }: KioskPageProps = {}) {
     const date = addDays(today(), i)
     const dateStr = formatDate(date)
     const meals: Record<string, MealieMealPlan | undefined> = {}
+    const extras: Record<string, MealieMealPlan[]> = {}
     for (const mt of mealTypes) {
-      meals[mt.key] = mealPlans.find((m) => m.date === dateStr && m.entryType === mt.key)
+      const slotMeals = sortMealsByCourse(mealPlans.filter((m) => m.date === dateStr && m.entryType === mt.key))
+      meals[mt.key] = slotMeals.find((m) => getMealCourse(m) === "plat")
+      extras[mt.key] = slotMeals.filter((m) => getMealCourse(m) !== "plat")
     }
-    return { date, dateStr, meals }
+    return { date, dateStr, meals, extras }
   })
 
   if (loading) {
@@ -237,13 +243,14 @@ interface DayCardProps {
 }
 
 function DayCard({ day, isToday, isVertical, mealTypes, nextMeal, onSelect }: DayCardProps) {
-  const { date, dateStr, meals } = day
+  const { date, dateStr, meals, extras } = day
 
   const slots = mealTypes.map((mt) => (
     <MealSlot
       key={mt.key}
       label={mt.label}
       meal={meals[mt.key]}
+      extras={extras[mt.key] ?? []}
       isNext={nextMeal?.dateStr === dateStr && nextMeal?.type === mt.key}
       isVertical={isVertical}
       onSelect={onSelect}
@@ -285,12 +292,13 @@ function DayCard({ day, isToday, isVertical, mealTypes, nextMeal, onSelect }: Da
 interface MealSlotProps {
   label: string
   meal: MealieMealPlan | undefined
+  extras: MealieMealPlan[]
   isNext: boolean
   isVertical: boolean
   onSelect: (slug: string) => void
 }
 
-function MealSlot({ label, meal, isNext, isVertical, onSelect }: MealSlotProps) {
+function MealSlot({ label, meal, extras, isNext, isVertical, onSelect }: MealSlotProps) {
   return (
     <div
       className={cn(
@@ -322,6 +330,23 @@ function MealSlot({ label, meal, isNext, isVertical, onSelect }: MealSlotProps) 
       ) : (
         <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground/50 italic p-2">
           Rien de prévu
+        </div>
+      )}
+
+      {extras.length > 0 && (
+        <div className="shrink-0 border-t border-border/50 px-3 py-1.5 space-y-1">
+          {extras.map((extra) => (
+            <button
+              key={extra.id}
+              type="button"
+              disabled={!extra.recipe?.slug}
+              onClick={() => extra.recipe?.slug && onSelect(extra.recipe.slug)}
+              className="flex w-full items-center gap-2 text-left text-xs disabled:cursor-default"
+            >
+              <CourseLabel course={getMealCourse(extra)} />
+              <span className="min-w-0 truncate font-medium">{extra.recipe?.name ?? extra.title ?? "Sans titre"}</span>
+            </button>
+          ))}
         </div>
       )}
     </div>

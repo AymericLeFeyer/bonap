@@ -20,13 +20,15 @@ import { MealCell } from "../components/planning/MealCell.tsx"
 import {
   getMealServings, getMealVisibleNote, getInitialServingsForNewMeal,
   formatDayDate, formatDateRange, addDays, fetchAllRecipeDetails,
+  getMealCourse, buildMealText, sortMealsByCourse,
 } from "../components/planning/planningUtils.ts"
-import type { MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
+import type { Course, MealieMealPlan, MealieRecipe } from "../../shared/types/mealie.ts"
 import { formatDate } from "../../shared/utils/date.ts"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { generateBalancedMealPlan } from "../../shared/utils/balancedMealPlanner.ts"
-import { encodeServingsInText, getRecipeServings } from "../../shared/utils/servings.ts"
+import { getRecipeServings } from "../../shared/utils/servings.ts"
+import { encodeMealText } from "../../shared/utils/mealText.ts"
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
@@ -76,7 +78,7 @@ export function PlanningPage() {
   const mealTypes = MEAL_TYPES.filter((t) => t.key !== "breakfast" || showBreakfast)
 
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string } | null>(null)
+  const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string; course: Course } | null>(null)
   const [previewRecipe, setPreviewRecipe] = useState<{ slug: string; targetServings?: number } | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
   const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
@@ -141,8 +143,11 @@ export function PlanningPage() {
 
   const getMeals = (date: Date, type: string): MealieMealPlan[] => {
     const key = formatDate(date)
-    return mealPlans.filter((m) => m.date === key && m.entryType === type)
+    return sortMealsByCourse(mealPlans.filter((m) => m.date === key && m.entryType === type))
   }
+
+  const hasMainCourse = (date: Date, type: string): boolean =>
+    getMeals(date, type).some((m) => getMealCourse(m) === "plat")
 
   const getLastMeals = (date: Date, type: string, count: number): MealieMealPlan[] => {
     const result: MealieMealPlan[] = []
@@ -157,7 +162,7 @@ export function PlanningPage() {
         currentType = "lunch"
       }
       const key = formatDate(currentDate)
-      const slots = mealPlans.filter((m) => m.date === key && m.entryType === currentType)
+      const slots = mealPlans.filter((m) => m.date === key && m.entryType === currentType && getMealCourse(m) === "plat")
       for (const meal of slots) {
         const uniqueKey = meal.recipe?.id ?? meal.title ?? ""
         if (uniqueKey && !seenKeys.has(uniqueKey)) {
@@ -170,8 +175,8 @@ export function PlanningPage() {
     return result
   }
 
-  const handleAddMeal = (date: string, entryType: string) => {
-    setPendingSlot({ date, entryType })
+  const handleAddMeal = (date: string, entryType: string, course: Course) => {
+    setPendingSlot({ date, entryType, course })
     setPickerOpen(true)
   }
 
@@ -184,12 +189,12 @@ export function PlanningPage() {
       const emptySlots = days.flatMap((date) => {
         const dateStr = formatDate(date)
         return MEAL_TYPES
-          .filter(({ key }) => key !== "breakfast" && getMeals(date, key).length === 0)
+          .filter(({ key }) => key !== "breakfast" && !hasMainCourse(date, key))
           .map(({ key }) => ({ date: dateStr, entryType: key as "lunch" | "dinner" }))
       })
 
       if (emptySlots.length === 0) {
-        setAutoPlanInfo("Aucun créneau vide sur la période affichée.")
+        setAutoPlanInfo("Tous les créneaux de la période affichée ont déjà un plat.")
         return
       }
 
@@ -202,11 +207,9 @@ export function PlanningPage() {
       }
 
       for (const plannedMeal of plannedMeals) {
-        const created = await addMeal(plannedMeal.slot.date, plannedMeal.slot.entryType, plannedMeal.recipe.id)
-        const initialServings = getInitialServingsForNewMeal(plannedMeal.recipe, familySize)
-        if (initialServings) {
-          await updateMealNote(created, encodeServingsInText(initialServings, getMealVisibleNote(created)))
-        }
+        const servings = getInitialServingsForNewMeal(plannedMeal.recipe, familySize)
+        const text = encodeMealText({ servings, course: "plat", note: "" })
+        await addMeal(plannedMeal.slot.date, plannedMeal.slot.entryType, plannedMeal.recipe.id, undefined, text || undefined)
       }
 
       setAutoPlanInfo(`${plannedMeals.length} repas équilibrés ont été ajoutés automatiquement sur la période affichée.`)
@@ -219,11 +222,9 @@ export function PlanningPage() {
 
   const handleRecipeSelect = async (recipe: MealieRecipe) => {
     if (!pendingSlot) return
-    const created = await addMeal(pendingSlot.date, pendingSlot.entryType, recipe.id)
-    const initialServings = getInitialServingsForNewMeal(recipe, familySize)
-    if (initialServings) {
-      await updateMealNote(created, encodeServingsInText(initialServings, getMealVisibleNote(created)))
-    }
+    const servings = getInitialServingsForNewMeal(recipe, familySize)
+    const text = encodeMealText({ servings, course: pendingSlot.course, note: "" })
+    await addMeal(pendingSlot.date, pendingSlot.entryType, recipe.id, undefined, text || undefined)
     setPendingSlot(null)
   }
 
@@ -233,24 +234,18 @@ export function PlanningPage() {
 
   const handleSaveNote = async () => {
     if (!noteDialog) return
-    const servings = getMealServings(noteDialog.meal)
-    await updateMealNote(noteDialog.meal, encodeServingsInText(servings, noteDialog.value))
+    await updateMealNote(noteDialog.meal, buildMealText(noteDialog.meal, { note: noteDialog.value }))
     setNoteDialog(null)
   }
 
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
-    const newMeal = meal.recipe
-      ? await addMeal(formatDate(date), entryType, meal.recipe.id)
-      : await addMeal(formatDate(date), entryType, undefined, meal.title)
-    const servings = getMealServings(meal)
-    if (servings) {
-      await updateMealNote(newMeal, encodeServingsInText(servings, getMealVisibleNote(newMeal)))
-    }
+    const text = encodeMealText({ servings: getMealServings(meal), course: getMealCourse(meal), note: "" }) || undefined
+    if (meal.recipe) await addMeal(formatDate(date), entryType, meal.recipe.id, undefined, text)
+    else await addMeal(formatDate(date), entryType, undefined, meal.title, text)
   }
 
   const handleServingsChange = useCallback(async (meal: MealieMealPlan, servings: number) => {
-    const cleanNote = getMealVisibleNote(meal)
-    await updateMealNote(meal, encodeServingsInText(servings, cleanNote))
+    await updateMealNote(meal, buildMealText(meal, { servings }))
   }, [updateMealNote])
 
   const handleDrop = useCallback(async (
@@ -261,11 +256,9 @@ export function PlanningPage() {
     if (draggedMeal.date === targetDate && draggedMeal.entryType === targetType) return
     if (!draggedMeal.recipe) return
     await deleteMeal(draggedMeal.id)
-    const newMeal = await addMeal(targetDate, targetType, draggedMeal.recipe.id)
-    if (draggedMeal.text && newMeal) {
-      await updateMealNote(newMeal, draggedMeal.text)
-    }
-  }, [deleteMeal, addMeal, updateMealNote])
+    // La note transporte les portions et le type (entrée / plat / dessert) du repas déplacé.
+    await addMeal(targetDate, targetType, draggedMeal.recipe.id, undefined, draggedMeal.text || undefined)
+  }, [deleteMeal, addMeal])
 
   // Use a ref so touch handlers always call the latest version without re-mounting the effect
   const handleDropRef = useRef(handleDrop)
@@ -507,8 +500,9 @@ export function PlanningPage() {
             Planification automatique équilibrée
           </div>
           <p className="text-sm text-muted-foreground">
-            Remplit les créneaux vides de la période affichée avec des recettes ayant des données nutritionnelles,
+            Remplit les créneaux sans plat de la période affichée avec des plats ayant des données nutritionnelles,
             en visant un équilibre repas adulte standard et en limitant les répétitions récentes.
+            Les entrées et desserts ne sont jamais choisis comme plat.
           </p>
         </div>
 
@@ -598,7 +592,7 @@ export function PlanningPage() {
                           <MobileMealSection
                             meals={meals}
                             lastMeals={getLastMeals(date, key, 3)}
-                            onAdd={() => handleAddMeal(dateStr, key)}
+                            onAdd={(course) => handleAddMeal(dateStr, key, course)}
                             onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                             onMealTouchStart={handleMealTouchStart}
                             servingsEnabled={flags.servings}
@@ -670,7 +664,7 @@ export function PlanningPage() {
                           key={date.toISOString()}
                           meals={meals}
                           lastMeals={lastMeals}
-                          onAdd={() => handleAddMeal(dateStr, key)}
+                          onAdd={(course) => handleAddMeal(dateStr, key, course)}
                           onDelete={deleteMeal}
                           onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                           onNote={handleOpenNote}
@@ -847,6 +841,7 @@ export function PlanningPage() {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onSelect={handleRecipeSelect}
+        course={pendingSlot?.course}
       />
 
       <RecipeDetailModal

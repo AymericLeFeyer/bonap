@@ -99,8 +99,16 @@ test.describe("Recettes", () => {
     test("affiche les catégories disponibles dans le formulaire", async ({ page }) => {
       await page.goto("/recipes/new")
       await expect(page.getByText("Plat principal")).toBeVisible()
-      await expect(page.getByText("Entrée")).toBeVisible()
-      await expect(page.getByText("Dessert")).toBeVisible()
+      // "Entrée" / "Dessert" existent aussi dans le sélecteur de type (rendu après les catégories).
+      await expect(page.getByText("Entrée", { exact: true }).first()).toBeVisible()
+      await expect(page.getByText("Dessert", { exact: true }).first()).toBeVisible()
+    })
+
+    test("affiche le sélecteur de type, plat par défaut", async ({ page }) => {
+      await page.goto("/recipes/new")
+      const group = page.getByRole("group", { name: "Type de plat" })
+      await expect(group.getByRole("button", { name: "Plat" })).toHaveAttribute("aria-pressed", "true")
+      await expect(group.getByRole("button", { name: "Dessert" })).toHaveAttribute("aria-pressed", "false")
     })
 
     test("affiche les saisons dans le formulaire", async ({ page }) => {

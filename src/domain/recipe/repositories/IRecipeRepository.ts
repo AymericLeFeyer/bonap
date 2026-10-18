@@ -8,6 +8,7 @@ import type {
   RecipeFilters,
   RecipeFormData,
   Season,
+  Course,
 } from "../../../shared/types/mealie.ts"
 
 export interface IRecipeRepository {
@@ -20,6 +21,7 @@ export interface IRecipeRepository {
   create(name: string): Promise<string>
   update(slug: string, data: RecipeFormData): Promise<MealieRecipe>
   updateSeasons(slug: string, seasons: Season[]): Promise<MealieRecipe>
+  updateCourses(slug: string, courses: Course[]): Promise<MealieRecipe>
   updateNutrition(
     slug: string,
     nutrition: MealieNutrition,
