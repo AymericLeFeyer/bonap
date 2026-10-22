@@ -135,7 +135,7 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section style={{
+      <section data-ay-section="hero" style={{
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
@@ -295,7 +295,7 @@ export default function LandingPage() {
       </section>
 
       {/* Video */}
-      <section style={{ padding: '5rem 1.5rem', maxWidth: '900px', margin: '0 auto' }}>
+      <section data-ay-section="origins" style={{ padding: '5rem 1.5rem', maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 style={{
             fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)',
@@ -337,7 +337,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section style={{ padding: '5rem 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <section data-ay-section="features" style={{ padding: '5rem 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 style={{
             fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
@@ -500,7 +500,7 @@ export default function LandingPage() {
       )}
 
       {/* Installation */}
-      <section style={{
+      <section data-ay-section="install" style={{
         padding: '5rem 1.5rem',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
@@ -608,7 +608,7 @@ export default function LandingPage() {
       </section>
 
       {/* Extras */}
-      <section style={{ padding: '5rem 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <section data-ay-section="more" style={{ padding: '5rem 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 style={{
             fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',

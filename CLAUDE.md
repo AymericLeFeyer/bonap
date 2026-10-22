@@ -1,6 +1,6 @@
 # CLAUDE.md — Bonap
 
-Mémoire projet pour Claude Code. Compressée depuis les 5 livrables `docs/` (MVP-SCOPE, PDL, SDLC, ROADMAP, MVP-EXEC). Mis à jour : 2026-09-11.
+Mémoire projet pour Claude Code. Compressée depuis les 5 livrables `docs/` (MVP-SCOPE, PDL, SDLC, ROADMAP, MVP-EXEC). Mis à jour : 2026-10-22.
 
 ## 1. Projet
 
@@ -381,6 +381,16 @@ npm run preview  # Prévisualisation prod
 - **v2.0** (cible 2027-06-30, ~52h) : planning auto IA, nutrition (OpenFoodFacts), multi-households, partage public de recettes, cookbook. Feature flags `multiHouseholdsEnabled`/`nutritionEnabled`/`cookbooksEnabled`. Sprints S7–S11 dans `docs/MVP-EXEC.md`.
 - **Skills à créer** (via skill-creator, sprint S0) : `scaffold-ddd-feature`, `e2e-test-gen`, `i18n-extract`, `accessibility-audit`, `performance-audit`, `recipe-migration` (optionnel). Voir `docs/PDL.md` §11 et `docs/MVP-EXEC.md` Sprint S0.
 - **MCP** : Playwright, Context7, GitHub, Filesystem, Sequential Thinking (install Sprint S0 / T6). Custom `bonap-nutrition`, `bonap-pdf` envisagés en v2.0.
+
+## 12bis. Site vitrine (`website/`) — analytics Aynalytics
+
+Projet séparé (React 18 + Vite 5, deps propres : `cd website && npm ci`, sinon `tsc` résout les `node_modules` de l'app — lucide 1.x sans icône `Github`). Image `ghcr.io/aymericlefeyer/bonap-website` (`.github/workflows/website.yml`). L'app Bonap elle-même n'a **pas** d'analytics.
+
+- `website/src/lib/aynalytics.ts` (`initAynalytics()` dans `main.tsx`) injecte `/_ay/sdk.js` puis `init({ persistence: 'local', autoClicks: false, outboundLinks: true, classifyLink })`. Un `screen` par route (react-router → `pushState`).
+- Liens sortants classés : `github_click { repo: 'owner/repo' }`, `mealie_click`, sinon `outbound_click` ; tous avec `url`, `host`, `text`, `section`. `section` vient de `data-ay-section` : `navbar`, `footer`, `docs-header`, `docs-content`, `hero`, `origins`, `features`, `install`, `more` (nouveau bloc = nouvel attribut).
+- `code_copy { page, language, command (1re ligne, 200 car.) }` : bouton Copier de `CodeBlock` (docs).
+- **Proxy** `location ^~ /_ay/` (`website/nginx.conf`) → `http://aynalytics-collector:8080` (réseau Docker `pangolin`, résolu à la requête : collector arrêté = 502 sur `/_ay/` seulement). Le `^~` est obligatoire : sans lui, la regex des assets (`\.js$`) capterait `/_ay/sdk.js` → 404.
+- Variables GitHub (`vars.*`, pas secrets) passées en build-args : `VITE_AYNALYTICS_SITE_KEY` (`ay_pk_...`, absente = inactif) et `VITE_AYNALYTICS_URL` (facultative, `/_ay`).
 
 ## 13. Références livrables
 

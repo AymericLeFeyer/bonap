@@ -3,7 +3,7 @@ import { Github } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer style={{
+    <footer data-ay-section="footer" style={{
       borderTop: '1px solid var(--border)',
       padding: '2rem 1.5rem',
       marginTop: '4rem',

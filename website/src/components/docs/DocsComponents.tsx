@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
+import { track } from '../../lib/aynalytics'
 
 interface CodeBlockProps {
   code: string
@@ -11,6 +12,12 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code)
+    track('code_copy', {
+      page: window.location.pathname,
+      language: language ?? 'bash',
+      // Première ligne seulement : identifie la commande sans envoyer tout le bloc.
+      command: code.split('\n')[0].slice(0, 200),
+    })
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

@@ -45,5 +45,9 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # Inlinées par Vite au build : variables GitHub (vars.*), la clé est publique.
+          build-args: |
+            VITE_AYNALYTICS_URL=${{ vars.VITE_AYNALYTICS_URL }}
+            VITE_AYNALYTICS_SITE_KEY=${{ vars.VITE_AYNALYTICS_SITE_KEY }}
           cache-from: type=gha,scope=website
           cache-to: type=gha,mode=max,scope=website

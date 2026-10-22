@@ -10,6 +10,14 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
+
+# Aynalytics : clé PUBLIQUE du site (jamais la clé secrète), inlinée par Vite au build.
+# Vide = analytics désactivé. L'URL est facultative (/_ay, proxy nginx, par défaut).
+ARG VITE_AYNALYTICS_URL=""
+ARG VITE_AYNALYTICS_SITE_KEY=""
+ENV VITE_AYNALYTICS_URL=$VITE_AYNALYTICS_URL
+ENV VITE_AYNALYTICS_SITE_KEY=$VITE_AYNALYTICS_SITE_KEY
+
 RUN npm run build
 
 # =============================================================================

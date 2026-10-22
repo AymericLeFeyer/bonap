@@ -10,7 +10,7 @@ export default function DocsLayout() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Docs Navbar */}
-      <header style={{
+      <header data-ay-section="docs-header" style={{
         position: 'sticky',
         top: 0,
         zIndex: 30,
@@ -84,7 +84,7 @@ export default function DocsLayout() {
       {/* Body */}
       <div style={{ display: 'flex', flex: 1 }}>
         <DocsSidebar />
-        <main style={{
+        <main data-ay-section="docs-content" style={{
           flex: 1,
           minWidth: 0,
           padding: '2.5rem 2rem 4rem',
