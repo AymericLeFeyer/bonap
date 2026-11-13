@@ -1,6 +1,6 @@
 'use strict'
 
-const { toPlainText } = require('./bff-nutrition-text.cjs')
+const { normalizeFoodKey, toPlainText } = require('./bff-nutrition-text.cjs')
 
 const OUNCE_GRAMS = 28.3495
 const POUND_GRAMS = 453.592
@@ -24,7 +24,11 @@ const VOLUME_FACTORS = {
   verre: 200, tasse: 250, bol: 350,
 }
 
-const PIECE_UNITS = new Set(['', 'piece', 'unite', 'u', 'tranche', 'botte', 'pave', 'filet de poisson', 'tete', 'part'])
+const PIECE_UNITS = new Set([
+  '', 'piece', 'unite', 'u', 'tranche', 'botte', 'pave', 'filet de poisson', 'tete', 'part',
+  // Morceaux de viande comptés à l'unité (« 2 cuisses de poulet »).
+  'cuisse', 'pilon', 'aile', 'escalope', 'cote', 'saucisse', 'manchon',
+])
 const VAGUE_UNITS = new Set([
   'pincee', 'filet', 'trait', 'qs', 'q s', 'noisette', 'brin', 'feuille', 'branche', 'zeste',
   'poignee', 'quelques', 'au gout', 'soupcon', 'touche',
@@ -115,9 +119,24 @@ function classifyUnit(unit, abbreviation = '') {
   return classifyUnitName(abbreviation)
 }
 
+/**
+ * Unité d'un ingrédient lu. Une unité Mealie qui reprend le nom de l'aliment
+ * (unité « oeuf » pour l'aliment « œuf », « gousse d'ail »…) désigne une pièce.
+ */
+function classifyReading(reading) {
+  const byUnit = classifyUnit(reading.unit, reading.unitAbbreviation)
+  if (byUnit.kind !== 'unknown') return byUnit
+  const unitWords = normalizeFoodKey(reading.unit).split(' ').filter(Boolean)
+  const foodWords = new Set(normalizeFoodKey(reading.label).split(' '))
+  if (unitWords.length > 0 && unitWords.every((word) => foodWords.has(word))) {
+    return { kind: 'piece', factor: 0 }
+  }
+  return byUnit
+}
+
 function quantityKind(reading) {
   if (reading.quantity === null) return 'vague'
-  return classifyUnit(reading.unit, reading.unitAbbreviation).kind
+  return classifyReading(reading).kind
 }
 
 function canWeight(foodKey) {
@@ -130,7 +149,7 @@ function canWeight(foodKey) {
  */
 function gramsFor(reading, foodKey, entry) {
   if (reading.quantity === null) return { negligible: true }
-  const { kind, factor } = classifyUnit(reading.unit, reading.unitAbbreviation)
+  const { kind, factor } = classifyReading(reading)
   switch (kind) {
     case 'mass':
     case 'clove':

@@ -63,8 +63,12 @@ const SEED_FOODS = {
   mozzarella: { ciqualCode: '19590' },
   jambon: { ciqualCode: '28900' },
   'jambon blanc': { ciqualCode: '28900' },
-  'blanc poulet': { ciqualCode: '36017' },
-  'filet poulet': { ciqualCode: '36017' },
+  'blanc poulet': { ciqualCode: '36017', pieceWeight: 150 },
+  'filet poulet': { ciqualCode: '36017', pieceWeight: 150 },
+  // Sans code : la correspondance CIQUAL est trouvée automatiquement, le poids
+  // d'une pièce est conservé lors de la fusion.
+  'cuisse poulet': { pieceWeight: 250 },
+  'pilon poulet': { pieceWeight: 110 },
   'thon conserve': { ciqualCode: '26039' },
   yaourt: { ciqualCode: '19593' },
   'yaourt nature': { ciqualCode: '19593' },
