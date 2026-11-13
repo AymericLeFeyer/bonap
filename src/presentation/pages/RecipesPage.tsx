@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useRecipesInfinite } from "../hooks/useRecipesInfinite.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useTags } from "../hooks/useTags.ts"
+import { useTools } from "../hooks/useTools.ts"
 import { getCaloriesFromTags } from "../../shared/utils/calorie.ts"
 import { useGridColumns } from "../hooks/useGridColumns.ts"
 import { RecipeCard } from "../components/RecipeCard.tsx"
@@ -24,6 +25,7 @@ export function RecipesPage() {
   const [search, setSearch] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedTools, setSelectedTools] = useState<string[]>([])
   const [maxTotalTime, setMaxTotalTime] = useState<number | undefined>(undefined)
   const [maxCalories, setMaxCalories] = useState<number | undefined>(undefined)
   const [selectedSeasons, setSelectedSeasons] = useState<Season[]>([])
@@ -67,6 +69,7 @@ export function RecipesPage() {
 
   const { categories } = useCategories()
   const { tags } = useTags()
+  const { tools } = useTools()
   const [orderBy, setOrderBy] = useState("createdAt")
   const [orderDirection, setOrderDirection] = useState<"asc" | "desc">("desc")
 
@@ -74,6 +77,7 @@ export function RecipesPage() {
     search,
     categories: selectedCategories,
     tags: selectedTags,
+    tools: selectedTools,
     orderBy,
     orderDirection,
   })
@@ -105,6 +109,12 @@ export function RecipesPage() {
     )
   }
 
+  const toggleTool = (slug: string) => {
+    setSelectedTools((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+    )
+  }
+
   const toggleSeason = (season: Season) => {
     setSelectedSeasons((prev) =>
       prev.includes(season) ? prev.filter((s) => s !== season) : [...prev, season],
@@ -129,6 +139,7 @@ export function RecipesPage() {
     search.trim() !== "" ||
     selectedCategories.length > 0 ||
     selectedTags.length > 0 ||
+    selectedTools.length > 0 ||
     maxTotalTime !== undefined ||
     maxCalories !== undefined ||
     selectedSeasons.length > 0 ||
@@ -139,6 +150,7 @@ export function RecipesPage() {
     setSearch("")
     setSelectedCategories([])
     setSelectedTags([])
+    setSelectedTools([])
     setMaxTotalTime(undefined)
     setMaxCalories(undefined)
     setSelectedSeasons([])
@@ -221,6 +233,14 @@ export function RecipesPage() {
       }
 
       // =====================
+      // USTENSILES (filtré par l'API ; revérifié pour la liste « sans ingrédients »)
+      // =====================
+      if (selectedTools.length > 0 && recipe.tools) {
+        const recipeToolSlugs = recipe.tools.map((t) => t.slug)
+        if (!selectedTools.every((tool) => recipeToolSlugs.includes(tool))) return false
+      }
+
+      // =====================
       // TEMPS TOTAL
       // =====================
       if (maxTotalTime !== undefined) {
@@ -251,6 +271,7 @@ export function RecipesPage() {
     selectedSeasons,
     selectedCourses,
     selectedTags,
+    selectedTools,
     maxTotalTime,
     maxCalories,
     showSimple,
@@ -384,6 +405,10 @@ export function RecipesPage() {
 
           selectedTags={selectedTags}
           toggleTag={toggleTag}
+
+          tools={tools}
+          selectedTools={selectedTools}
+          toggleTool={toggleTool}
 
           selectedSeasons={selectedSeasons}
           toggleSeason={toggleSeason}

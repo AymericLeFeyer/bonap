@@ -17,6 +17,7 @@ export function useRecipesInfinite(filters: RecipeFilters = {}) {
     search: filters.search ?? "",
     categories: [...(filters.categories ?? [])].sort(),
     tags: [...(filters.tags ?? [])].sort(),
+    tools: [...(filters.tools ?? [])].sort(),
     orderBy: filters.orderBy ?? null,
     orderDirection: filters.orderDirection ?? null,
   })

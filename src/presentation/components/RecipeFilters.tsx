@@ -4,7 +4,7 @@ import { Input } from "../components/ui/input"
 import { Search, X, RotateCcw } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
-import type { Course, MealieCategory, MealieTag, Season } from "../../shared/types/mealie"
+import type { Course, MealieCategory, MealieTag, MealieTool, Season } from "../../shared/types/mealie"
 import { COURSES, COURSE_LABELS } from "../../shared/types/mealie"
 import { isSeasonTag } from "../../shared/utils/season"
 import { isCourseTag } from "../../shared/utils/course"
@@ -51,6 +51,10 @@ type Props = {
     selectedTags: string[]
     toggleTag: (slug: string) => void
 
+    tools: MealieTool[]
+    selectedTools: string[]
+    toggleTool: (slug: string) => void
+
     selectedSeasons: Season[]
     toggleSeason: (season: Season) => void
 
@@ -87,6 +91,9 @@ export function RecipeFilters({
     toggleCategory,
     selectedTags,
     toggleTag,
+    tools,
+    selectedTools,
+    toggleTool,
     selectedSeasons,
     toggleSeason,
     selectedCourses,
@@ -373,6 +380,36 @@ export function RecipeFilters({
                             </div>
                         </div>
                     </div>
+
+                    {/* ===================== */}
+                    {/* 3bis. USTENSILES */}
+                    {/* ===================== */}
+                    {tools.length > 0 && (
+                        <div className="flex flex-col gap-1">
+
+                            <div className="text-xs text-muted-foreground font-medium">
+                                Ustensiles
+                            </div>
+
+                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-2 py-1 min-w-0">
+                                <div className="flex items-center gap-2 min-w-max">
+                                    {tools.map(tool => {
+                                        const active = selectedTools.includes(tool.slug)
+                                        return (
+                                            <Badge
+                                                key={tool.id}
+                                                variant={active ? "default" : "outline"}
+                                                className="cursor-pointer whitespace-nowrap shrink-0"
+                                                onClick={() => toggleTool(tool.slug)}
+                                            >
+                                                {tool.name}
+                                            </Badge>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ===================== */}
                     {/* 4. TAGS + SEARCH */}

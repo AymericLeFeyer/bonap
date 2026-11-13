@@ -80,6 +80,12 @@ export class RecipeRepository implements IRecipeRepository {
       })
       params.set("requireAllTags", "true")
     }
+    if (filters.tools?.length) {
+      filters.tools.forEach((tool) => {
+        params.append("tools", tool)
+      })
+      params.set("requireAllTools", "true")
+    }
     if (filters.orderBy !== undefined) {
       params.set("orderBy", String(filters.orderBy))
     }
