@@ -8,7 +8,7 @@ const path = require('path')
 
 const { normalizeFoodKey, detectPrecisions } = require('./bff-nutrition-text.cjs')
 const { classifyUnit, readIngredient, quantityKind, gramsFor } = require('./bff-nutrition-quantity.cjs')
-const { createFoodStore, mergeFoodEntry, validateFoodPatch, MAX_ENTRIES } = require('./bff-nutrition-foods.cjs')
+const { createFoodStore, mergeFoodEntry, seedEntry, validateFoodPatch, MAX_ENTRIES } = require('./bff-nutrition-foods.cjs')
 const {
   buildCiqualIndex,
   classifyIngredients,
@@ -383,4 +383,24 @@ test('estimateRecipe : Open Food Facts ne fournit pas de micros, couverture null
   const result = await estimate(store, [{ food: 'Beurre doux', quantity: '100', unit: 'g' }], 1, async () => ({ calories: 740 }))
   assert.equal(result.micronutrients.iron.coverage, 0)
   assert.equal(result.micronutrients.iron.perServing, 0)
+})
+
+test('quantityKind : unité Mealie reprenant le nom de l\'aliment (issue #191)', () => {
+  const egg = readIngredient({ quantity: '1', unit: 'oeuf', food: 'œuf' })
+  assert.equal(quantityKind(egg), 'piece')
+  assert.deepEqual(gramsFor(egg, 'oeuf', { pieceWeight: 60 }), { grams: 60 })
+  const thighs = readIngredient({ quantity: '2', unit: 'cuisses', food: 'Cuisse de poulet' })
+  assert.equal(quantityKind(thighs), 'piece')
+  assert.equal(quantityKind(readIngredient({ quantity: '1', unit: 'paquet', food: 'farine' })), 'unknown')
+})
+
+test('quantityKind : morceaux de viande comptés à la pièce', () => {
+  assert.equal(quantityKind(readIngredient({ quantity: '4', unit: 'pilon', food: 'poulet' })), 'piece')
+  assert.equal(quantityKind(readIngredient({ quantity: '2', unit: 'escalopes', food: 'dinde' })), 'piece')
+})
+
+test('seedEntry : poids d\'une cuisse de poulet sans code CIQUAL imposé', () => {
+  const entry = seedEntry('cuisse poulet', { nameOf: () => null })
+  assert.equal(entry.pieceWeight, 250)
+  assert.equal(entry.ciqualCode, null)
 })

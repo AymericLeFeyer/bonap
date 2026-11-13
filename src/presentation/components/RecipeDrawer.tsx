@@ -4,7 +4,9 @@ import { CookingMode } from "./CookingMode"
 import { PlanningSlotPicker } from "./PlanningSlotPicker"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 import { Badge } from "./ui/badge"
-import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, Heart } from "lucide-react"
+import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, Heart, Printer } from "lucide-react"
+import { printHtml } from "./print/printHtml"
+import { buildRecipePrintHtml } from "./print/buildRecipePrintHtml"
 
 import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"
@@ -37,6 +39,9 @@ import { SEASONS, SEASON_LABELS } from "../../shared/types/mealie"
 import { addMealUseCase, deleteMealUseCase } from "../../infrastructure/container"
 
 import { useGetFavorites } from "../../presentation/hooks/useGetFavorites"
+import { useGuestHistory } from "../hooks/useGuestHistory"
+import { recipeTasters } from "../../domain/planning/services/GuestHistoryService"
+import { formatGuestDate } from "../../shared/utils/guests"
 import { useToggleFavorite } from "../../presentation/hooks/useToggleFavorite"
 
 
@@ -61,6 +66,7 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
     const { updateCalorieTag } = useUpdateCalorieTag()
     const { flags } = useFeatureFlags()
     const [cookingMode, setCookingMode] = useState(false)
+    const { history: guestHistory } = useGuestHistory()
     // Portions choisies pour l'affichage uniquement (jamais écrites dans Mealie),
     // rattachées au slug pour repartir de la base en changeant de recette.
     const [servingsChoice, setServingsChoice] = useState<{ slug: string; value: number } | null>(null)
@@ -276,6 +282,34 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                             </button>
                                         </TooltipTrigger>
                                         <TooltipContent className="hidden sm:block">Mode cuisine</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    printHtml(
+                                                        buildRecipePrintHtml(recipe, {
+                                                            baseServings,
+                                                            targetServings,
+                                                            imageUrl: recipe.image ? recipeImageUrl(recipe, "original") : undefined,
+                                                        }),
+                                                    )
+                                                }
+                                                aria-label="Imprimer la recette"
+                                                className={cn(
+                                                    "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                                                    "border border-border px-2.5 py-1.5",
+                                                    "text-xs font-semibold text-muted-foreground",
+                                                    "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                                                    "transition-all duration-150",
+                                                )}
+                                            >
+                                                <Printer className="h-3.5 w-3.5" />
+                                                <span className="sm:hidden">Imprimer</span>
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="hidden sm:block">Imprimer</TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -506,6 +540,24 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                 )}
 
                             </div>
+
+                            {recipe && recipeTasters(guestHistory, recipe.id).length > 0 && (
+                                <div className="px-5">
+                                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.10em] text-muted-foreground/60">
+                                        Déjà goûtée par
+                                    </p>
+                                    <ul className="space-y-0.5 text-sm">
+                                        {recipeTasters(guestHistory, recipe.id).map((taster) => (
+                                            <li key={taster.name}>
+                                                <span className="font-medium">{taster.name}</span>
+                                                <span className="text-muted-foreground">
+                                                    {" "}· {taster.dates.map(formatGuestDate).join(", ")}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
                             {/* Séparateur éditorial */}
                             {((recipe.recipeIngredient ?? []).length > 0 || (recipe.recipeInstructions ?? []).length > 0) && (

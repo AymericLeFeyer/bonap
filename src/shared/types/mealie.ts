@@ -92,10 +92,19 @@ export interface MealieTag {
   slug: string
 }
 
+/** Ustensile / équipement Mealie (`/api/organizers/tools`). */
+export interface MealieTool {
+  id: string
+  name: string
+  slug: string
+}
+
 export interface RecipeFilters {
   search?: string
   categories?: string[]
   tags?: string[]
+  /** Slugs d'ustensiles : la recette doit les avoir tous. */
+  tools?: string[]
   seasons?: Season[]
   orderBy?: string
   orderDirection?: string
@@ -147,6 +156,7 @@ export interface MealieRecipe {
   dateUpdated?: string
   recipeCategory?: MealieCategory[]
   tags?: MealieTag[]
+  tools?: MealieTool[]
   prepTime?: string
   performTime?: string
   totalTime?: string

@@ -79,6 +79,15 @@ describe("RecipeRepository", () => {
       expect(url).toContain("categories=cat-1")
       expect(url).toContain("requireAllCategories=true")
     })
+
+    it("inclut les ustensiles dans l'URL si fournis", async () => {
+      client.get.mockResolvedValue({ page: 1, per_page: 30, total: 0, total_pages: 0, items: [] })
+      await repo.getAll(1, 30, { tools: ["thermomix", "air-fryer"] })
+      const url = client.get.mock.calls[0][0] as string
+      expect(url).toContain("tools=thermomix")
+      expect(url).toContain("tools=air-fryer")
+      expect(url).toContain("requireAllTools=true")
+    })
   })
 
   // ── minutesToString (via update) ─────────────────────────────────────────────

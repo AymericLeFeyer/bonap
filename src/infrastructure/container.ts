@@ -16,6 +16,7 @@ import { PlanningRepository } from './mealie/repositories/PlanningRepository.ts'
 import { ShoppingRepository } from './mealie/repositories/ShoppingRepository.ts'
 import { CategoryRepository } from './mealie/repositories/CategoryRepository.ts'
 import { TagRepository } from './mealie/repositories/TagRepository.ts'
+import { ToolRepository } from './mealie/repositories/ToolRepository.ts'
 import { FoodRepository } from './mealie/repositories/FoodRepository.ts'
 import { UnitRepository } from './mealie/repositories/UnitRepository.ts'
 import { AuthRepository } from './mealie/repositories/AuthRepository.ts'
@@ -57,6 +58,7 @@ import { ToggleFavoriteUseCase } from "../application/user/usecases/ToggleFavori
 // Use cases — planning
 import { GetWeekPlanningUseCase } from '../application/planning/usecases/GetWeekPlanningUseCase.ts'
 import { GetPlanningRangeUseCase } from '../application/planning/usecases/GetPlanningRangeUseCase.ts'
+import { GetGuestHistoryUseCase } from '../application/planning/usecases/GetGuestHistoryUseCase.ts'
 import { AddMealUseCase } from '../application/planning/usecases/AddMealUseCase.ts'
 import { DeleteMealUseCase } from '../application/planning/usecases/DeleteMealUseCase.ts'
 
@@ -71,6 +73,7 @@ import { ClearListUseCase } from '../application/shopping/usecases/ClearListUseC
 // Use cases — organizer
 import { GetCategoriesUseCase } from '../application/organizer/usecases/GetCategoriesUseCase.ts'
 import { GetTagsUseCase } from '../application/organizer/usecases/GetTagsUseCase.ts'
+import { GetToolsUseCase } from '../application/organizer/usecases/GetToolsUseCase.ts'
 import { GetFoodsUseCase } from '../application/organizer/usecases/GetFoodsUseCase.ts'
 import { CreateFoodUseCase } from '../application/organizer/usecases/CreateFoodUseCase.ts'
 import { GetUnitsUseCase } from '../application/organizer/usecases/GetUnitsUseCase.ts'
@@ -86,6 +89,7 @@ export const planningRepository = new PlanningRepository()
 export const shoppingRepository = new ShoppingRepository()
 export const categoryRepository = new CategoryRepository()
 export const tagRepository = new TagRepository()
+export const toolRepository = new ToolRepository()
 export const foodRepository = new FoodRepository()
 export const unitRepository = new UnitRepository()
 export const authRepository = new AuthRepository()
@@ -150,6 +154,7 @@ export const getPlanningRangeUseCase = new GetPlanningRangeUseCase(
 )
 export const addMealUseCase = new AddMealUseCase(planningRepository)
 export const deleteMealUseCase = new DeleteMealUseCase(planningRepository)
+export const getGuestHistoryUseCase = new GetGuestHistoryUseCase(planningRepository)
 
 // --- Singleton use case instances — shopping ---
 
@@ -168,6 +173,7 @@ export const clearListUseCase = new ClearListUseCase(shoppingRepository)
 
 export const getCategoriesUseCase = new GetCategoriesUseCase(categoryRepository)
 export const getTagsUseCase = new GetTagsUseCase(tagRepository)
+export const getToolsUseCase = new GetToolsUseCase(toolRepository)
 export const getFoodsUseCase = new GetFoodsUseCase(foodRepository)
 export const createFoodUseCase = new CreateFoodUseCase(foodRepository)
 export const getUnitsUseCase = new GetUnitsUseCase(unitRepository)

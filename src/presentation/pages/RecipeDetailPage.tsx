@@ -34,7 +34,10 @@ import {
   Star,
   Heart,
   Smile,
+  Printer,
 } from "lucide-react"
+import { printHtml } from "../components/print/printHtml.ts"
+import { buildRecipePrintHtml } from "../components/print/buildRecipePrintHtml.ts"
 import { FOOD_EMOJIS, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
 import { recipeEmojiStore } from "../../infrastructure/recipe/RecipeEmojiStore.ts"
 import { useState, useRef, useCallback, useEffect, type ChangeEvent } from "react"
@@ -443,6 +446,27 @@ export function RecipeDetailPage() {
               >
                 <UtensilsCrossed className="h-4 w-4" />
                 Mode cuisine
+              </Button>
+            )}
+
+            {recipe && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  printHtml(
+                    buildRecipePrintHtml(recipe, {
+                      baseServings: getRecipeServings(recipe),
+                      targetServings: formData ? parseServings(formData.recipeYield) : undefined,
+                      imageUrl: recipe.image ? recipeImageUrl(recipe, "original") : undefined,
+                    }),
+                  )
+                }
+                className="gap-1.5"
+                aria-label="Imprimer la recette"
+              >
+                <Printer className="h-4 w-4" />
+                <span className="hidden sm:inline">Imprimer</span>
               </Button>
             )}
 

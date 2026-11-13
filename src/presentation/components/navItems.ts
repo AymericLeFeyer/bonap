@@ -1,4 +1,4 @@
-import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, Sparkles, Globe } from "lucide-react"
+import { UtensilsCrossed, CalendarDays, BarChart2, ShoppingCart, Sparkles, Globe, Users } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { visibleNavRoutes } from "../../shared/constants/navigation.ts"
 import type { NavRoute } from "../../shared/constants/navigation.ts"
@@ -14,6 +14,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/suggestions": Sparkles,
   "/explore": Globe,
   "/stats": BarChart2,
+  "/guests": Users,
 }
 
 /**

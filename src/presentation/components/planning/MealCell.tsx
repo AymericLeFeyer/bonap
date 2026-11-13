@@ -10,6 +10,9 @@ import { RecipeImage } from "../RecipeImage.tsx"
 import { getRecipeServings } from "../../../shared/utils/servings.ts"
 import { getMealCourse, getMealServings, getMealVisibleNote } from "./planningUtils.ts"
 import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
+import { MealGuests } from "./MealGuests.tsx"
+import type { GuestHistory } from "../../../domain/planning/services/GuestHistoryService.ts"
+import { decodeMealText } from "../../../shared/utils/mealText.ts"
 
 export interface MealCellProps {
   /** Repas du créneau, déjà triés entrée → plat → dessert. */
@@ -29,12 +32,14 @@ export interface MealCellProps {
   selectionMode?: boolean
   selectedMealIds?: Set<number>
   onToggleSelect?: (id: number) => void
+  /** Historique des invités, pour signaler un plat déjà goûté. */
+  guestHistory?: GuestHistory[]
 }
 
 export function MealCell({
   meals, lastMeals, onAdd, onDelete, onSelectLeftover, onNote,
   colorClass, date, entryType, onDrop, onView, onServingsChange, servingsEnabled,
-  selectionMode, selectedMealIds, onToggleSelect,
+  selectionMode, selectedMealIds, onToggleSelect, guestHistory = [],
 }: MealCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -153,6 +158,9 @@ export function MealCell({
                 <span className="line-clamp-4 flex-1 text-[12.5px] font-medium leading-snug">{name}</span>
               </div>
 
+              <div className="px-2 pb-1.5 empty:hidden">
+                <MealGuests meal={meal} history={guestHistory} />
+              </div>
               {getMealVisibleNote(meal) && (
                 <div className="px-2 pb-1.5">
                   <p className="text-[11px] text-muted-foreground italic leading-snug line-clamp-2">
@@ -210,10 +218,10 @@ export function MealCell({
                 <button
                   type="button"
                   onClick={() => onNote(meal)}
-                  title={getMealVisibleNote(meal) ? "Modifier la note" : "Ajouter une note"}
+                  title="Note et invités"
                   className={cn(
                     "flex flex-1 items-center justify-center py-1.5 transition-colors border-l border-border/30",
-                    getMealVisibleNote(meal)
+                    getMealVisibleNote(meal) || decodeMealText(meal.text).guests
                       ? "text-primary/70 hover:bg-primary/8 hover:text-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
