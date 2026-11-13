@@ -93,6 +93,18 @@ export class LLMConfigService {
           return await testOpenAI(config.apiKey, config.model)
         case 'google':
           return await testGoogle(config.apiKey, config.model)
+        case 'mistral':
+          return await testChatCompletions(
+            'https://api.mistral.ai/v1/chat/completions',
+            config.apiKey,
+            config.model,
+          )
+        case 'perplexity':
+          return await testChatCompletions(
+            'https://api.perplexity.ai/chat/completions',
+            config.apiKey,
+            config.model,
+          )
         case 'ollama':
           return await testOllama(config.ollamaBaseUrl)
         case 'openrouter':
@@ -245,6 +257,30 @@ async function testOllama(
     }
   }
 }
+/** Test générique pour les API compatibles OpenAI `/chat/completions`. */
+async function testChatCompletions(
+  url: string,
+  apiKey: string,
+  model: string,
+): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'Hi' }],
+    }),
+  })
+  if (res.ok || res.status === 400) return { ok: true, message: 'Clé valide' }
+  if (res.status === 401) return { ok: false, message: 'Clé invalide (401)' }
+  if (res.status === 403) return { ok: false, message: 'Clé invalide (403)' }
+  return { ok: false, message: `Erreur ${res.status}` }
+}
+
 async function testOpenRouter(
   apiKey: string,
   model: string,
