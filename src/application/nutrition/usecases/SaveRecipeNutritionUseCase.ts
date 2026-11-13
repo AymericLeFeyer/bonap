@@ -1,6 +1,7 @@
 import type { NutritionEstimate } from "../../../domain/nutrition/entities/NutritionFood.ts"
 import type { IRecipeRepository } from "../../../domain/recipe/repositories/IRecipeRepository.ts"
 import type { MealieRecipe } from "../../../shared/types/mealie.ts"
+import { micronutrientsToStore } from "../../../shared/utils/micronutrients.ts"
 import type { EstimateRecipeNutritionUseCase } from "./EstimateRecipeNutritionUseCase.ts"
 
 export interface SavedRecipeNutrition {
@@ -34,6 +35,7 @@ export class SaveRecipeNutritionUseCase {
       source: estimate.source,
       coverage: estimate.coverage,
       perServing: true,
+      micronutrients: micronutrientsToStore(estimate.micronutrients),
     })
     return { estimate, recipe: updated }
   }

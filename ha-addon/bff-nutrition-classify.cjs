@@ -16,6 +16,39 @@ const COOKED_PATTERN = /\b(cuite?|bouillie?|rotie?|poelee?|sautee?|grillee?|frit
 const PREPARED_PATTERN = /\b(preemballee?|recette|sauce|gratin|farcie?|plat|garnie?|preparee?)\b/
 const SOFT_PRECISIONS = ['seche']
 const NUTRIENT_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat']
+
+/**
+ * Micronutriments lus dans CIQUAL en plus des macros (issue #201). Codes et
+ * unités de const_2020_07_07.xml : fer, calcium et zinc en mg/100 g ; iode,
+ * vitamines D et B12 en µg/100 g ; acide alpha-linolénique (ALA) en g/100 g.
+ */
+const CIQUAL_MICRONUTRIENT_CODES = {
+  iron: '10260',
+  calcium: '10200',
+  zinc: '10300',
+  iodine: '10530',
+  vitaminD: '52100',
+  vitaminB12: '56600',
+  ala: '41833',
+}
+const MICRONUTRIENT_FIELDS = Object.keys(CIQUAL_MICRONUTRIENT_CODES)
+
+/**
+ * Teneur CIQUAL d'un micronutriment. Les micros sont souvent sous le seuil de
+ * quantification (« < 20 » pour 22 % des valeurs d'iode) : la mesure existe et
+ * dit « presque rien », on compte donc 0, ce qui ne peut que sous-estimer.
+ * « - » ou une case vide signifient « non mesuré » : absent, jamais 0.
+ *
+ * Volontairement distincte du parsing des macros, que cette évolution ne
+ * modifie pas.
+ */
+function parseMicronutrientContent(raw) {
+  const text = String(raw ?? '').trim()
+  if (!text || text === '-') return null
+  if (text.startsWith('<') || /^traces?$/i.test(text)) return 0
+  const num = Number.parseFloat(text.replace(',', '.'))
+  return Number.isFinite(num) ? num : null
+}
 const ENERGY_FACTORS = { protein: 4, carbs: 4, fat: 9, fiber: 2 }
 
 function rawnessOf(name) {
@@ -329,6 +362,11 @@ function exclusionReason(entry, conversion) {
 async function estimateRecipe(ingredients, servings, context) {
   const { store, index, nutrientsOf, fallbackNutrients } = context
   const totals = emptyTotals()
+  // Par micronutriment : somme et poids des ingrédients dont la teneur est
+  // connue. Un ingrédient sans valeur ne compte pas pour 0, il fait baisser
+  // la couverture de ce micronutriment.
+  const microTotals = Object.fromEntries(MICRONUTRIENT_FIELDS.map((field) => [field, 0]))
+  const microKnownGrams = Object.fromEntries(MICRONUTRIENT_FIELDS.map((field) => [field, 0]))
   const lines = []
   let usedFallback = false
 
@@ -375,22 +413,39 @@ async function estimateRecipe(ingredients, servings, context) {
     }
 
     addNutrients(totals, withEnergy(nutrients), grams)
+    for (const field of MICRONUTRIENT_FIELDS) {
+      if (!Number.isFinite(nutrients[field])) continue
+      microTotals[field] += nutrients[field] * grams / 100
+      microKnownGrams[field] += grams
+    }
     lines.push({ ...base, grams: round(grams), included: true, source })
   }
 
   const portions = Number.isFinite(servings) && servings > 0 ? servings : 1
   const perServing = Object.fromEntries(NUTRIENT_FIELDS.map((field) => [field, totals[field] / portions]))
 
+  const coverage = computeCoverage(lines)
+  // Couverture rapportée au poids total de la recette, comme la couverture
+  // globale : part de la recette dont on connaît vraiment ce micronutriment.
+  const micronutrients = Object.fromEntries(MICRONUTRIENT_FIELDS.map((field) => [field, {
+    perServing: round(microTotals[field] / portions, 3),
+    coverage: coverage.totalGrams > 0 ? round(microKnownGrams[field] / coverage.totalGrams, 3) : 0,
+  }]))
+
   return {
     source: usedFallback ? 'ANSES CIQUAL 2020 (+ Open Food Facts)' : 'ANSES CIQUAL 2020',
     servings: portions,
-    ...computeCoverage(lines),
+    ...coverage,
     lines,
     nutrition: toMealieNutrition(perServing),
+    micronutrients,
   }
 }
 
 module.exports = {
+  CIQUAL_MICRONUTRIENT_CODES,
+  MICRONUTRIENT_FIELDS,
+  parseMicronutrientContent,
   buildCiqualIndex,
   classifyIngredients,
   computeCoverage,

@@ -338,6 +338,10 @@ export class RecipeRepository implements IRecipeRepository {
       [NUTRITION_EXTRAS.coverage]: String(metadata.coverage),
       [NUTRITION_EXTRAS.perServing]: String(metadata.perServing),
     }
+    for (const [key, value] of Object.entries(metadata.micronutrients ?? {})) {
+      if (value === null) delete extras[key]
+      else extras[key] = String(value)
+    }
 
     try {
       return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, {

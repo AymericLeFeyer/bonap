@@ -74,6 +74,14 @@ export interface NutritionEstimateLine {
   source: "ciqual" | "off" | null
 }
 
+export type MicronutrientField = "iron" | "calcium" | "zinc" | "iodine" | "vitaminD" | "vitaminB12" | "ala"
+
+/** Micronutriment par portion et part du poids de la recette où sa teneur est connue. */
+export interface MicronutrientEstimate {
+  perServing: number
+  coverage: number
+}
+
 export interface NutritionEstimate {
   source: string
   servings: number
@@ -82,4 +90,6 @@ export interface NutritionEstimate {
   totalGrams: number
   lines: NutritionEstimateLine[]
   nutrition: MealieNutrition
+  /** Absent si le BFF est antérieur à l'issue #201. */
+  micronutrients?: Partial<Record<MicronutrientField, MicronutrientEstimate>>
 }

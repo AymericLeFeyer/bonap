@@ -6,6 +6,15 @@ export const NUTRITION_EXTRAS = {
   coverage: "nutritionCoverage",
   perServing: "nutritionPerServing",
   legacyCiqualMappings: "nutritionCiqualMappings",
+  // Micronutriments par portion (issue #201). Le modèle nutrition de Mealie
+  // est fermé et ignore les champs inconnus : seuls les extras les conservent.
+  ironMg: "nutritionIronMg",
+  calciumMg: "nutritionCalciumMg",
+  zincMg: "nutritionZincMg",
+  iodineUg: "nutritionIodineUg",
+  vitaminDUg: "nutritionVitaminDUg",
+  vitaminB12Ug: "nutritionVitaminB12Ug",
+  alaG: "nutritionAlaG",
 } as const
 
 export type CoverageLevel = "reliable" | "partial" | "unreliable"

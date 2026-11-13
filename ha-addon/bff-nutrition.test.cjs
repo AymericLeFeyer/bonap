@@ -15,6 +15,8 @@ const {
   computeCoverage,
   estimateRecipe,
   findExactRawMatch,
+  MICRONUTRIENT_FIELDS,
+  parseMicronutrientContent,
   refreshItems,
   withEnergy,
 } = require('./bff-nutrition-classify.cjs')
@@ -39,9 +41,9 @@ const CIQUAL_FOODS = [
 
 const NUTRIENTS = {
   20016: { calories: 25, protein: 2 },
-  20504: { calories: 330, protein: 25 },
+  20504: { calories: 330, protein: 25, iron: 6.5, calcium: 40, zinc: 3.3, iodine: 0, vitaminD: 0, vitaminB12: 0, ala: 0.1 },
   22000: { calories: 140, protein: 12.5 },
-  17270: { calories: 900, fat: 100 },
+  17270: { calories: 900, fat: 100, iron: 0.4, calcium: 1, zinc: 0, vitaminD: 0, vitaminB12: 0, ala: 0.6 },
   20034: { calories: 40, protein: 1 },
   20160: { calories: 20 },
   13050: { protein: 0.25, carbs: 10.7, fat: 0.25, fiber: 1.4 },
@@ -334,6 +336,53 @@ test('estimateRecipe : une pomme sans énergie CIQUAL compte ses calories', asyn
   store.upsert([{ key: 'pomme', ciqualCode: '13050', ciqualName: 'Pomme, pulpe, crue', status: 'validated', origin: 'user' }], index)
   const result = await estimate(store, [{ food: 'Pomme', quantity: '100', unit: 'g' }])
   assert.equal(result.nutrition.calories, '48.8 kcal')
+})
+
+test('parseMicronutrientContent : sous le seuil = 0, non mesuré = absent', () => {
+  assert.equal(parseMicronutrientContent('6,5'), 6.5)
+  // « < 20 » : mesuré, sous le seuil de quantification. Compter 0 ne peut que sous-estimer.
+  assert.equal(parseMicronutrientContent('< 20'), 0)
+  assert.equal(parseMicronutrientContent('<0,001'), 0)
+  assert.equal(parseMicronutrientContent('traces'), 0)
+  // « - » ou vide : non mesuré. Absent, surtout pas 0.
+  assert.equal(parseMicronutrientContent('-'), null)
+  assert.equal(parseMicronutrientContent(''), null)
+  assert.equal(parseMicronutrientContent(undefined), null)
+})
+
+test('estimateRecipe : micronutriments ramenés à une portion, couverture complète', async () => {
+  const store = newStore()
+  store.upsert([{ key: 'lentille', ciqualCode: '20504', ciqualName: 'Lentille, sèche', status: 'validated', origin: 'user' }], index)
+  const result = await estimate(store, [{ food: 'Lentille', quantity: '200', unit: 'g' }], 2)
+  // 200 g à 6,5 mg/100 g = 13 mg, sur 2 portions = 6,5 mg.
+  assert.equal(result.micronutrients.iron.perServing, 6.5)
+  assert.equal(result.micronutrients.iron.coverage, 1)
+  assert.deepEqual(Object.keys(result.micronutrients).sort(), [...MICRONUTRIENT_FIELDS].sort())
+})
+
+test('estimateRecipe : un micronutriment non mesuré baisse sa couverture, sans compter 0', async () => {
+  const store = newStore()
+  store.upsert([
+    { key: 'lentille', ciqualCode: '20504', ciqualName: 'Lentille, sèche', status: 'validated', origin: 'user' },
+    { key: 'huile olive', ciqualCode: '17270', ciqualName: "Huile d'olive vierge extra", status: 'validated', origin: 'user' },
+  ], index)
+  const result = await estimate(store, [
+    { food: 'Lentille', quantity: '300', unit: 'g' },
+    { food: "Huile d'olive", quantity: '100', unit: 'g' },
+  ])
+  // L'iode est connu pour la lentille (0) mais pas pour l'huile : 300 g sur 400 g.
+  assert.equal(result.micronutrients.iodine.coverage, 0.75)
+  // Le fer est connu pour les deux : 300 × 6,5 / 100 + 100 × 0,4 / 100.
+  assert.equal(result.micronutrients.iron.coverage, 1)
+  assert.equal(result.micronutrients.iron.perServing, 19.9)
+})
+
+test('estimateRecipe : Open Food Facts ne fournit pas de micros, couverture nulle', async () => {
+  const store = newStore()
+  store.upsert([{ key: 'beurre doux', ciqualCode: '16400', ciqualName: 'Beurre à 82% MG, doux', status: 'validated', origin: 'user' }], index)
+  const result = await estimate(store, [{ food: 'Beurre doux', quantity: '100', unit: 'g' }], 1, async () => ({ calories: 740 }))
+  assert.equal(result.micronutrients.iron.coverage, 0)
+  assert.equal(result.micronutrients.iron.perServing, 0)
 })
 
 test('quantityKind : unité Mealie reprenant le nom de l\'aliment (issue #191)', () => {
