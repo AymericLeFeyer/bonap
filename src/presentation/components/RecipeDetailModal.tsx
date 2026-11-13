@@ -29,6 +29,10 @@ interface CookingSnapshot {
   targetServings?: number
 }
 
+function servingsRatioFor(base?: number, target?: number): number {
+  return base && base > 0 && target && target > 0 ? target / base : 1
+}
+
 export function RecipeDetailModal({ slug, targetServings, onOpenChange }: RecipeDetailModalProps) {
   const { recipe, loading, error } = useRecipe(slug ?? undefined)
   const [cookingSnapshot, setCookingSnapshot] = useState<CookingSnapshot | null>(null)
@@ -153,6 +157,14 @@ export function RecipeDetailModal({ slug, targetServings, onOpenChange }: Recipe
               <RecipeIngredientsList
                 ingredients={recipe.recipeIngredient ?? []}
                 headingSize="text-base"
+                servingsRatio={servingsRatioFor(getRecipeServings(recipe), targetServings)}
+                headerAction={
+                  targetServings ? (
+                    <span className="text-xs text-muted-foreground">
+                      Pour {targetServings} portion{targetServings > 1 ? "s" : ""}
+                    </span>
+                  ) : undefined
+                }
               />
 
               <RecipeInstructionsList

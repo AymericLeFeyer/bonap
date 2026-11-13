@@ -20,6 +20,8 @@ import { mealTextForCourse } from "../../shared/utils/mealText"
 import { recipeImageUrl } from "../../shared/utils/image"
 import { getRecipeEmoji } from "../../shared/utils/recipeEmoji"
 import { formatDuration } from "../../shared/utils/duration"
+import { getRecipeServings } from "../../shared/utils/servings"
+import { InlineEditServings } from "./RecipeEditorShared"
 import { nutritionForServings } from "../../shared/utils/nutritionDisplay"
 import { NutritionFactBadges } from "./nutrition/NutritionFactBadges"
 import { useUpdateRating } from "../../presentation/hooks/useUpdateRating"
@@ -59,6 +61,9 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
     const { updateCalorieTag } = useUpdateCalorieTag()
     const { flags } = useFeatureFlags()
     const [cookingMode, setCookingMode] = useState(false)
+    // Portions choisies pour l'affichage uniquement (jamais écrites dans Mealie),
+    // rattachées au slug pour repartir de la base en changeant de recette.
+    const [servingsChoice, setServingsChoice] = useState<{ slug: string; value: number } | null>(null)
     const [planningPickerOpen, setPlanningPickerOpen] = useState(false)
     const syncLock = useRef(false)
     const calorieTagSyncedRef = useRef<number | null>(null)
@@ -193,6 +198,12 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
         }
     }
 
+    const baseServings = recipe ? getRecipeServings(recipe) : undefined
+    const targetServings =
+        servingsChoice?.slug === slug ? servingsChoice.value : baseServings
+    const servingsRatio =
+        baseServings && targetServings ? targetServings / baseServings : 1
+
     return (
         <>
             {cookingMode && recipe && (
@@ -200,6 +211,8 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                     recipeName={recipe.name}
                     ingredients={recipe.recipeIngredient ?? []}
                     instructions={recipe.recipeInstructions ?? []}
+                    baseServings={baseServings}
+                    targetServings={targetServings}
                     onClose={() => setCookingMode(false)}
                 />
             )}
@@ -504,7 +517,23 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                             {/* Ingrédients */}
                             {(recipe.recipeIngredient ?? []).length > 0 && (
                                 <div className="px-5">
-                                    <RecipeIngredientsList ingredients={recipe.recipeIngredient ?? []} headingSize="text-base" />
+                                    <RecipeIngredientsList
+                                        ingredients={recipe.recipeIngredient ?? []}
+                                        headingSize="text-base"
+                                        servingsRatio={servingsRatio}
+                                        headerAction={
+                                            baseServings ? (
+                                                <InlineEditServings
+                                                    value={targetServings ? String(targetServings) : ""}
+                                                    baseServings={baseServings}
+                                                    onChange={(v) => {
+                                                        const n = parseInt(v, 10)
+                                                        setServingsChoice(n > 0 ? { slug, value: n } : null)
+                                                    }}
+                                                />
+                                            ) : undefined
+                                        }
+                                    />
                                 </div>
                             )}
 
