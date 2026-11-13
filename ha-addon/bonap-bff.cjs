@@ -16,6 +16,8 @@ const {
   estimateRecipe,
   findCandidates,
   refreshItems,
+  CIQUAL_MICRONUTRIENT_CODES,
+  parseMicronutrientContent,
 } = require('./bff-nutrition-classify.cjs')
 const app = express()
 const PORT = Number(process.env.BONAP_BFF_PORT) || 3001
@@ -203,13 +205,26 @@ function parseCiqualFoods(xml) {
   return foods
 }
 
+const MICRONUTRIENT_FIELD_BY_CODE = Object.fromEntries(
+  Object.entries(CIQUAL_MICRONUTRIENT_CODES).map(([field, code]) => [code, field]),
+)
+
 function parseCiqualComposition(xml) {
-  const wantedCodes = new Set(Object.values(CIQUAL_CODES))
+  const wantedCodes = new Set([...Object.values(CIQUAL_CODES), ...Object.keys(MICRONUTRIENT_FIELD_BY_CODE)])
   const nutrientsByFood = new Map()
   for (const [, block] of xml.matchAll(/<COMPO>([\s\S]*?)<\/COMPO>/gi)) {
     const foodCode = extractXmlValue(block, 'alim_code')
     const nutrientCode = extractXmlValue(block, 'const_code')
     if (!foodCode || !wantedCodes.has(nutrientCode)) continue
+    const microField = MICRONUTRIENT_FIELD_BY_CODE[nutrientCode]
+    if (microField) {
+      // Parsing propre aux micros : « < 20 » vaut 0, « - » reste absent.
+      const micro = parseMicronutrientContent(extractXmlValue(block, 'teneur'))
+      if (micro === null) continue
+      if (!nutrientsByFood.has(foodCode)) nutrientsByFood.set(foodCode, {})
+      nutrientsByFood.get(foodCode)[microField] = micro
+      continue
+    }
     const value = parseNutritionNumber(extractXmlValue(block, 'teneur'))
     if (value === null) continue
     if (!nutrientsByFood.has(foodCode)) nutrientsByFood.set(foodCode, {})

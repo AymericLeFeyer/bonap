@@ -367,5 +367,34 @@ describe("RecipeRepository", () => {
       expect(client.patch).toHaveBeenCalledTimes(1)
       expect(client.put.mock.calls[0][1].extras.nutritionPerServing).toBe("true")
     })
+
+    it("écrit les micronutriments et retire ceux qui valent null, sans perdre les autres extras", async () => {
+      client.get.mockResolvedValue({
+        slug: "gratin",
+        name: "Gratin",
+        extras: { autre: "x", nutritionIodineUg: "12", nutritionPerServing: "true" },
+      })
+      client.patch.mockResolvedValue({ slug: "gratin" })
+
+      await repo.updateNutrition("gratin", { calories: "320" }, {
+        ...metadata,
+        micronutrients: { nutritionIronMg: 3.25, nutritionIodineUg: null },
+      })
+
+      const extras = client.patch.mock.calls[0][1].extras
+      expect(extras.autre).toBe("x")
+      expect(extras.nutritionPerServing).toBe("true")
+      expect(extras.nutritionIronMg).toBe("3.25")
+      expect(extras).not.toHaveProperty("nutritionIodineUg")
+    })
+
+    it("laisse les micronutriments enregistrés intacts si l'appelant n'en fournit pas", async () => {
+      client.get.mockResolvedValue({ slug: "gratin", name: "Gratin", extras: { nutritionIronMg: "3" } })
+      client.patch.mockResolvedValue({ slug: "gratin" })
+
+      await repo.updateNutrition("gratin", { calories: "320" }, metadata)
+
+      expect(client.patch.mock.calls[0][1].extras.nutritionIronMg).toBe("3")
+    })
   })
 })

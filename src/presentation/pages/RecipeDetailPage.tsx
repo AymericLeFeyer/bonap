@@ -64,6 +64,8 @@ import { useCompleteRecipeNutrition } from "../hooks/useCompleteRecipeNutrition.
 import { NutritionEstimateDetail } from "../components/nutrition/NutritionEstimateDetail.tsx"
 import { readNutritionCoverage } from "../../shared/utils/nutritionCoverage.ts"
 import { nutritionForServings } from "../../shared/utils/nutritionDisplay.ts"
+import { micronutrientsForServings } from "../../shared/utils/micronutrients.ts"
+import { MicronutrientList } from "../components/nutrition/MicronutrientList.tsx"
 import { NutritionFactBadges } from "../components/nutrition/NutritionFactBadges.tsx"
 
 function buildFormData(recipe: MealieRecipe): RecipeFormData {
@@ -386,6 +388,10 @@ export function RecipeDetailPage() {
     id: u.id,
     label: u.useAbbreviation && u.abbreviation ? u.abbreviation : u.name,
   }))
+
+  // Portions du sélecteur : la nutrition et les micronutriments suivent la même échelle.
+  const displayedServings = parseServings(formData?.recipeYield) ?? (recipe ? getRecipeServings(recipe) : undefined) ?? 1
+  const displayedMicronutrients = recipe ? micronutrientsForServings(recipe, displayedServings) : null
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -809,11 +815,12 @@ export function RecipeDetailPage() {
               </div>
 
               {recipe?.nutrition?.calories && (
-                <div className="rounded-[var(--radius-xl)] border border-border/50 bg-secondary/30 p-3.5">
+                <div className="space-y-3 rounded-[var(--radius-xl)] border border-border/50 bg-secondary/30 p-3.5">
                   <NutritionFactBadges
-                    nutrition={nutritionForServings(recipe, parseServings(formData.recipeYield) ?? getRecipeServings(recipe) ?? 1)}
+                    nutrition={nutritionForServings(recipe, displayedServings)}
                     coverage={readNutritionCoverage(recipe)}
                   />
+                  {displayedMicronutrients && <MicronutrientList micronutrients={displayedMicronutrients} />}
                 </div>
               )}
 

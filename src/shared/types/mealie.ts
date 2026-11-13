@@ -179,6 +179,12 @@ export interface NutritionMetadata {
   source: string
   coverage: number
   perServing: boolean
+  /**
+   * Micronutriments par portion, rangés par clé d'extras. `null` retire la
+   * clé : une valeur d'une estimation précédente serait fausse. Absent = les
+   * micronutriments enregistrés ne sont pas touchés.
+   */
+  micronutrients?: Record<string, number | null>
 }
 
 export interface MealieRawPaginatedRecipes {
