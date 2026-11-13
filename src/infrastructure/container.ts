@@ -36,6 +36,10 @@ import { UpdateSeasonsUseCase } from "../application/recipe/usecases/UpdateSeaso
 import { UpdateCoursesUseCase } from "../application/recipe/usecases/UpdateCoursesUseCase.ts"
 import { UpdateCalorieTagUseCase } from "../application/recipe/usecases/UpdateCalorieTagUseCase.ts"
 import { GetAllRecipeDetailsUseCase } from "../application/recipe/usecases/GetAllRecipeDetailsUseCase.ts"
+import { UpdateBatchUseCase } from "../application/recipe/usecases/UpdateBatchUseCase.ts"
+import { GetBatchRecipesUseCase } from "../application/recipe/usecases/GetBatchRecipesUseCase.ts"
+import { SuggestBatchRecipesUseCase } from "../application/recipe/usecases/SuggestBatchRecipesUseCase.ts"
+import { LlmBatchAdvisor } from "./recipe/LlmBatchAdvisor.ts"
 import { ClassifyIngredientsUseCase } from "../application/nutrition/usecases/ClassifyIngredientsUseCase.ts"
 import { ClassifyRecipeIngredientsUseCase } from "../application/nutrition/usecases/ClassifyRecipeIngredientsUseCase.ts"
 import { CompleteAllRecipesNutritionUseCase } from "../application/nutrition/usecases/CompleteAllRecipesNutritionUseCase.ts"
@@ -119,6 +123,9 @@ export const deleteRecipeUseCase = new DeleteRecipeUseCase(recipeRepository)
 export const fetchAiImageUseCase = new FetchAiImageUseCase()
 
 export const getAllRecipeDetailsUseCase = new GetAllRecipeDetailsUseCase(recipeRepository)
+export const updateBatchUseCase = new UpdateBatchUseCase(recipeRepository)
+export const getBatchRecipesUseCase = new GetBatchRecipesUseCase(recipeRepository)
+export const suggestBatchRecipesUseCase = new SuggestBatchRecipesUseCase(recipeRepository, new LlmBatchAdvisor())
 
 // --- Singleton use case instances — nutrition ---
 const nutritionRepository = new NutritionRepository()

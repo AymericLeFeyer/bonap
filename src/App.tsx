@@ -7,6 +7,7 @@ import { RecipeFormPage } from './presentation/pages/RecipeFormPage.tsx'
 import { PlanningPage } from './presentation/pages/PlanningPage.tsx'
 import { StatsPage } from './presentation/pages/StatsPage.tsx'
 import { GuestsPage } from './presentation/pages/GuestsPage.tsx'
+import { BatchPage } from './presentation/pages/BatchPage.tsx'
 import { ShoppingPage } from './presentation/pages/ShoppingPage.tsx'
 import { SettingsPage } from './presentation/pages/SettingsPage.tsx'
 import { SuggestionsPage } from './presentation/pages/SuggestionsPage.tsx'
@@ -54,6 +55,7 @@ function App() {
           <Route path="planning" element={<PlanningPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="guests" element={<GuestsPage />} />
+          <Route path="batch" element={<BatchPage />} />
           <Route path="shopping" element={<ShoppingPage />} />
           <Route path="suggestions" element={<SuggestionsPage />} />
           <Route path="explore" element={<ExploreRecipesPage />} />

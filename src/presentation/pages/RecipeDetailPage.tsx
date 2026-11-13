@@ -3,6 +3,7 @@ import { useRecipe } from "../hooks/useRecipe.ts"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons.ts"
 import { useUpdateCourses } from "../hooks/useUpdateCourses.ts"
 import { CourseToggleGroup } from "../components/CourseToggleGroup.tsx"
+import { BatchRecipePanel } from "../components/batch/BatchRecipePanel.tsx"
 import { useUpdateCategories } from "../hooks/useUpdateCategories.ts"
 import { useCategories } from "../hooks/useCategories.ts"
 import { useFoods } from "../hooks/useFoods.ts"
@@ -718,6 +719,8 @@ export function RecipeDetailPage() {
                   })}
                 </div>
               </div>
+
+              <BatchRecipePanel recipe={recipe} onRecipeChange={setRecipe} />
 
               {/* Durées */}
               <div className="flex flex-wrap gap-4">

@@ -12,6 +12,7 @@ import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"
 import { useUpdateCourses } from "../hooks/useUpdateCourses"
 import { CourseToggleGroup } from "./CourseToggleGroup"
+import { BatchRecipePanel } from "./batch/BatchRecipePanel"
 import { useUpdateCategories } from "../hooks/useUpdateCategories"
 import { useFeatureFlags } from "../hooks/useFeatureFlags"
 import { useUpdateCalorieTag } from "../../presentation/hooks/useUpdateCalorieTag"
@@ -523,6 +524,8 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                         })}
                                     </div>
                                 </div>
+
+                                <BatchRecipePanel recipe={recipe} onRecipeChange={setRecipe} />
 
                                 {recipe?.nutrition?.calories && flags.nutrition && (
                                     <div

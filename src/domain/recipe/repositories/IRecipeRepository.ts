@@ -10,6 +10,7 @@ import type {
   Season,
   Course,
 } from "../../../shared/types/mealie.ts"
+import type { BatchInfo } from "../../../shared/utils/batch.ts"
 
 export interface IRecipeRepository {
   getAll(
@@ -28,6 +29,8 @@ export interface IRecipeRepository {
     metadata: NutritionMetadata,
   ): Promise<MealieRecipe>
   updateCalorieTags(slug: string, calories: number): Promise<MealieRecipe>
+  /** Applique `update` au batch actuel (relu sur le serveur) et l'enregistre. */
+  updateBatch(slug: string, update: (current: BatchInfo) => BatchInfo): Promise<MealieRecipe>
   updateCategories(slug: string, categories: MealieCategory[]): Promise<MealieRecipe>
   updateRating(slug: string, rating: number): Promise<void>
   getFavorites(): Promise<MealieFavoritesResponse>

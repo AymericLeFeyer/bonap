@@ -10,6 +10,7 @@ import { usePlanningPreferences } from "../hooks/usePlanningPreferences.ts"
 import { getMealCourse, getMealVisibleNote, sortMealsByCourse } from "../components/planning/planningUtils.ts"
 import { CourseLabel } from "../components/planning/CourseControls.tsx"
 import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
+import { MealBatchBadge } from "../components/planning/MealBatchBadge.tsx"
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
@@ -375,6 +376,7 @@ function RecipeCard({ meal, isVertical }: { meal: MealieMealPlan; isVertical: bo
       {/* Infos */}
       <div className="px-3 py-2 space-y-0.5 shrink-0">
         <p className="text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
+        <MealBatchBadge meal={meal} compact />
         {note && (
           <p className="text-xs text-muted-foreground line-clamp-2">{note}</p>
         )}
