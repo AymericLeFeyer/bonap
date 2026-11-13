@@ -18,6 +18,10 @@ import { courseTagNamesToWrite, isCourseTag } from "../../../shared/utils/course
 import { isCalorieTag, buildCalorieTag } from "../../../shared/utils/calorie.ts"
 import { generateId } from "../../../shared/utils/id.ts"
 import { NUTRITION_EXTRAS } from "../../../shared/utils/nutritionCoverage.ts"
+import {
+  BATCH_EXTRA_KEYS, BATCH_TAG, batchInfoToExtras, getBatchInfo, isBatchTag, withoutBatchExtras,
+  type BatchInfo,
+} from "../../../shared/utils/batch.ts"
 import { mealieApiClient } from "../api/index.ts"
 import { AuthService } from "../auth/AuthService.ts"
 import { MealieApiError } from "../../../shared/types/errors.ts"
@@ -239,8 +243,18 @@ export class RecipeRepository implements IRecipeRepository {
             text: step.text,
           }
         }),
-      tags: [...data.tags.filter((t) => !isCourseTag(t)), ...courseTags, ...seasonTags],
-      extras: { ...(current.extras ?? {}), ...(data.extras ?? {}) },
+      // Le batch (tag + extras) ne s'écrit que via updateBatch() : le formulaire
+      // peut être resté ouvert pendant qu'un plat sortait du stock depuis le planning.
+      tags: [
+        ...data.tags.filter((t) => !isCourseTag(t) && !isBatchTag(t)),
+        ...(current.tags ?? []).filter(isBatchTag).map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
+        ...courseTags,
+        ...seasonTags,
+      ],
+      extras: {
+        ...(current.extras ?? {}),
+        ...Object.fromEntries(Object.entries(data.extras ?? {}).filter(([key]) => !BATCH_EXTRA_KEYS.includes(key))),
+      },
     }
     return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, payload)
   }
@@ -349,6 +363,41 @@ export class RecipeRepository implements IRecipeRepository {
         return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
           ...current,
           nutrition: normalizedNutrition,
+          extras,
+        })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Met à jour le batch d'une recette à partir de son état actuel relu sur le
+   * serveur (le stock peut avoir bougé depuis un autre écran). Écrit le tag
+   * `batch` et les extras ; même repli PUT que la nutrition si Mealie refuse
+   * les extras en PATCH.
+   */
+  async updateBatch(slug: string, update: (current: BatchInfo) => BatchInfo): Promise<MealieRecipe> {
+    const current = await this.getBySlug(slug)
+    const next = update(getBatchInfo(current))
+    const otherTags = (current.tags ?? [])
+      .filter((t) => !isBatchTag(t))
+      .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+    const existingBatchTag = (current.tags ?? []).find(isBatchTag)
+    const batchTags: MealieTagObject[] = !next.enabled
+      ? []
+      : existingBatchTag
+        ? [{ id: existingBatchTag.id, name: existingBatchTag.name, slug: existingBatchTag.slug }]
+        : await this.resolveTagsByName([BATCH_TAG])
+    const tags = [...otherTags, ...batchTags]
+    const extras = { ...withoutBatchExtras(current.extras), ...batchInfoToExtras(next) }
+
+    try {
+      return await mealieApiClient.patch<MealieRecipe>(`/api/recipes/${slug}`, { tags, extras })
+    } catch (error) {
+      if (error instanceof MealieApiError && error.statusCode >= 500) {
+        return mealieApiClient.put<MealieRecipe>(`/api/recipes/${slug}`, {
+          ...this.simplifyRecipeForPut(current),
+          tags,
           extras,
         })
       }

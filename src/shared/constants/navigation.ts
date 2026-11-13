@@ -16,6 +16,7 @@ export const NAV_ROUTES: NavRoute[] = [
   { to: "/planning", label: "Planning" },
   { to: "/shopping", label: "Courses" },
   { to: "/recipes", label: "Recettes" },
+  { to: "/batch", label: "Batch cooking" },
   { to: "/suggestions", label: "Suggestions IA", requiresAI: true },
   { to: "/explore", label: "Explorer" },
   { to: "/stats", label: "Statistiques" },

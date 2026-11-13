@@ -11,6 +11,7 @@ import { getRecipeServings } from "../../../shared/utils/servings.ts"
 import { getMealCourse, getMealServings, getMealVisibleNote } from "./planningUtils.ts"
 import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
 import { MealGuests } from "./MealGuests.tsx"
+import { MealBatchBadge } from "./MealBatchBadge.tsx"
 import type { GuestHistory } from "../../../domain/planning/services/GuestHistoryService.ts"
 import { decodeMealText } from "../../../shared/utils/mealText.ts"
 
@@ -158,6 +159,9 @@ export function MealCell({
                 <span className="line-clamp-4 flex-1 text-[12.5px] font-medium leading-snug">{name}</span>
               </div>
 
+              <div className="px-2 pb-1.5 empty:hidden">
+                <MealBatchBadge meal={meal} />
+              </div>
               <div className="px-2 pb-1.5 empty:hidden">
                 <MealGuests meal={meal} history={guestHistory} />
               </div>

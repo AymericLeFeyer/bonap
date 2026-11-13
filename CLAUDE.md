@@ -370,6 +370,13 @@ npm run preview  # Prévisualisation prod
 - **Repas du planning** : `entryType` reste lunch/dinner, le type est un marqueur dans la note : `[s:4][c:dessert]note` (`shared/utils/mealText.ts`, absent = plat). Toujours réécrire la note via `buildMealText(meal, patch)` (`planningUtils.ts`), jamais `encodeServingsInText` à la main — sinon le type est perdu.
 - **Auto-planifier** et Suggestions IA ne tirent que des recettes `plat`. Un créneau « vide » = sans plat.
 
+### Batch cooking (`/batch`)
+- **Recette batch** = tag `batch` + extras `batchFridgeDays`, `batchFreezerDays`, `batchStock` (JSON `[{ location: "fridge"|"freezer", count, preparedAt: "YYYY-MM-DD" }]`, une entrée par endroit + date). Tout est dans Mealie : stock partagé entre appareils, sans BFF. Helpers purs dans `shared/utils/batch.ts`.
+- **Écriture uniquement via `updateBatch(slug, current => next)`** (`RecipeRepository`, relit la recette avant d'écrire). `update()` (formulaire) ignore les clés batch du formulaire et recopie tag + extras batch de `current` : un formulaire resté ouvert n'écrase jamais le stock. Mealie remplace l'objet extras en entier : partir de `withoutBatchExtras(current.extras)`.
+- **Planning** : onglet « Batch » du `RecipePickerDialog`. Le repas porte `[b:freezer:2026-11-02]` dans sa note (`mealText.ts`, toujours via `buildMealText`) et le plat sort du stock (`takeFromStock`). Supprimer un repas batch daté d'aujourd'hui ou plus tard le remet en stock ; un repas passé est considéré mangé. Un déplacement (drag & drop) garde le marqueur sans toucher au stock.
+- **Rappel décongélation** : `MealBatchBadge` (planning, mobile, kiosk) affiche « À sortir du congélateur aujourd'hui » la veille d'un repas venu du congélateur.
+- **IA** : `SuggestBatchRecipesUseCase` + `LlmBatchAdvisor` (`llmChat`, par paquets de 80 plats non batch) proposent recettes + durées ; rien n'est écrit avant validation dans `BatchAiDialog`. Des durées déjà saisies priment sur l'estimation.
+
 ### Portions / scaling
 - **Lecture** : toujours `getRecipeServings(recipe)`, jamais `parseServings(recipe.recipeYield)` — voir `shared/utils/servings.ts`. Le bug #14 venait précisément de cette confusion.
 - **Scaling à l'ajout au panier** : `AddRecipesToListUseCase` multiplie `quantity` par `servingsRatio` quand l'ingrédient a `quantity > 0` ET au moins l'un de `unit` ou `food` (sinon impossible à formater proprement). Output : `"500 g farine"`, `"2 oignon"`, ou fallback texte brut. Évite les artefacts type `3 1 cup farine` car ce cas (quantité dans la note libre, pas dans `quantity`) tombe en fallback.

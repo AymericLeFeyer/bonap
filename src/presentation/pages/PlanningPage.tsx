@@ -34,6 +34,8 @@ import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { generateBalancedMealPlan } from "../../shared/utils/balancedMealPlanner.ts"
 import { getRecipeServings } from "../../shared/utils/servings.ts"
 import { encodeMealText } from "../../shared/utils/mealText.ts"
+import { returnToStock, takeFromStock, type BatchStockEntry } from "../../shared/utils/batch.ts"
+import { updateBatchUseCase } from "../../infrastructure/container.ts"
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
@@ -233,6 +235,49 @@ export function PlanningPage() {
     await addMeal(pendingSlot.date, pendingSlot.entryType, recipe.id, undefined, text || undefined)
     setPendingSlot(null)
   }
+
+  /** Plat pris dans le stock batch : planifié avec sa provenance, puis retiré du stock. */
+  const handleBatchSelect = async (recipe: MealieRecipe, entry: BatchStockEntry) => {
+    if (!pendingSlot) return
+    const slot = pendingSlot
+    setPendingSlot(null)
+    const servings = getInitialServingsForNewMeal(recipe, familySize)
+    const text = encodeMealText({
+      servings,
+      course: slot.course,
+      batch: { location: entry.location, preparedAt: entry.preparedAt },
+      note: "",
+    })
+    await addMeal(slot.date, slot.entryType, recipe.id, undefined, text)
+    try {
+      await updateBatchUseCase.execute(recipe.slug, (current) => ({
+        ...current,
+        stock: takeFromStock(current.stock, entry.location, entry.preparedAt).stock,
+      }))
+    } catch {
+      setAutoPlanError(`Le repas est planifié, mais le stock de « ${recipe.name} » n'a pas pu être mis à jour.`)
+    }
+  }
+
+  /**
+   * Supprime un repas. Un plat batch déprogrammé (aujourd'hui ou plus tard)
+   * retourne dans le stock ; un repas passé est considéré comme mangé.
+   */
+  const handleDeleteMeal = useCallback(async (id: number) => {
+    const meal = mealPlans.find((m) => m.id === id)
+    await deleteMeal(id)
+    const batch = meal ? decodeMealText(meal.text).batch : undefined
+    const slug = meal?.recipe?.slug
+    if (!meal || !batch || !slug || meal.date < formatDate(new Date())) return
+    try {
+      await updateBatchUseCase.execute(slug, (current) => ({
+        ...current,
+        stock: returnToStock(current.stock, batch.location, batch.preparedAt),
+      }))
+    } catch {
+      setAutoPlanError("Le repas est supprimé, mais le plat n'a pas pu être remis dans le stock batch.")
+    }
+  }, [mealPlans, deleteMeal])
 
   const handleOpenNote = (meal: MealieMealPlan) => {
     setNoteDialog({ meal, value: getMealVisibleNote(meal), guests: decodeMealText(meal.text).guests ?? [] })
@@ -676,7 +721,7 @@ export function PlanningPage() {
                           meals={meals}
                           lastMeals={lastMeals}
                           onAdd={(course) => handleAddMeal(dateStr, key, course)}
-                          onDelete={deleteMeal}
+                          onDelete={(id) => void handleDeleteMeal(id)}
                           onSelectLeftover={(meal) => void handleLeftoverSelect(date, key, meal)}
                           onNote={handleOpenNote}
                           colorClass={cn(color, "border-b border-r", borderColor)}
@@ -796,7 +841,7 @@ export function PlanningPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { void deleteMeal(mobileMenuMeal.meal.id); setMobileMenuMeal(null) }}
+                  onClick={() => { void handleDeleteMeal(mobileMenuMeal.meal.id); setMobileMenuMeal(null) }}
                   className="flex items-center gap-3 px-4 py-3.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -872,6 +917,7 @@ export function PlanningPage() {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onSelect={handleRecipeSelect}
+        onSelectBatch={(recipe, entry) => void handleBatchSelect(recipe, entry)}
         course={pendingSlot?.course}
       />
 

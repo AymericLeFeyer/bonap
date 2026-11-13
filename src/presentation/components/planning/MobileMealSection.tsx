@@ -7,6 +7,7 @@ import { RecipeImage } from "../RecipeImage.tsx"
 import { getMealCourse, getMealServings } from "./planningUtils.ts"
 import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
 import { MealGuests } from "./MealGuests.tsx"
+import { MealBatchBadge } from "./MealBatchBadge.tsx"
 import type { GuestHistory } from "../../../domain/planning/services/GuestHistoryService.ts"
 
 export interface MobileMealSectionProps {
@@ -107,6 +108,9 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
                   </span>
                 )
               )}
+            </div>
+            <div className="px-2 py-1 empty:hidden">
+              <MealBatchBadge meal={meal} compact />
             </div>
             <div className="px-2 py-1 empty:hidden">
               <MealGuests meal={meal} history={guestHistory} compact />

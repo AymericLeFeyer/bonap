@@ -5,6 +5,8 @@ import type { MealieRecipe } from "../../shared/types/mealie.ts"
 import { COURSE_LABELS } from "../../shared/types/mealie.ts"
 import { getRecipeSeasonsFromTags } from "../../shared/utils/season.ts"
 import { getRecipeCourses } from "../../shared/utils/course.ts"
+import { isBatchRecipe } from "../../shared/utils/batch.ts"
+import { CookingPot } from "lucide-react"
 import { cn } from "../../lib/utils.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { getRecipeEmoji, EXTRAS_EMOJI_KEY } from "../../shared/utils/recipeEmoji.ts"
@@ -40,6 +42,7 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
   // Plat = cas par défaut, seuls les autres types sont signalés.
   const courses = getRecipeCourses(recipe).filter((c) => c !== "plat")
   const categories = recipe.recipeCategory ?? []
+  const batch = isBatchRecipe(recipe)
 
   return (
     <Link
@@ -84,8 +87,17 @@ export function RecipeCard({ recipe, onSelect, selected }: RecipeCardProps) {
           )}
 
           {/* Type entrée / dessert — top right */}
-          {courses.length > 0 && (
+          {(courses.length > 0 || batch) && (
             <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+              {batch && (
+                <span
+                  className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-sm"
+                  title="Recette batch cooking"
+                >
+                  <CookingPot className="h-2.5 w-2.5" />
+                  Batch
+                </span>
+              )}
               {courses.map((course) => (
                 <span
                   key={course}

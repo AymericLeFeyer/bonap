@@ -377,4 +377,77 @@ describe("RecipeRepository", () => {
       expect(client.put.mock.calls[0][1].extras.nutritionPerServing).toBe("true")
     })
   })
+
+  // ── Batch cooking ───────────────────────────────────────────────────────────
+
+  describe("batch", () => {
+    const batchTag = { id: "t-batch", name: "batch", slug: "batch" }
+    const stock = JSON.stringify([{ location: "freezer", count: 3, preparedAt: "2026-11-02" }])
+
+    function mockGets(recipe: Record<string, unknown>) {
+      client.get.mockImplementation((url: string) =>
+        Promise.resolve(url.startsWith("/api/organizers/tags") ? { items: [batchTag] } : recipe),
+      )
+    }
+
+    it("updateBatch ajoute le tag existant et écrit durées + stock dans les extras", async () => {
+      mockGets({ slug: "lasagnes", name: "Lasagnes", tags: [{ id: "t1", name: "Gratins", slug: "gratins" }], extras: { emoji: "🍝" } })
+      client.patch.mockResolvedValue({ slug: "lasagnes" })
+
+      await repo.updateBatch("lasagnes", (current) => ({
+        ...current,
+        enabled: true,
+        freezerDays: 90,
+        stock: [{ location: "freezer", count: 3, preparedAt: "2026-11-02" }],
+      }))
+
+      const body = client.patch.mock.calls[0][1]
+      expect(body.tags).toEqual([
+        { id: "t1", name: "Gratins", slug: "gratins" },
+        { id: "t-batch", name: "batch", slug: "batch" },
+      ])
+      expect(body.extras).toEqual({ emoji: "🍝", batchFreezerDays: "90", batchStock: stock })
+    })
+
+    it("updateBatch retire le tag et efface les clés non renseignées", async () => {
+      mockGets({ slug: "lasagnes", name: "Lasagnes", tags: [batchTag], extras: { batchFridgeDays: "3", batchStock: stock } })
+      client.patch.mockResolvedValue({ slug: "lasagnes" })
+
+      await repo.updateBatch("lasagnes", () => ({ enabled: false, stock: [] }))
+
+      const body = client.patch.mock.calls[0][1]
+      expect(body.tags).toEqual([])
+      expect(body.extras).toEqual({})
+    })
+
+    it("update() conserve le tag et le stock batch actuels malgré un formulaire périmé", async () => {
+      mockGets({
+        slug: "lasagnes",
+        name: "Lasagnes",
+        tags: [batchTag],
+        extras: { batchStock: stock, emoji: "🍝" },
+      })
+      client.put.mockResolvedValue({ slug: "lasagnes" })
+
+      await repo.update("lasagnes", {
+        name: "Lasagnes maison",
+        description: "",
+        prepTime: "",
+        performTime: "",
+        totalTime: "",
+        recipeYield: "",
+        recipeIngredient: [],
+        recipeInstructions: [],
+        seasons: [],
+        categories: [],
+        tags: [],
+        // Copie du formulaire ouverte avant qu'un plat sorte du stock
+        extras: { batchStock: "[]", emoji: "🥘" },
+      })
+
+      const body = client.put.mock.calls[0][1]
+      expect(body.tags).toEqual([{ id: "t-batch", name: "batch", slug: "batch" }])
+      expect(body.extras).toEqual({ batchStock: stock, emoji: "🥘" })
+    })
+  })
 })

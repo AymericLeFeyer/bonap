@@ -42,3 +42,18 @@ describe("encodeMealText", () => {
     expect(decodeMealText(encodeMealText(parts))).toEqual(parts)
   })
 })
+
+describe("marqueur batch", () => {
+  it("lit et réécrit la provenance d'un plat batch", () => {
+    const text = "[s:4][b:freezer:2026-11-02][g:Marc]à réchauffer"
+    const parts = decodeMealText(text)
+    expect(parts.batch).toEqual({ location: "freezer", preparedAt: "2026-11-02" })
+    expect(parts.guests).toEqual(["Marc"])
+    expect(parts.note).toBe("à réchauffer")
+    expect(encodeMealText(parts)).toBe(text)
+  })
+
+  it("laisse dans la note un marqueur batch invalide", () => {
+    expect(decodeMealText("[b:cave:2026-11-02]x").note).toBe("[b:cave:2026-11-02]x")
+  })
+})

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Search, Loader2, UtensilsCrossed, X, ChefHat } from "lucide-react"
+import { Search, Loader2, UtensilsCrossed, X, ChefHat, CookingPot } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { recipeHasCourse } from "../../shared/utils/course.ts"
 import { recipeImageUrl } from "../../shared/utils/image.ts"
 import { getRecipeEmoji } from "../../shared/utils/recipeEmoji.ts"
 import { SimpleRecipePicker } from "./SimpleRecipePicker.tsx"
+import { BatchPickerList } from "./batch/BatchPickerList.tsx"
+import type { BatchStockEntry } from "../../shared/utils/batch.ts"
 import { cn } from "../../lib/utils.ts"
 
 // ─── Isolated list ────────────────────────────────────────────────────────────
@@ -128,12 +130,14 @@ function RecipeThumbnail({ recipe, emoji }: { recipe: MealieRecipe; emoji: strin
 
 // ─── Dialog ───────────────────────────────────────────────────────────────────
 
-type Tab = "recipes" | "simple"
+type Tab = "recipes" | "simple" | "batch"
 
 interface RecipePickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelect: (recipe: MealieRecipe) => void
+  /** Plat pris dans le stock batch ; sans ce callback, l'onglet Batch est masqué. */
+  onSelectBatch?: (recipe: MealieRecipe, entry: BatchStockEntry) => void
   /** Type du créneau : pré-filtre la liste (l'utilisateur peut afficher toutes les recettes). */
   course?: Course
 }
@@ -142,6 +146,7 @@ export function RecipePickerDialog({
   open,
   onOpenChange,
   onSelect,
+  onSelectBatch,
   course,
 }: RecipePickerDialogProps) {
   const [tab, setTab] = useState<Tab>("recipes")
@@ -174,6 +179,11 @@ export function RecipePickerDialog({
     handleOpenChange(false)
   }
 
+  const handleSelectBatch = (recipe: MealieRecipe, entry: BatchStockEntry) => {
+    onSelectBatch?.(recipe, entry)
+    handleOpenChange(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -199,7 +209,7 @@ export function RecipePickerDialog({
             {course === "entree" ? "Choisir une entrée" : course === "dessert" ? "Choisir un dessert" : "Choisir un repas"}
           </DialogTitle>
           <DialogDescription>
-            Sélectionnez une recette existante ou créez un repas simple à la volée.
+            Sélectionnez une recette, un plat préparé en batch ou créez un repas simple à la volée.
           </DialogDescription>
         </DialogHeader>
 
@@ -213,6 +223,12 @@ export function RecipePickerDialog({
             <ChefHat className="h-3.5 w-3.5" />
             Repas simple
           </TabButton>
+          {onSelectBatch && (
+            <TabButton active={tab === "batch"} onClick={() => setTab("batch")}>
+              <CookingPot className="h-3.5 w-3.5" />
+              Batch
+            </TabButton>
+          )}
         </div>
 
         {tab === "recipes" ? (
@@ -260,6 +276,10 @@ export function RecipePickerDialog({
               <RecipeList search={debouncedSearch} course={courseFilter} onSelect={handleSelect} />
             </div>
           </>
+        ) : tab === "batch" ? (
+          <div className="flex-1 overflow-y-auto">
+            <BatchPickerList onSelect={handleSelectBatch} />
+          </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-1">
             <SimpleRecipePicker onCreated={handleSelect} dropdownContainer={dialogContentEl} />
