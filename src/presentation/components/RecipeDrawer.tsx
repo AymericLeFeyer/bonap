@@ -4,7 +4,9 @@ import { CookingMode } from "./CookingMode"
 import { PlanningSlotPicker } from "./PlanningSlotPicker"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 import { Badge } from "./ui/badge"
-import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, Heart } from "lucide-react"
+import { X, CalendarPlus, UtensilsCrossed, ExternalLink, Loader2, Clock, Star, Heart, Printer } from "lucide-react"
+import { printHtml } from "./print/printHtml"
+import { buildRecipePrintHtml } from "./print/buildRecipePrintHtml"
 
 import { useRecipe } from "../hooks/useRecipe"
 import { useUpdateSeasons } from "../hooks/useUpdateSeasons"
@@ -276,6 +278,34 @@ export function RecipeDrawer({ slug, allCategories, closing, onClose }: RecipeDr
                                             </button>
                                         </TooltipTrigger>
                                         <TooltipContent className="hidden sm:block">Mode cuisine</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    printHtml(
+                                                        buildRecipePrintHtml(recipe, {
+                                                            baseServings,
+                                                            targetServings,
+                                                            imageUrl: recipe.image ? recipeImageUrl(recipe, "original") : undefined,
+                                                        }),
+                                                    )
+                                                }
+                                                aria-label="Imprimer la recette"
+                                                className={cn(
+                                                    "flex items-center gap-1.5 rounded-[var(--radius-md)]",
+                                                    "border border-border px-2.5 py-1.5",
+                                                    "text-xs font-semibold text-muted-foreground",
+                                                    "hover:text-foreground hover:border-border/80 hover:bg-secondary",
+                                                    "transition-all duration-150",
+                                                )}
+                                            >
+                                                <Printer className="h-3.5 w-3.5" />
+                                                <span className="sm:hidden">Imprimer</span>
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="hidden sm:block">Imprimer</TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
                                         <TooltipTrigger asChild>

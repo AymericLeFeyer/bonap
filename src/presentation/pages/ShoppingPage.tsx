@@ -17,6 +17,7 @@ import { GroupedHabituels } from "../components/shopping/GroupedHabituels.tsx"
 import { DefaultCatalogModal } from "../components/shopping/DefaultCatalogModal.tsx"
 import { FormLabelSelect } from "../components/shopping/FormLabelSelect.tsx"
 import { buildPrintHtml } from "../components/shopping/buildPrintHtml.ts"
+import { printHtml } from "../components/print/printHtml.ts"
 import type { ShoppingItem } from "../../domain/shopping/entities/ShoppingItem.ts"
 
 export function ShoppingPage() {
@@ -89,15 +90,7 @@ export function ShoppingPage() {
 
   const handlePrint = () => {
     const date = new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
-    const html = buildPrintHtml(items, labels, date)
-    const iframe = document.createElement("iframe")
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0"
-    document.body.appendChild(iframe)
-    iframe.contentDocument!.open()
-    iframe.contentDocument!.write(html)
-    iframe.contentDocument!.close()
-    iframe.contentWindow!.onafterprint = () => document.body.removeChild(iframe)
-    iframe.contentWindow!.print()
+    printHtml(buildPrintHtml(items, labels, date))
   }
 
   const handleAddItem = async (e: React.FormEvent) => {
