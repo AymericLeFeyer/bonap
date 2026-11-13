@@ -6,6 +6,8 @@ import { cn } from "../../../lib/utils.ts"
 import { RecipeImage } from "../RecipeImage.tsx"
 import { getMealCourse, getMealServings } from "./planningUtils.ts"
 import { CourseLabel, OptionalCourseButtons } from "./CourseControls.tsx"
+import { MealGuests } from "./MealGuests.tsx"
+import type { GuestHistory } from "../../../domain/planning/services/GuestHistoryService.ts"
 
 export interface MobileMealSectionProps {
   /** Repas du créneau, déjà triés entrée → plat → dessert. */
@@ -18,9 +20,10 @@ export interface MobileMealSectionProps {
   selectionMode?: boolean
   selectedMealIds?: Set<number>
   onToggleSelect?: (id: number) => void
+  guestHistory?: GuestHistory[]
 }
 
-export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled, selectionMode, selectedMealIds, onToggleSelect }: MobileMealSectionProps) {
+export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, onMealTouchStart, servingsEnabled, selectionMode, selectedMealIds, onToggleSelect, guestHistory = [] }: MobileMealSectionProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const copyBtnRef = useRef<HTMLButtonElement>(null)
@@ -104,6 +107,9 @@ export function MobileMealSection({ meals, lastMeals, onAdd, onSelectLeftover, o
                   </span>
                 )
               )}
+            </div>
+            <div className="px-2 py-1 empty:hidden">
+              <MealGuests meal={meal} history={guestHistory} compact />
             </div>
           </div>
         )

@@ -19,6 +19,7 @@ export const NAV_ROUTES: NavRoute[] = [
   { to: "/suggestions", label: "Suggestions IA", requiresAI: true },
   { to: "/explore", label: "Explorer" },
   { to: "/stats", label: "Statistiques" },
+  { to: "/guests", label: "Invités" },
 ]
 
 /** Destinations visibles selon que l'IA est configurée ou non. */

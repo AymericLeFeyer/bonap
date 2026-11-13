@@ -58,6 +58,7 @@ import { ToggleFavoriteUseCase } from "../application/user/usecases/ToggleFavori
 // Use cases — planning
 import { GetWeekPlanningUseCase } from '../application/planning/usecases/GetWeekPlanningUseCase.ts'
 import { GetPlanningRangeUseCase } from '../application/planning/usecases/GetPlanningRangeUseCase.ts'
+import { GetGuestHistoryUseCase } from '../application/planning/usecases/GetGuestHistoryUseCase.ts'
 import { AddMealUseCase } from '../application/planning/usecases/AddMealUseCase.ts'
 import { DeleteMealUseCase } from '../application/planning/usecases/DeleteMealUseCase.ts'
 
@@ -153,6 +154,7 @@ export const getPlanningRangeUseCase = new GetPlanningRangeUseCase(
 )
 export const addMealUseCase = new AddMealUseCase(planningRepository)
 export const deleteMealUseCase = new DeleteMealUseCase(planningRepository)
+export const getGuestHistoryUseCase = new GetGuestHistoryUseCase(planningRepository)
 
 // --- Singleton use case instances — shopping ---
 

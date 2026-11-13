@@ -17,6 +17,11 @@ import { RecipeDetailModal } from "../components/RecipeDetailModal.tsx"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog.tsx"
 import { MobileMealSection } from "../components/planning/MobileMealSection.tsx"
 import { MealCell } from "../components/planning/MealCell.tsx"
+import { GuestsInput } from "../components/planning/GuestsInput.tsx"
+import { tastingWarning } from "../../shared/utils/guests.ts"
+import { useGuestHistory } from "../hooks/useGuestHistory.ts"
+import { previousTastingsFor } from "../../domain/planning/services/GuestHistoryService.ts"
+import { decodeMealText } from "../../shared/utils/mealText.ts"
 import {
   getMealServings, getMealVisibleNote, getInitialServingsForNewMeal,
   formatDayDate, formatDateRange, addDays, fetchAllRecipeDetails,
@@ -66,6 +71,7 @@ export function PlanningPage() {
     addMeal, deleteMeal, updateMealNote,
   } = usePlanning()
   const { familySize } = useFamilySize()
+  const { history: guestHistory, reload: reloadGuestHistory } = useGuestHistory()
   const { flags } = useFeatureFlags()
   const {
     addRecipes: addRecipesToCart,
@@ -81,7 +87,7 @@ export function PlanningPage() {
   const [pendingSlot, setPendingSlot] = useState<{ date: string; entryType: string; course: Course } | null>(null)
   const [previewRecipe, setPreviewRecipe] = useState<{ slug: string; targetServings?: number } | null>(null)
   const [mobileMenuMeal, setMobileMenuMeal] = useState<{ meal: MealieMealPlan; y: number } | null>(null)
-  const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string } | null>(null)
+  const [noteDialog, setNoteDialog] = useState<{ meal: MealieMealPlan; value: string; guests: string[] } | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedMealIds, setSelectedMealIds] = useState<Set<number>>(new Set())
   const [autoPlanning, setAutoPlanning] = useState(false)
@@ -229,13 +235,17 @@ export function PlanningPage() {
   }
 
   const handleOpenNote = (meal: MealieMealPlan) => {
-    setNoteDialog({ meal, value: getMealVisibleNote(meal) })
+    setNoteDialog({ meal, value: getMealVisibleNote(meal), guests: decodeMealText(meal.text).guests ?? [] })
   }
 
   const handleSaveNote = async () => {
     if (!noteDialog) return
-    await updateMealNote(noteDialog.meal, buildMealText(noteDialog.meal, { note: noteDialog.value }))
+    await updateMealNote(
+      noteDialog.meal,
+      buildMealText(noteDialog.meal, { note: noteDialog.value, guests: noteDialog.guests }),
+    )
     setNoteDialog(null)
+    void reloadGuestHistory()
   }
 
   const handleLeftoverSelect = async (date: Date, entryType: string, meal: MealieMealPlan) => {
@@ -599,6 +609,7 @@ export function PlanningPage() {
                             selectionMode={selectionMode}
                             selectedMealIds={selectedMealIds}
                             onToggleSelect={toggleMealSelection}
+                            guestHistory={guestHistory}
                           />
                         </div>
                       )
@@ -685,6 +696,7 @@ export function PlanningPage() {
                           selectionMode={selectionMode}
                           selectedMealIds={selectedMealIds}
                           onToggleSelect={toggleMealSelection}
+                          guestHistory={guestHistory}
                         />
                       )
                     })}
@@ -780,7 +792,7 @@ export function PlanningPage() {
                     ? <MessageSquare className="h-4 w-4 text-primary/70" />
                     : <MessageSquarePlus className="h-4 w-4 text-muted-foreground" />
                   }
-                  {getMealVisibleNote(mobileMenuMeal.meal) ? "Modifier la note" : "Ajouter une note"}
+                  Note et invités
                 </button>
                 <button
                   type="button"
@@ -807,7 +819,7 @@ export function PlanningPage() {
       <Dialog open={noteDialog !== null} onOpenChange={(v) => { if (!v) setNoteDialog(null) }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading text-base">Note pour ce repas</DialogTitle>
+            <DialogTitle className="font-heading text-base">Note et invités</DialogTitle>
             <p className="text-sm text-muted-foreground">
               {noteDialog?.meal.recipe?.name ?? noteDialog?.meal.title ?? "Repas"}
             </p>
@@ -826,6 +838,25 @@ export function PlanningPage() {
               "resize-none transition-[border-color,box-shadow] duration-150",
             )}
           />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Invités</label>
+            <GuestsInput
+              value={noteDialog?.guests ?? []}
+              onChange={(guests) => setNoteDialog((prev) => prev ? { ...prev, guests } : null)}
+              suggestions={guestHistory.map((g) => g.name)}
+            />
+            {noteDialog && previousTastingsFor(
+              guestHistory,
+              noteDialog.meal.recipeId ?? noteDialog.meal.recipe?.id,
+              noteDialog.meal.date,
+              noteDialog.guests,
+              noteDialog.meal.id,
+            ).map((w) => (
+              <p key={w.name} className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                ⚠ {tastingWarning(w)}
+              </p>
+            ))}
+          </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setNoteDialog(null)}>
               Annuler
